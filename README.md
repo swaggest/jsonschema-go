@@ -6,5 +6,5 @@
 ![Code lines](https://sloc.xyz/github/swaggest/jsonschema-go/?category=code)
 ![Comments](https://sloc.xyz/github/swaggest/jsonschema-go/?category=comments)
 
-This library helps to create [JSON Schema](https://json-schema.org/) spec with Go structures.
+This library provides Go structures to marshal and unmarshal [JSON Schema](https://json-schema.org/) documents.
 

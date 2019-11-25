@@ -14,30 +14,30 @@ import (
 //
 // Core schema meta-schema.
 type CoreSchemaMetaSchema struct {
-	ID                   string                                      `json:"$id,omitempty"`
-	Schema               string                                      `json:"$schema,omitempty"`
-	Ref                  string                                      `json:"$ref,omitempty"`
-	Comment              string                                      `json:"$comment,omitempty"`
-	Title                string                                      `json:"title,omitempty"`
-	Description          string                                      `json:"description,omitempty"`
+	ID                   *string                                     `json:"$id,omitempty"`
+	Schema               *string                                     `json:"$schema,omitempty"`
+	Ref                  *string                                     `json:"$ref,omitempty"`
+	Comment              *string                                     `json:"$comment,omitempty"`
+	Title                *string                                     `json:"title,omitempty"`
+	Description          *string                                     `json:"description,omitempty"`
 	Default              *interface{}                                `json:"default,omitempty"`
-	ReadOnly             bool                                        `json:"readOnly,omitempty"`
+	ReadOnly             *bool                                       `json:"readOnly,omitempty"`
 	Examples             []interface{}                               `json:"examples,omitempty"`
-	MultipleOf           float64                                     `json:"multipleOf,omitempty"`
-	Maximum              float64                                     `json:"maximum,omitempty"`
-	ExclusiveMaximum     float64                                     `json:"exclusiveMaximum,omitempty"`
-	Minimum              float64                                     `json:"minimum,omitempty"`
-	ExclusiveMinimum     float64                                     `json:"exclusiveMinimum,omitempty"`
-	MaxLength            int64                                       `json:"maxLength,omitempty"`
+	MultipleOf           *float64                                    `json:"multipleOf,omitempty"`
+	Maximum              *float64                                    `json:"maximum,omitempty"`
+	ExclusiveMaximum     *float64                                    `json:"exclusiveMaximum,omitempty"`
+	Minimum              *float64                                    `json:"minimum,omitempty"`
+	ExclusiveMinimum     *float64                                    `json:"exclusiveMinimum,omitempty"`
+	MaxLength            *int64                                      `json:"maxLength,omitempty"`
 	MinLength            int64                                       `json:"minLength,omitempty"`
-	Pattern              string                                      `json:"pattern,omitempty"`
+	Pattern              *string                                     `json:"pattern,omitempty"`
 	AdditionalItems      *Schema                                     `json:"additionalItems,omitempty"` // Core schema meta-schema
 	Items                *Items                                      `json:"items,omitempty"`
-	MaxItems             int64                                       `json:"maxItems,omitempty"`
+	MaxItems             *int64                                      `json:"maxItems,omitempty"`
 	MinItems             int64                                       `json:"minItems,omitempty"`
-	UniqueItems          bool                                        `json:"uniqueItems,omitempty"`
+	UniqueItems          *bool                                       `json:"uniqueItems,omitempty"`
 	Contains             *Schema                                     `json:"contains,omitempty"` // Core schema meta-schema
-	MaxProperties        int64                                       `json:"maxProperties,omitempty"`
+	MaxProperties        *int64                                      `json:"maxProperties,omitempty"`
 	MinProperties        int64                                       `json:"minProperties,omitempty"`
 	Required             []string                                    `json:"required,omitempty"`
 	AdditionalProperties *Schema                                     `json:"additionalProperties,omitempty"` // Core schema meta-schema
@@ -49,9 +49,9 @@ type CoreSchemaMetaSchema struct {
 	Const                *interface{}                                `json:"const,omitempty"`
 	Enum                 []interface{}                               `json:"enum,omitempty"`
 	Type                 *Type                                       `json:"type,omitempty"`
-	Format               string                                      `json:"format,omitempty"`
-	ContentMediaType     string                                      `json:"contentMediaType,omitempty"`
-	ContentEncoding      string                                      `json:"contentEncoding,omitempty"`
+	Format               *string                                     `json:"format,omitempty"`
+	ContentMediaType     *string                                     `json:"contentMediaType,omitempty"`
+	ContentEncoding      *string                                     `json:"contentEncoding,omitempty"`
 	If                   *Schema                                     `json:"if,omitempty"`   // Core schema meta-schema
 	Then                 *Schema                                     `json:"then,omitempty"` // Core schema meta-schema
 	Else                 *Schema                                     `json:"else,omitempty"` // Core schema meta-schema
