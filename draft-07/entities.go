@@ -189,6 +189,10 @@ const (
 	SimpleTypesString  = SimpleTypes("string")
 )
 
+func (i SimpleTypes) Ptr() *SimpleTypes {
+	return &i
+}
+
 // MarshalJSON encodes JSON.
 func (i SimpleTypes) MarshalJSON() ([]byte, error) {
 	switch i {
