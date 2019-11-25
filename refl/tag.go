@@ -43,4 +43,5 @@ func ReadBoolTag(tag reflect.StructTag, name string, holder *bool) error {
 		}
 		*holder = v
 	}
+	return nil
 }

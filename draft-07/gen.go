@@ -1,7 +1,6 @@
 package jsonschema
 
 import (
-	"errors"
 	"fmt"
 	"github.com/swaggest/jsonschema-go/refl"
 	"reflect"
@@ -33,12 +32,6 @@ func (g *Generator) getMappedType(t reflect.Type) (dst interface{}, found bool) 
 
 // reflectTypeReliableName returns real name of given reflect.Type
 func (g *Generator) reflectTypeReliableName(t reflect.Type) string {
-	if def, ok := reflect.Zero(t).Interface().(SchemaDefinition); ok {
-		typeDef := def.SwaggerDef()
-		if typeDef.TypeName != "" {
-			return typeDef.TypeName
-		}
-	}
 	if t.Name() != "" {
 		// todo consider optionally processing package
 		// return path.Base(t.PkgPath()) + t.Name()
@@ -151,15 +144,7 @@ func (g *Generator) Parse(i interface{}) (CoreSchemaMetaSchema, error) {
 		return schema, fmt.Errorf("type is not supported: %s", typeString)
 	}
 
-	if typeDef.TypeName != "" { // non-anonymous types should be added to definitions map and returned "in-place" as references
-		typeDef.TypeName = g.makeNameForType(t, typeDef.TypeName)
-		if typeDef.Ref != "" {
-			typeDef.Ref = refDefinitionPrefix + typeDef.TypeName
-		}
-		g.addDefinition(t, &typeDef)
-		return typeDef.Export()
-	}
-	return typeDef // anonymous types are not added to definitions map; instead, they are returned "in-place" in full form
+	return schema, nil
 }
 
 func (g *Generator) walkProperties(v reflect.Value, parent *CoreSchemaMetaSchema) error {

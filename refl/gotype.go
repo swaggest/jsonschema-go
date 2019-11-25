@@ -40,5 +40,5 @@ func GoType(t reflect.Type) TypeString {
 		return "map[" + GoType(t.Key()) + "]" + GoType(t.Elem())
 	}
 
-	return s
+	return TypeString(s)
 }
