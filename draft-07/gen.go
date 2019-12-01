@@ -1,10 +1,12 @@
 package jsonschema
 
 import (
+	"encoding/json"
 	"fmt"
-	"github.com/swaggest/jsonschema-go/refl"
 	"reflect"
 	"strings"
+
+	"github.com/swaggest/jsonschema-go/refl"
 )
 
 type Ref string
@@ -163,6 +165,7 @@ func (g *Generator) walkProperties(v reflect.Value, parent *CoreSchemaMetaSchema
 
 		var tag = field.Tag.Get(propertyNameTag)
 
+		// Skip explicitly discarded field.
 		if tag == "-" {
 			continue
 		}
@@ -175,7 +178,7 @@ func (g *Generator) walkProperties(v reflect.Value, parent *CoreSchemaMetaSchema
 			continue
 		}
 
-		// don't check if it's omitted
+		// Skip the field if tag is not set.
 		if tag == "" {
 			continue
 		}
@@ -191,10 +194,52 @@ func (g *Generator) walkProperties(v reflect.Value, parent *CoreSchemaMetaSchema
 			parent.Required = append(parent.Required, propName)
 		}
 
-		propertySchema, err := g.Parse(v.Interface())
+		fieldVal := v.Field(i).Interface()
+
+		propertySchema, err := g.Parse(fieldVal)
 		if err != nil {
 			return err
 		}
+
+		// Read tags.
+		err = refl.JoinErrors(
+			refl.ReadStringPtrTag(field.Tag, "title", &propertySchema.Title),
+			refl.ReadStringPtrTag(field.Tag, "description", &propertySchema.Description),
+			refl.ReadStringPtrTag(field.Tag, "format", &propertySchema.Format),
+			refl.ReadStringPtrTag(field.Tag, "pattern", &propertySchema.Pattern),
+			refl.ReadStringPtrTag(field.Tag, "contentMediaType", &propertySchema.ContentMediaType),
+			refl.ReadStringPtrTag(field.Tag, "contentEncoding", &propertySchema.ContentEncoding),
+
+			refl.ReadIntPtrTag(field.Tag, "maxLength", &propertySchema.MaxLength),
+			refl.ReadIntTag(field.Tag, "minLength", &propertySchema.MinLength),
+			refl.ReadIntPtrTag(field.Tag, "maxItems", &propertySchema.MaxItems),
+			refl.ReadIntTag(field.Tag, "minItems", &propertySchema.MinItems),
+			refl.ReadIntPtrTag(field.Tag, "maxProperties", &propertySchema.MaxProperties),
+			refl.ReadIntTag(field.Tag, "minProperties", &propertySchema.MinProperties),
+
+			refl.ReadFloatPtrTag(field.Tag, "multipleOf", &propertySchema.MultipleOf),
+			refl.ReadFloatPtrTag(field.Tag, "maximum", &propertySchema.Maximum),
+			refl.ReadFloatPtrTag(field.Tag, "minimum", &propertySchema.Minimum),
+
+			refl.ReadFloatPtrTag(field.Tag, "exclusiveMaximum", &propertySchema.ExclusiveMaximum),
+			refl.ReadFloatPtrTag(field.Tag, "exclusiveMinimum", &propertySchema.ExclusiveMinimum),
+			refl.ReadBoolPtrTag(field.Tag, "uniqueItems", &propertySchema.UniqueItems),
+			refl.ReadBoolPtrTag(field.Tag, "readOnly", &propertySchema.ReadOnly),
+		)
+		if err != nil {
+			return err
+		}
+
+		enum := enum{}
+		enum.loadFromField(field, fieldVal)
+		if len(enum.items) > 0 {
+			propertySchema.Enum = enum.items
+			// Where are the extra props?!
+			//if len(enum.names) > 0 {
+			//	propertySchema.ExtraProperties = ""
+			//}
+		}
+
 		if parent.Properties == nil {
 			parent.Properties = make(map[string]Schema, 1)
 		}
@@ -204,4 +249,43 @@ func (g *Generator) walkProperties(v reflect.Value, parent *CoreSchemaMetaSchema
 	}
 
 	return nil
+}
+
+// enum can be use for sending enum data that need validate.
+type enum struct {
+	items []interface{}
+	names []string
+}
+
+// loadFromField loads enum from field tag: json array or comma-separated string.
+func (enum *enum) loadFromField(field reflect.StructField, fieldVal interface{}) {
+	type namedEnum interface {
+		// NamedEnum return the const-name pair slice
+		NamedEnum() ([]interface{}, []string)
+	}
+
+	type plainEnum interface {
+		Enum() []interface{}
+	}
+
+	if e, isEnumer := fieldVal.(namedEnum); isEnumer {
+		enum.items, enum.names = e.NamedEnum()
+	}
+
+	if e, isEnumer := fieldVal.(plainEnum); isEnumer {
+		enum.items = e.Enum()
+	}
+
+	if enumTag := field.Tag.Get("enum"); enumTag != "" {
+		var e []interface{}
+		err := json.Unmarshal([]byte(enumTag), &e)
+		if err != nil {
+			es := strings.Split(enumTag, ",")
+			e = make([]interface{}, len(es))
+			for i, s := range es {
+				e[i] = s
+			}
+		}
+		enum.items = e
+	}
 }
