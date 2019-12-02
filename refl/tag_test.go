@@ -2,10 +2,10 @@ package refl_test
 
 import (
 	"encoding/json"
+	"github.com/swaggest/jsonschema-go/refl"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/swaggest/swgen/refl"
 )
 
 type (

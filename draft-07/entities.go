@@ -59,6 +59,118 @@ type CoreSchemaMetaSchema struct {
 	AnyOf                []Schema                                    `json:"anyOf,omitempty"`
 	OneOf                []Schema                                    `json:"oneOf,omitempty"`
 	Not                  *Schema                                     `json:"not,omitempty"` // Core schema meta-schema
+	ExtraProperties      map[string]interface{}                      `json:"-"`             // All unmatched properties
+}
+
+type marshalCoreSchemaMetaSchema CoreSchemaMetaSchema
+
+var ignoreKeysCoreSchemaMetaSchema = []string{
+	"$id",
+	"$schema",
+	"$ref",
+	"$comment",
+	"title",
+	"description",
+	"default",
+	"readOnly",
+	"examples",
+	"multipleOf",
+	"maximum",
+	"exclusiveMaximum",
+	"minimum",
+	"exclusiveMinimum",
+	"maxLength",
+	"minLength",
+	"pattern",
+	"additionalItems",
+	"items",
+	"maxItems",
+	"minItems",
+	"uniqueItems",
+	"contains",
+	"maxProperties",
+	"minProperties",
+	"required",
+	"additionalProperties",
+	"definitions",
+	"properties",
+	"patternProperties",
+	"dependencies",
+	"propertyNames",
+	"const",
+	"enum",
+	"type",
+	"format",
+	"contentMediaType",
+	"contentEncoding",
+	"if",
+	"then",
+	"else",
+	"allOf",
+	"anyOf",
+	"oneOf",
+	"not",
+}
+
+// UnmarshalJSON decodes JSON.
+func (i *CoreSchemaMetaSchema) UnmarshalJSON(data []byte) error {
+	var err error
+
+	ii := marshalCoreSchemaMetaSchema(*i)
+
+	err = json.Unmarshal(data, &ii)
+	if err != nil {
+		return err
+	}
+
+	var m map[string]json.RawMessage
+
+	err = json.Unmarshal(data, &m)
+	if err != nil {
+		m = nil
+	}
+
+	if ii.Default == nil {
+		if _, ok := m["default"]; ok {
+			var v interface{}
+			ii.Default = &v
+		}
+	}
+
+	if ii.Const == nil {
+		if _, ok := m["const"]; ok {
+			var v interface{}
+			ii.Const = &v
+		}
+	}
+
+	for _, key := range ignoreKeysCoreSchemaMetaSchema {
+		delete(m, key)
+	}
+
+	for key, rawValue := range m {
+		if ii.ExtraProperties == nil {
+			ii.ExtraProperties = make(map[string]interface{}, 1)
+		}
+
+		var val interface{}
+
+		err = json.Unmarshal(rawValue, &val)
+		if err != nil {
+			return err
+		}
+
+		ii.ExtraProperties[key] = val
+	}
+
+	*i = CoreSchemaMetaSchema(ii)
+
+	return nil
+}
+
+// MarshalJSON encodes JSON.
+func (i CoreSchemaMetaSchema) MarshalJSON() ([]byte, error) {
+	return marshalUnion(marshalCoreSchemaMetaSchema(i), i.ExtraProperties)
 }
 
 // Schema structure is generated from "#".
@@ -188,10 +300,6 @@ const (
 	SimpleTypesObject  = SimpleTypes("object")
 	SimpleTypesString  = SimpleTypes("string")
 )
-
-func (i SimpleTypes) Ptr() *SimpleTypes {
-	return &i
-}
 
 // MarshalJSON encodes JSON.
 func (i SimpleTypes) MarshalJSON() ([]byte, error) {

@@ -50,7 +50,16 @@ func (g *Generator) getDefinition(t reflect.Type) (typeDef CoreSchemaMetaSchema,
 	return
 }
 
-func (g *Generator) Parse(i interface{}) (CoreSchemaMetaSchema, error) {
+func (g *Generator) Parse(i interface{}) (schema CoreSchemaMetaSchema, err error) {
+	defer func() {
+		if err != nil {
+			return
+		}
+		if customizer, ok := i.(Customizer); ok {
+			err = customizer.CustomizeJSONSchema(&schema)
+		}
+	}()
+
 	var (
 		t = reflect.TypeOf(i)
 		v = reflect.ValueOf(i)
@@ -73,7 +82,6 @@ func (g *Generator) Parse(i interface{}) (CoreSchemaMetaSchema, error) {
 	if ref, ok := g.definitionRefs[typeString]; ok {
 		return ref.Schema(), nil
 	}
-	schema := CoreSchemaMetaSchema{}
 
 	floatZero := 0.0
 
@@ -82,7 +90,7 @@ func (g *Generator) Parse(i interface{}) (CoreSchemaMetaSchema, error) {
 		schema.Type = &Type{
 			SimpleTypes: SimpleTypesObject.Ptr(),
 		}
-		err := g.walkProperties(v, &schema)
+		err = g.walkProperties(v, &schema)
 		if err != nil {
 			return schema, err
 		}
@@ -90,7 +98,7 @@ func (g *Generator) Parse(i interface{}) (CoreSchemaMetaSchema, error) {
 	case reflect.Slice, reflect.Array:
 		elemType := refl.DeepIndirect(t.Elem())
 
-		itemsSchema, err := g.Parse(reflect.Zero(elemType))
+		itemsSchema, err := g.Parse(reflect.Zero(elemType).Interface())
 		if err != nil {
 			return schema, err
 		}
@@ -234,10 +242,12 @@ func (g *Generator) walkProperties(v reflect.Value, parent *CoreSchemaMetaSchema
 		enum.loadFromField(field, fieldVal)
 		if len(enum.items) > 0 {
 			propertySchema.Enum = enum.items
-			// Where are the extra props?!
-			//if len(enum.names) > 0 {
-			//	propertySchema.ExtraProperties = ""
-			//}
+			if len(enum.names) > 0 {
+				if propertySchema.ExtraProperties == nil {
+					propertySchema.ExtraProperties = make(map[string]interface{}, 1)
+				}
+				propertySchema.ExtraProperties[XEnumNames] = enum.names
+			}
 		}
 
 		if parent.Properties == nil {
@@ -259,20 +269,11 @@ type enum struct {
 
 // loadFromField loads enum from field tag: json array or comma-separated string.
 func (enum *enum) loadFromField(field reflect.StructField, fieldVal interface{}) {
-	type namedEnum interface {
-		// NamedEnum return the const-name pair slice
-		NamedEnum() ([]interface{}, []string)
-	}
-
-	type plainEnum interface {
-		Enum() []interface{}
-	}
-
-	if e, isEnumer := fieldVal.(namedEnum); isEnumer {
+	if e, isEnumer := fieldVal.(NamedEnum); isEnumer {
 		enum.items, enum.names = e.NamedEnum()
 	}
 
-	if e, isEnumer := fieldVal.(plainEnum); isEnumer {
+	if e, isEnumer := fieldVal.(Enum); isEnumer {
 		enum.items = e.Enum()
 	}
 
