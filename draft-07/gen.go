@@ -3,6 +3,7 @@ package jsonschema
 import (
 	"encoding/json"
 	"fmt"
+	"path"
 	"reflect"
 	"strings"
 
@@ -22,6 +23,7 @@ type Generator struct {
 	typesMap        map[refl.TypeString]interface{}
 	definitions     map[refl.TypeString]CoreSchemaMetaSchema // list of all definition objects
 	definitionRefs  map[refl.TypeString]Ref
+	definitionAlloc map[string]refl.TypeString // index of allocated TypeNames
 	propertyNameTag string
 	reflectGoTypes  bool
 }
@@ -48,6 +50,55 @@ func (g *Generator) getDefinition(t reflect.Type) (typeDef CoreSchemaMetaSchema,
 		typeDef, found = g.definitions[refl.GoType(t.Elem())]
 	}
 	return
+}
+
+func (g *Generator) makeNameForType(t reflect.Type, baseTypeName string) string {
+	goTypeName := refl.GoType(t)
+	baseTypeName = strings.Title(baseTypeName)
+
+	if g.definitionAlloc == nil {
+		g.definitionAlloc = make(map[string]refl.TypeString, 1)
+	}
+
+	for typeName, allocatedGoTypeName := range g.definitionAlloc {
+		if goTypeName == allocatedGoTypeName {
+			return typeName
+		}
+	}
+
+	pkgPath := t.PkgPath()
+
+	if pkgPath != "" {
+		pref := strings.Title(path.Base(pkgPath))
+		baseTypeName = pref + baseTypeName
+		pkgPath = path.Dir(pkgPath)
+	}
+
+	allocatedType, isAllocated := g.definitionAlloc[baseTypeName]
+	if isAllocated && allocatedType != goTypeName {
+		typeIndex := 2
+		pref := strings.Title(path.Base(pkgPath))
+		for {
+			typeName := ""
+			if pkgPath != "" {
+				typeName = pref + baseTypeName
+			} else {
+				typeName = fmt.Sprintf("%sType%d", baseTypeName, typeIndex)
+				typeIndex++
+			}
+			allocatedType, isAllocated := g.definitionAlloc[typeName]
+
+			if !isAllocated || allocatedType == goTypeName {
+				baseTypeName = typeName
+				break
+			}
+			typeIndex++
+			pref = strings.Title(path.Base(pkgPath)) + pref
+			pkgPath = path.Dir(pkgPath)
+		}
+	}
+	g.definitionAlloc[baseTypeName] = goTypeName
+	return baseTypeName
 }
 
 func (g *Generator) Parse(i interface{}) (schema CoreSchemaMetaSchema, err error) {
