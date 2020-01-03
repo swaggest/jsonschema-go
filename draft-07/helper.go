@@ -50,6 +50,11 @@ func (i CoreSchemaMetaSchema) JSONSchema() (map[string]interface{}, error) {
 	return nil, errors.New("invalid json, map expected")
 }
 
+// Type references simple type.
+func (i SimpleTypes) Type() Type {
+	return Type{SimpleTypes: &i}
+}
+
 // Ptr references simple type.
 func (i SimpleTypes) Ptr() *SimpleTypes {
 	return &i
