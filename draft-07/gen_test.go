@@ -3,6 +3,7 @@ package jsonschema_test
 import (
 	"encoding/json"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 	"github.com/swaggest/assertjson"
@@ -10,9 +11,11 @@ import (
 )
 
 type Person struct {
-	FirstName string `json:"firstName" format:"date-time"`
-	LastName  string `json:"lastName" required:"true"`
-	Age       int    `json:"age"`
+	Datetime  string    `json:"datetime" format:"date-time"`
+	CreatedAt time.Time `json:"createdAt"`
+	FirstName string    `json:"firstName"`
+	LastName  string    `json:"lastName" required:"true"`
+	Age       int       `json:"age"`
 }
 
 type Org struct {

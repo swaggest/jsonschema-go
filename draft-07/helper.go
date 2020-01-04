@@ -30,6 +30,12 @@ type Customizer interface {
 	CustomizeJSONSchema(schema *CoreSchemaMetaSchema) error
 }
 
+func (i *CoreSchemaMetaSchema) ToSchema() Schema {
+	return Schema{
+		TypeObject: i,
+	}
+}
+
 // JSONSchema exports JSON Schema as a map.
 func (i CoreSchemaMetaSchema) JSONSchema() (map[string]interface{}, error) {
 	jsonBytes, err := json.Marshal(i)
@@ -53,9 +59,4 @@ func (i CoreSchemaMetaSchema) JSONSchema() (map[string]interface{}, error) {
 // Type references simple type.
 func (i SimpleTypes) Type() Type {
 	return Type{SimpleTypes: &i}
-}
-
-// Ptr references simple type.
-func (i SimpleTypes) Ptr() *SimpleTypes {
-	return &i
 }

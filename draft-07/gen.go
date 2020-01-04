@@ -134,13 +134,9 @@ func (g *Generator) Parse(i interface{}) (schema CoreSchemaMetaSchema, err error
 		return ref.Schema(), nil
 	}
 
-	floatZero := 0.0
-
 	switch t.Kind() {
 	case reflect.Struct:
-		schema.Type = &Type{
-			SimpleTypes: SimpleTypesObject.Ptr(),
-		}
+		schema.WithType(Object.Type())
 		err = g.walkProperties(v, &schema)
 		if err != nil {
 			return schema, err
@@ -154,14 +150,8 @@ func (g *Generator) Parse(i interface{}) (schema CoreSchemaMetaSchema, err error
 			return schema, err
 		}
 
-		schema.Type = &Type{
-			SimpleTypes: SimpleTypesArray.Ptr(),
-		}
-		schema.Items = &Items{
-			Schema: &Schema{
-				TypeObject: &itemsSchema,
-			},
-		}
+		schema.WithType(Array.Type())
+		schema.WithItems(*(&Items{}).WithSchema(itemsSchema.ToSchema()))
 
 	case reflect.Map:
 		elemType := refl.DeepIndirect(t.Elem())
@@ -171,34 +161,20 @@ func (g *Generator) Parse(i interface{}) (schema CoreSchemaMetaSchema, err error
 			return schema, err
 		}
 
-		schema.Type = &Type{
-			SimpleTypes: SimpleTypesObject.Ptr(),
-		}
-		schema.AdditionalProperties = &Schema{
-			TypeObject: &additionalPropertiesSchema,
-		}
+		schema.WithType(Object.Type())
+		schema.WithAdditionalProperties(additionalPropertiesSchema.ToSchema())
 
 	case reflect.Bool:
-		schema.Type = &Type{
-			SimpleTypes: SimpleTypesBoolean.Ptr(),
-		}
+		schema.WithType(Boolean.Type())
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		schema.Type = &Type{
-			SimpleTypes: SimpleTypesInteger.Ptr(),
-		}
+		schema.WithType(Integer.Type())
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-		schema.Type = &Type{
-			SimpleTypes: SimpleTypesInteger.Ptr(),
-		}
-		schema.Minimum = &floatZero
+		schema.WithType(Integer.Type())
+		schema.WithMinimum(0)
 	case reflect.Float32, reflect.Float64:
-		schema.Type = &Type{
-			SimpleTypes: SimpleTypesNumber.Ptr(),
-		}
+		schema.WithType(Number.Type())
 	case reflect.String:
-		schema.Type = &Type{
-			SimpleTypes: SimpleTypesString.Ptr(),
-		}
+		schema.WithType(String.Type())
 	case reflect.Interface:
 		return schema, fmt.Errorf("non-empty interface is not supported: %s", typeString)
 	default:
