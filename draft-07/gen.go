@@ -1,13 +1,21 @@
 package jsonschema
 
 import (
+	"encoding"
 	"encoding/json"
 	"fmt"
 	"path"
 	"reflect"
 	"strings"
+	"time"
 
 	"github.com/swaggest/jsonschema-go/refl"
+)
+
+var (
+	typeOfJSONRawMsg      = reflect.TypeOf(json.RawMessage{})
+	typeOfTime            = reflect.TypeOf(time.Time{})
+	typeOfTextUnmarshaler = reflect.TypeOf((*encoding.TextUnmarshaler)(nil)).Elem()
 )
 
 type Ref string
@@ -101,20 +109,53 @@ func (g *Generator) makeNameForType(t reflect.Type, baseTypeName string) string 
 	return baseTypeName
 }
 
-func (g *Generator) Parse(i interface{}) (schema CoreSchemaMetaSchema, err error) {
+func (g *Generator) Parse(i interface{}) (CoreSchemaMetaSchema, error) {
+	schema, err := g.parse(i)
+	if err == nil && len(g.definitions) > 0 {
+		schema.Definitions = make(map[string]Schema, len(g.definitions))
+		for typeString, def := range g.definitions {
+			def := def
+			schema.Definitions[string(typeString)] = def.ToSchema()
+		}
+	}
+	return schema, err
+}
+
+func (g *Generator) parse(i interface{}) (schema CoreSchemaMetaSchema, err error) {
+	var (
+		typeString refl.TypeString
+		t          = reflect.TypeOf(i)
+		v          = reflect.ValueOf(i)
+	)
+
 	defer func() {
+		if schema.Ref != nil {
+			return
+		}
+
 		if err != nil {
 			return
 		}
 		if customizer, ok := i.(Customizer); ok {
 			err = customizer.CustomizeJSONSchema(&schema)
 		}
-	}()
 
-	var (
-		t = reflect.TypeOf(i)
-		v = reflect.ValueOf(i)
-	)
+		pkgPath := t.PkgPath()
+		if pkgPath == "" || pkgPath == "time" || pkgPath == "encoding/json" {
+			return
+		}
+
+		if g.definitions == nil {
+			g.definitions = make(map[refl.TypeString]CoreSchemaMetaSchema, 1)
+			g.definitionRefs = make(map[refl.TypeString]Ref, 1)
+		}
+		g.definitions[typeString] = schema
+		g.definitionRefs[typeString] = Ref("#/definitions/" + typeString)
+
+		schema = Ref("#/definitions/" + typeString).Schema()
+
+		println(typeString, t.PkgPath())
+	}()
 
 	if mappedTo, ok := g.getMappedType(t); ok {
 		t = reflect.TypeOf(mappedTo)
@@ -126,9 +167,23 @@ func (g *Generator) Parse(i interface{}) (schema CoreSchemaMetaSchema, err error
 		t = et
 	}
 
-	t = refl.DeepIndirect(t)
+	if t.Kind() == reflect.Ptr {
+		schema.AddType(Null)
+	}
 
-	typeString := refl.GoType(t)
+	t = refl.DeepIndirect(t)
+	typeString = refl.GoType(t)
+
+	if t == typeOfTime {
+		schema.AddType(String)
+		schema.WithFormat("date-time")
+		return
+	}
+
+	if t.Implements(typeOfTextUnmarshaler) {
+		schema.AddType(String)
+		return
+	}
 
 	if ref, ok := g.definitionRefs[typeString]; ok {
 		return ref.Schema(), nil
@@ -136,45 +191,54 @@ func (g *Generator) Parse(i interface{}) (schema CoreSchemaMetaSchema, err error
 
 	switch t.Kind() {
 	case reflect.Struct:
-		schema.WithType(Object.Type())
-		err = g.walkProperties(v, &schema)
-		if err != nil {
-			return schema, err
+		switch true {
+		case reflect.PtrTo(t).Implements(typeOfTextUnmarshaler):
+			schema.AddType(String)
+		default:
+			schema.AddType(Object)
+			err = g.walkProperties(v, &schema)
+			if err != nil {
+				return schema, err
+			}
 		}
 
 	case reflect.Slice, reflect.Array:
+		if t == typeOfJSONRawMsg {
+			break
+		}
+
 		elemType := refl.DeepIndirect(t.Elem())
 
-		itemsSchema, err := g.Parse(reflect.Zero(elemType).Interface())
+		itemsSchema, err := g.parse(reflect.Zero(elemType).Interface())
 		if err != nil {
 			return schema, err
 		}
 
-		schema.WithType(Array.Type())
+		schema.AddType(Array)
 		schema.WithItems(*(&Items{}).WithSchema(itemsSchema.ToSchema()))
 
 	case reflect.Map:
 		elemType := refl.DeepIndirect(t.Elem())
 
-		additionalPropertiesSchema, err := g.Parse(reflect.Zero(elemType))
+		additionalPropertiesSchema, err := g.parse(reflect.Zero(elemType))
 		if err != nil {
 			return schema, err
 		}
 
-		schema.WithType(Object.Type())
+		schema.AddType(Object)
 		schema.WithAdditionalProperties(additionalPropertiesSchema.ToSchema())
 
 	case reflect.Bool:
-		schema.WithType(Boolean.Type())
+		schema.AddType(Boolean)
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		schema.WithType(Integer.Type())
+		schema.AddType(Integer)
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-		schema.WithType(Integer.Type())
+		schema.AddType(Integer)
 		schema.WithMinimum(0)
 	case reflect.Float32, reflect.Float64:
-		schema.WithType(Number.Type())
+		schema.AddType(Number)
 	case reflect.String:
-		schema.WithType(String.Type())
+		schema.AddType(String)
 	case reflect.Interface:
 		return schema, fmt.Errorf("non-empty interface is not supported: %s", typeString)
 	default:
@@ -185,10 +249,15 @@ func (g *Generator) Parse(i interface{}) (schema CoreSchemaMetaSchema, err error
 }
 
 func (g *Generator) walkProperties(v reflect.Value, parent *CoreSchemaMetaSchema) error {
-	if v.Kind() == reflect.Ptr {
-		v = v.Elem()
-	}
 	t := v.Type()
+	if t.Kind() == reflect.Ptr {
+		t = t.Elem()
+		if v.IsZero() {
+			v = reflect.Zero(t)
+		} else {
+			v = v.Elem()
+		}
+	}
 
 	propertyNameTag := g.propertyNameTag
 	if propertyNameTag == "" {
@@ -231,12 +300,13 @@ func (g *Generator) walkProperties(v reflect.Value, parent *CoreSchemaMetaSchema
 
 		fieldVal := v.Field(i).Interface()
 
-		propertySchema, err := g.Parse(fieldVal)
+		propertySchema, err := g.parse(fieldVal)
 		if err != nil {
 			return err
 		}
 
 		// Read tags.
+		// TODO get rid of these handcrafted readers in favor of reflection walker.
 		err = refl.JoinErrors(
 			refl.ReadStringPtrTag(field.Tag, "title", &propertySchema.Title),
 			refl.ReadStringPtrTag(field.Tag, "description", &propertySchema.Description),

@@ -60,3 +60,30 @@ func (i CoreSchemaMetaSchema) JSONSchema() (map[string]interface{}, error) {
 func (i SimpleTypes) Type() Type {
 	return Type{SimpleTypes: &i}
 }
+
+func (i *CoreSchemaMetaSchema) AddType(t SimpleTypes) {
+	if i.Type == nil {
+		i.WithType(t.Type())
+		return
+	}
+
+	if i.Type.SimpleTypes != nil {
+		if *i.Type.SimpleTypes == t {
+			return
+		} else {
+			i.Type.SliceOfSimpleTypesValues = []SimpleTypes{*i.Type.SimpleTypes, t}
+			i.Type.SimpleTypes = nil
+			return
+		}
+	}
+
+	if len(i.Type.SliceOfSimpleTypesValues) > 0 {
+		for _, st := range i.Type.SliceOfSimpleTypesValues {
+			if st == t {
+				return
+			}
+		}
+
+		i.Type.SliceOfSimpleTypesValues = append(i.Type.SliceOfSimpleTypesValues, t)
+	}
+}
