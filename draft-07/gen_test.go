@@ -25,9 +25,9 @@ func (r *Role) UnmarshalText([]byte) error {
 }
 
 type Entity struct {
-	CreatedAt time.Time       `json:"createdAt"`
-	DeletedAt *time.Time      `json:"deletedAt"`
-	Meta      json.RawMessage `json:"meta"`
+	CreatedAt time.Time        `json:"createdAt"`
+	DeletedAt *time.Time       `json:"deletedAt"`
+	Meta      *json.RawMessage `json:"meta"`
 }
 
 type Person struct {
