@@ -988,7 +988,7 @@ func (v *ParameterReference) WithRef(val string) *ParameterReference {
 // Parameter structure is generated from "#/definitions/Parameter".
 type Parameter struct {
 	Name             *string                 `json:"name,omitempty"`
-	In               *string                 `json:"in,omitempty"`
+	In               *ParameterIn            `json:"in,omitempty"`
 	Description      *string                 `json:"description,omitempty"`
 	Required         *bool                   `json:"required,omitempty"`
 	Deprecated       *bool                   `json:"deprecated,omitempty"`
@@ -1000,7 +1000,7 @@ type Parameter struct {
 	Content          map[string]MediaType    `json:"content,omitempty"`
 	Example          *interface{}            `json:"example,omitempty"`
 	Examples         map[string]ExampleOrRef `json:"examples,omitempty"`
-	SchemaXORContent *SchemaXORContentOneOf1 `json:"-"`
+	SchemaXORContent *HasContent             `json:"-"` // TODO fix wrong type, HasContent is a oneOf item, not the type.
 	Location         *ParameterLocation      `json:"-"`
 	MapOfAnything    map[string]interface{}  `json:"-"` // Key must match pattern: ^x-
 }
@@ -1012,7 +1012,7 @@ func (v *Parameter) WithName(val string) *Parameter {
 }
 
 // WithIn sets In value.
-func (v *Parameter) WithIn(val string) *Parameter {
+func (v *Parameter) WithIn(val ParameterIn) *Parameter {
 	v.In = &val
 	return v
 }
@@ -1084,7 +1084,7 @@ func (v *Parameter) WithExamples(val map[string]ExampleOrRef) *Parameter {
 }
 
 // WithSchemaXORContent sets SchemaXORContent value.
-func (v *Parameter) WithSchemaXORContent(val SchemaXORContentOneOf1) *Parameter {
+func (v *Parameter) WithSchemaXORContent(val HasContent) *Parameter {
 	v.SchemaXORContent = &val
 	return v
 }
@@ -2268,32 +2268,36 @@ func (i Header) MarshalJSON() ([]byte, error) {
 	return marshalUnion(constHeader, marshalHeader(i), i.MapOfAnything)
 }
 
-// SchemaXORContentOneOf1 structure is generated from "#/definitions/SchemaXORContent/oneOf/1".
+// HasContent structure is generated from "#/definitions/SchemaXORContent/oneOf/1".
+//
+// Has Content.
 //
 // Some properties are not allowed if content is present.
-type SchemaXORContentOneOf1 struct {
+type HasContent struct {
 }
 
-// ParameterLocationOneOf0 structure is generated from "#/definitions/ParameterLocation/oneOf/0".
+// PathParameter structure is generated from "#/definitions/ParameterLocation/oneOf/0".
+//
+// Path Parameter.
 //
 // Parameter in path.
-type ParameterLocationOneOf0 struct {
-	Style *ParameterLocationOneOf0Style `json:"style,omitempty"`
+type PathParameter struct {
+	Style *PathParameterStyle `json:"style,omitempty"`
 }
 
 // WithStyle sets Style value.
-func (v *ParameterLocationOneOf0) WithStyle(val ParameterLocationOneOf0Style) *ParameterLocationOneOf0 {
+func (v *PathParameter) WithStyle(val PathParameterStyle) *PathParameter {
 	v.Style = &val
 	return v
 }
 
-type marshalParameterLocationOneOf0 ParameterLocationOneOf0
+type marshalPathParameter PathParameter
 
 // UnmarshalJSON decodes JSON.
-func (i *ParameterLocationOneOf0) UnmarshalJSON(data []byte) error {
+func (i *PathParameter) UnmarshalJSON(data []byte) error {
 	var err error
 
-	ii := marshalParameterLocationOneOf0(*i)
+	ii := marshalPathParameter(*i)
 
 	err = json.Unmarshal(data, &ii)
 	if err != nil {
@@ -2319,41 +2323,43 @@ func (i *ParameterLocationOneOf0) UnmarshalJSON(data []byte) error {
 
 	delete(m, "required")
 
-	*i = ParameterLocationOneOf0(ii)
+	*i = PathParameter(ii)
 
 	return nil
 }
 
 var (
-	// constParameterLocationOneOf0 is unconditionally added to JSON.
-	constParameterLocationOneOf0 = json.RawMessage(`{"in":"path","required":true}`)
+	// constPathParameter is unconditionally added to JSON.
+	constPathParameter = json.RawMessage(`{"in":"path","required":true}`)
 )
 
 // MarshalJSON encodes JSON.
-func (i ParameterLocationOneOf0) MarshalJSON() ([]byte, error) {
-	return marshalUnion(constParameterLocationOneOf0, marshalParameterLocationOneOf0(i))
+func (i PathParameter) MarshalJSON() ([]byte, error) {
+	return marshalUnion(constPathParameter, marshalPathParameter(i))
 }
 
-// ParameterLocationOneOf1 structure is generated from "#/definitions/ParameterLocation/oneOf/1".
+// QueryParameter structure is generated from "#/definitions/ParameterLocation/oneOf/1".
+//
+// Query Parameter.
 //
 // Parameter in query.
-type ParameterLocationOneOf1 struct {
-	Style *ParameterLocationOneOf1Style `json:"style,omitempty"`
+type QueryParameter struct {
+	Style *QueryParameterStyle `json:"style,omitempty"`
 }
 
 // WithStyle sets Style value.
-func (v *ParameterLocationOneOf1) WithStyle(val ParameterLocationOneOf1Style) *ParameterLocationOneOf1 {
+func (v *QueryParameter) WithStyle(val QueryParameterStyle) *QueryParameter {
 	v.Style = &val
 	return v
 }
 
-type marshalParameterLocationOneOf1 ParameterLocationOneOf1
+type marshalQueryParameter QueryParameter
 
 // UnmarshalJSON decodes JSON.
-func (i *ParameterLocationOneOf1) UnmarshalJSON(data []byte) error {
+func (i *QueryParameter) UnmarshalJSON(data []byte) error {
 	var err error
 
-	ii := marshalParameterLocationOneOf1(*i)
+	ii := marshalQueryParameter(*i)
 
 	err = json.Unmarshal(data, &ii)
 	if err != nil {
@@ -2373,29 +2379,31 @@ func (i *ParameterLocationOneOf1) UnmarshalJSON(data []byte) error {
 
 	delete(m, "in")
 
-	*i = ParameterLocationOneOf1(ii)
+	*i = QueryParameter(ii)
 
 	return nil
 }
 
 var (
-	// constParameterLocationOneOf1 is unconditionally added to JSON.
-	constParameterLocationOneOf1 = json.RawMessage(`{"in":"query"}`)
+	// constQueryParameter is unconditionally added to JSON.
+	constQueryParameter = json.RawMessage(`{"in":"query"}`)
 )
 
 // MarshalJSON encodes JSON.
-func (i ParameterLocationOneOf1) MarshalJSON() ([]byte, error) {
-	return marshalUnion(constParameterLocationOneOf1, marshalParameterLocationOneOf1(i))
+func (i QueryParameter) MarshalJSON() ([]byte, error) {
+	return marshalUnion(constQueryParameter, marshalQueryParameter(i))
 }
 
-// ParameterLocationOneOf2 structure is generated from "#/definitions/ParameterLocation/oneOf/2".
+// HeaderParameter structure is generated from "#/definitions/ParameterLocation/oneOf/2".
+//
+// Header Parameter.
 //
 // Parameter in header.
-type ParameterLocationOneOf2 struct {
+type HeaderParameter struct {
 }
 
 // UnmarshalJSON decodes JSON.
-func (i *ParameterLocationOneOf2) UnmarshalJSON(data []byte) error {
+func (i *HeaderParameter) UnmarshalJSON(data []byte) error {
 	var err error
 
 	var m map[string]json.RawMessage
@@ -2421,23 +2429,25 @@ func (i *ParameterLocationOneOf2) UnmarshalJSON(data []byte) error {
 }
 
 var (
-	// constParameterLocationOneOf2 is unconditionally added to JSON.
-	constParameterLocationOneOf2 = json.RawMessage(`{"in":"header","style":"simple"}`)
+	// constHeaderParameter is unconditionally added to JSON.
+	constHeaderParameter = json.RawMessage(`{"in":"header","style":"simple"}`)
 )
 
 // MarshalJSON encodes JSON.
-func (i ParameterLocationOneOf2) MarshalJSON() ([]byte, error) {
-	return marshalUnion(constParameterLocationOneOf2)
+func (i HeaderParameter) MarshalJSON() ([]byte, error) {
+	return marshalUnion(constHeaderParameter)
 }
 
-// ParameterLocationOneOf3 structure is generated from "#/definitions/ParameterLocation/oneOf/3".
+// CookieParameter structure is generated from "#/definitions/ParameterLocation/oneOf/3".
+//
+// Cookie Parameter.
 //
 // Parameter in cookie.
-type ParameterLocationOneOf3 struct {
+type CookieParameter struct {
 }
 
 // UnmarshalJSON decodes JSON.
-func (i *ParameterLocationOneOf3) UnmarshalJSON(data []byte) error {
+func (i *CookieParameter) UnmarshalJSON(data []byte) error {
 	var err error
 
 	var m map[string]json.RawMessage
@@ -2463,46 +2473,46 @@ func (i *ParameterLocationOneOf3) UnmarshalJSON(data []byte) error {
 }
 
 var (
-	// constParameterLocationOneOf3 is unconditionally added to JSON.
-	constParameterLocationOneOf3 = json.RawMessage(`{"in":"cookie","style":"form"}`)
+	// constCookieParameter is unconditionally added to JSON.
+	constCookieParameter = json.RawMessage(`{"in":"cookie","style":"form"}`)
 )
 
 // MarshalJSON encodes JSON.
-func (i ParameterLocationOneOf3) MarshalJSON() ([]byte, error) {
-	return marshalUnion(constParameterLocationOneOf3)
+func (i CookieParameter) MarshalJSON() ([]byte, error) {
+	return marshalUnion(constCookieParameter)
 }
 
 // ParameterLocation structure is generated from "#/definitions/ParameterLocation".
 //
 // Parameter location.
 type ParameterLocation struct {
-	OneOf0 *ParameterLocationOneOf0 `json:"-"`
-	OneOf1 *ParameterLocationOneOf1 `json:"-"`
-	OneOf2 *ParameterLocationOneOf2 `json:"-"`
-	OneOf3 *ParameterLocationOneOf3 `json:"-"`
+	PathParameter   *PathParameter   `json:"-"`
+	QueryParameter  *QueryParameter  `json:"-"`
+	HeaderParameter *HeaderParameter `json:"-"`
+	CookieParameter *CookieParameter `json:"-"`
 }
 
-// WithOneOf0 sets OneOf0 value.
-func (v *ParameterLocation) WithOneOf0(val ParameterLocationOneOf0) *ParameterLocation {
-	v.OneOf0 = &val
+// WithPathParameter sets PathParameter value.
+func (v *ParameterLocation) WithPathParameter(val PathParameter) *ParameterLocation {
+	v.PathParameter = &val
 	return v
 }
 
-// WithOneOf1 sets OneOf1 value.
-func (v *ParameterLocation) WithOneOf1(val ParameterLocationOneOf1) *ParameterLocation {
-	v.OneOf1 = &val
+// WithQueryParameter sets QueryParameter value.
+func (v *ParameterLocation) WithQueryParameter(val QueryParameter) *ParameterLocation {
+	v.QueryParameter = &val
 	return v
 }
 
-// WithOneOf2 sets OneOf2 value.
-func (v *ParameterLocation) WithOneOf2(val ParameterLocationOneOf2) *ParameterLocation {
-	v.OneOf2 = &val
+// WithHeaderParameter sets HeaderParameter value.
+func (v *ParameterLocation) WithHeaderParameter(val HeaderParameter) *ParameterLocation {
+	v.HeaderParameter = &val
 	return v
 }
 
-// WithOneOf3 sets OneOf3 value.
-func (v *ParameterLocation) WithOneOf3(val ParameterLocationOneOf3) *ParameterLocation {
-	v.OneOf3 = &val
+// WithCookieParameter sets CookieParameter value.
+func (v *ParameterLocation) WithCookieParameter(val CookieParameter) *ParameterLocation {
+	v.CookieParameter = &val
 	return v
 }
 
@@ -2510,24 +2520,24 @@ func (v *ParameterLocation) WithOneOf3(val ParameterLocationOneOf3) *ParameterLo
 func (i *ParameterLocation) UnmarshalJSON(data []byte) error {
 	var err error
 
-	err = json.Unmarshal(data, &i.OneOf0)
+	err = json.Unmarshal(data, &i.PathParameter)
 	if err != nil {
-		i.OneOf0 = nil
+		i.PathParameter = nil
 	}
 
-	err = json.Unmarshal(data, &i.OneOf1)
+	err = json.Unmarshal(data, &i.QueryParameter)
 	if err != nil {
-		i.OneOf1 = nil
+		i.QueryParameter = nil
 	}
 
-	err = json.Unmarshal(data, &i.OneOf2)
+	err = json.Unmarshal(data, &i.HeaderParameter)
 	if err != nil {
-		i.OneOf2 = nil
+		i.HeaderParameter = nil
 	}
 
-	err = json.Unmarshal(data, &i.OneOf3)
+	err = json.Unmarshal(data, &i.CookieParameter)
 	if err != nil {
-		i.OneOf3 = nil
+		i.CookieParameter = nil
 	}
 
 	return nil
@@ -2535,7 +2545,7 @@ func (i *ParameterLocation) UnmarshalJSON(data []byte) error {
 
 // MarshalJSON encodes JSON.
 func (i ParameterLocation) MarshalJSON() ([]byte, error) {
-	return marshalUnion(i.OneOf0, i.OneOf1, i.OneOf2, i.OneOf3)
+	return marshalUnion(i.PathParameter, i.QueryParameter, i.HeaderParameter, i.CookieParameter)
 }
 
 // ParameterOrRef structure is generated from "#/definitions/ParameterOrRef".
@@ -4190,12 +4200,12 @@ func (i APIKeySecurityScheme) MarshalJSON() ([]byte, error) {
 
 // HTTPSecurityScheme structure is generated from "#/definitions/HTTPSecurityScheme".
 type HTTPSecurityScheme struct {
-	Scheme        *string                   `json:"scheme,omitempty"`
-	BearerFormat  *string                   `json:"bearerFormat,omitempty"`
-	Description   *string                   `json:"description,omitempty"`
-	OneOf0        *HTTPSecuritySchemeOneOf0 `json:"-"`
-	OneOf1        *HTTPSecuritySchemeOneOf1 `json:"-"`
-	MapOfAnything map[string]interface{}    `json:"-"` // Key must match pattern: ^x-
+	Scheme        *string                `json:"scheme,omitempty"`
+	BearerFormat  *string                `json:"bearerFormat,omitempty"`
+	Description   *string                `json:"description,omitempty"`
+	Bearer        *Bearer                `json:"-"`
+	NonBearer     *NonBearer             `json:"-"`
+	MapOfAnything map[string]interface{} `json:"-"` // Key must match pattern: ^x-
 }
 
 // WithScheme sets Scheme value.
@@ -4216,15 +4226,15 @@ func (v *HTTPSecurityScheme) WithDescription(val string) *HTTPSecurityScheme {
 	return v
 }
 
-// WithOneOf0 sets OneOf0 value.
-func (v *HTTPSecurityScheme) WithOneOf0(val HTTPSecuritySchemeOneOf0) *HTTPSecurityScheme {
-	v.OneOf0 = &val
+// WithBearer sets Bearer value.
+func (v *HTTPSecurityScheme) WithBearer(val Bearer) *HTTPSecurityScheme {
+	v.Bearer = &val
 	return v
 }
 
-// WithOneOf1 sets OneOf1 value.
-func (v *HTTPSecurityScheme) WithOneOf1(val HTTPSecuritySchemeOneOf1) *HTTPSecurityScheme {
-	v.OneOf1 = &val
+// WithNonBearer sets NonBearer value.
+func (v *HTTPSecurityScheme) WithNonBearer(val NonBearer) *HTTPSecurityScheme {
+	v.NonBearer = &val
 	return v
 }
 
@@ -4254,14 +4264,14 @@ func (i *HTTPSecurityScheme) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
-	err = json.Unmarshal(data, &ii.OneOf0)
+	err = json.Unmarshal(data, &ii.Bearer)
 	if err != nil {
-		ii.OneOf0 = nil
+		ii.Bearer = nil
 	}
 
-	err = json.Unmarshal(data, &ii.OneOf1)
+	err = json.Unmarshal(data, &ii.NonBearer)
 	if err != nil {
-		ii.OneOf1 = nil
+		ii.NonBearer = nil
 	}
 
 	var m map[string]json.RawMessage
@@ -4318,17 +4328,19 @@ var (
 
 // MarshalJSON encodes JSON.
 func (i HTTPSecurityScheme) MarshalJSON() ([]byte, error) {
-	return marshalUnion(constHTTPSecurityScheme, marshalHTTPSecurityScheme(i), i.MapOfAnything, i.OneOf0, i.OneOf1)
+	return marshalUnion(constHTTPSecurityScheme, marshalHTTPSecurityScheme(i), i.MapOfAnything, i.Bearer, i.NonBearer)
 }
 
-// HTTPSecuritySchemeOneOf0 structure is generated from "#/definitions/HTTPSecurityScheme/oneOf/0".
+// Bearer structure is generated from "#/definitions/HTTPSecurityScheme/oneOf/0".
 //
 // Bearer.
-type HTTPSecuritySchemeOneOf0 struct {
+//
+// Bearer.
+type Bearer struct {
 }
 
 // UnmarshalJSON decodes JSON.
-func (i *HTTPSecuritySchemeOneOf0) UnmarshalJSON(data []byte) error {
+func (i *Bearer) UnmarshalJSON(data []byte) error {
 	var err error
 
 	var m map[string]json.RawMessage
@@ -4348,24 +4360,26 @@ func (i *HTTPSecuritySchemeOneOf0) UnmarshalJSON(data []byte) error {
 }
 
 var (
-	// constHTTPSecuritySchemeOneOf0 is unconditionally added to JSON.
-	constHTTPSecuritySchemeOneOf0 = json.RawMessage(`{"scheme":"bearer"}`)
+	// constBearer is unconditionally added to JSON.
+	constBearer = json.RawMessage(`{"scheme":"bearer"}`)
 )
 
 // MarshalJSON encodes JSON.
-func (i HTTPSecuritySchemeOneOf0) MarshalJSON() ([]byte, error) {
-	return marshalUnion(constHTTPSecuritySchemeOneOf0)
+func (i Bearer) MarshalJSON() ([]byte, error) {
+	return marshalUnion(constBearer)
 }
 
-// HTTPSecuritySchemeOneOf1 structure is generated from "#/definitions/HTTPSecurityScheme/oneOf/1".
+// NonBearer structure is generated from "#/definitions/HTTPSecurityScheme/oneOf/1".
 //
 // Non Bearer.
-type HTTPSecuritySchemeOneOf1 struct {
+//
+// Non Bearer.
+type NonBearer struct {
 	Scheme *interface{} `json:"scheme,omitempty"`
 }
 
 // WithScheme sets Scheme value.
-func (v *HTTPSecuritySchemeOneOf1) WithScheme(val interface{}) *HTTPSecuritySchemeOneOf1 {
+func (v *NonBearer) WithScheme(val interface{}) *NonBearer {
 	v.Scheme = &val
 	return v
 }
@@ -5342,6 +5356,58 @@ func (i ComponentsCallbacks) MarshalJSON() ([]byte, error) {
 	return marshalUnion(i.MapOfCallbackOrRefValues)
 }
 
+// ParameterIn is an enum type.
+type ParameterIn string
+
+// ParameterIn values enumeration.
+const (
+	ParameterInPath   = ParameterIn("path")
+	ParameterInQuery  = ParameterIn("query")
+	ParameterInHeader = ParameterIn("header")
+	ParameterInCookie = ParameterIn("cookie")
+)
+
+// MarshalJSON encodes JSON.
+func (i ParameterIn) MarshalJSON() ([]byte, error) {
+	switch i {
+	case ParameterInPath:
+	case ParameterInQuery:
+	case ParameterInHeader:
+	case ParameterInCookie:
+
+	default:
+		return nil, fmt.Errorf("unexpected ParameterIn value: %v", i)
+	}
+
+	return json.Marshal(string(i))
+}
+
+// UnmarshalJSON decodes JSON.
+func (i *ParameterIn) UnmarshalJSON(data []byte) error {
+	var ii string
+
+	err := json.Unmarshal(data, &ii)
+	if err != nil {
+		return err
+	}
+
+	v := ParameterIn(ii)
+
+	switch v {
+	case ParameterInPath:
+	case ParameterInQuery:
+	case ParameterInHeader:
+	case ParameterInCookie:
+
+	default:
+		return fmt.Errorf("unexpected ParameterIn value: %v", v)
+	}
+
+	*i = v
+
+	return nil
+}
+
 // SchemaType is an enum type.
 type SchemaType string
 
@@ -5452,32 +5518,32 @@ func (i *EncodingStyle) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-// ParameterLocationOneOf0Style is an enum type.
-type ParameterLocationOneOf0Style string
+// PathParameterStyle is an enum type.
+type PathParameterStyle string
 
-// ParameterLocationOneOf0Style values enumeration.
+// PathParameterStyle values enumeration.
 const (
-	ParameterLocationOneOf0StyleMatrix = ParameterLocationOneOf0Style("matrix")
-	ParameterLocationOneOf0StyleLabel  = ParameterLocationOneOf0Style("label")
-	ParameterLocationOneOf0StyleSimple = ParameterLocationOneOf0Style("simple")
+	PathParameterStyleMatrix = PathParameterStyle("matrix")
+	PathParameterStyleLabel  = PathParameterStyle("label")
+	PathParameterStyleSimple = PathParameterStyle("simple")
 )
 
 // MarshalJSON encodes JSON.
-func (i ParameterLocationOneOf0Style) MarshalJSON() ([]byte, error) {
+func (i PathParameterStyle) MarshalJSON() ([]byte, error) {
 	switch i {
-	case ParameterLocationOneOf0StyleMatrix:
-	case ParameterLocationOneOf0StyleLabel:
-	case ParameterLocationOneOf0StyleSimple:
+	case PathParameterStyleMatrix:
+	case PathParameterStyleLabel:
+	case PathParameterStyleSimple:
 
 	default:
-		return nil, fmt.Errorf("unexpected ParameterLocationOneOf0Style value: %v", i)
+		return nil, fmt.Errorf("unexpected PathParameterStyle value: %v", i)
 	}
 
 	return json.Marshal(string(i))
 }
 
 // UnmarshalJSON decodes JSON.
-func (i *ParameterLocationOneOf0Style) UnmarshalJSON(data []byte) error {
+func (i *PathParameterStyle) UnmarshalJSON(data []byte) error {
 	var ii string
 
 	err := json.Unmarshal(data, &ii)
@@ -5485,15 +5551,15 @@ func (i *ParameterLocationOneOf0Style) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
-	v := ParameterLocationOneOf0Style(ii)
+	v := PathParameterStyle(ii)
 
 	switch v {
-	case ParameterLocationOneOf0StyleMatrix:
-	case ParameterLocationOneOf0StyleLabel:
-	case ParameterLocationOneOf0StyleSimple:
+	case PathParameterStyleMatrix:
+	case PathParameterStyleLabel:
+	case PathParameterStyleSimple:
 
 	default:
-		return fmt.Errorf("unexpected ParameterLocationOneOf0Style value: %v", v)
+		return fmt.Errorf("unexpected PathParameterStyle value: %v", v)
 	}
 
 	*i = v
@@ -5501,34 +5567,34 @@ func (i *ParameterLocationOneOf0Style) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-// ParameterLocationOneOf1Style is an enum type.
-type ParameterLocationOneOf1Style string
+// QueryParameterStyle is an enum type.
+type QueryParameterStyle string
 
-// ParameterLocationOneOf1Style values enumeration.
+// QueryParameterStyle values enumeration.
 const (
-	ParameterLocationOneOf1StyleForm           = ParameterLocationOneOf1Style("form")
-	ParameterLocationOneOf1StyleSpaceDelimited = ParameterLocationOneOf1Style("spaceDelimited")
-	ParameterLocationOneOf1StylePipeDelimited  = ParameterLocationOneOf1Style("pipeDelimited")
-	ParameterLocationOneOf1StyleDeepObject     = ParameterLocationOneOf1Style("deepObject")
+	QueryParameterStyleForm           = QueryParameterStyle("form")
+	QueryParameterStyleSpaceDelimited = QueryParameterStyle("spaceDelimited")
+	QueryParameterStylePipeDelimited  = QueryParameterStyle("pipeDelimited")
+	QueryParameterStyleDeepObject     = QueryParameterStyle("deepObject")
 )
 
 // MarshalJSON encodes JSON.
-func (i ParameterLocationOneOf1Style) MarshalJSON() ([]byte, error) {
+func (i QueryParameterStyle) MarshalJSON() ([]byte, error) {
 	switch i {
-	case ParameterLocationOneOf1StyleForm:
-	case ParameterLocationOneOf1StyleSpaceDelimited:
-	case ParameterLocationOneOf1StylePipeDelimited:
-	case ParameterLocationOneOf1StyleDeepObject:
+	case QueryParameterStyleForm:
+	case QueryParameterStyleSpaceDelimited:
+	case QueryParameterStylePipeDelimited:
+	case QueryParameterStyleDeepObject:
 
 	default:
-		return nil, fmt.Errorf("unexpected ParameterLocationOneOf1Style value: %v", i)
+		return nil, fmt.Errorf("unexpected QueryParameterStyle value: %v", i)
 	}
 
 	return json.Marshal(string(i))
 }
 
 // UnmarshalJSON decodes JSON.
-func (i *ParameterLocationOneOf1Style) UnmarshalJSON(data []byte) error {
+func (i *QueryParameterStyle) UnmarshalJSON(data []byte) error {
 	var ii string
 
 	err := json.Unmarshal(data, &ii)
@@ -5536,16 +5602,16 @@ func (i *ParameterLocationOneOf1Style) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
-	v := ParameterLocationOneOf1Style(ii)
+	v := QueryParameterStyle(ii)
 
 	switch v {
-	case ParameterLocationOneOf1StyleForm:
-	case ParameterLocationOneOf1StyleSpaceDelimited:
-	case ParameterLocationOneOf1StylePipeDelimited:
-	case ParameterLocationOneOf1StyleDeepObject:
+	case QueryParameterStyleForm:
+	case QueryParameterStyleSpaceDelimited:
+	case QueryParameterStylePipeDelimited:
+	case QueryParameterStyleDeepObject:
 
 	default:
-		return fmt.Errorf("unexpected ParameterLocationOneOf1Style value: %v", v)
+		return fmt.Errorf("unexpected QueryParameterStyle value: %v", v)
 	}
 
 	*i = v

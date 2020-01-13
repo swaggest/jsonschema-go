@@ -968,11 +968,13 @@
       },
       "oneOf": [
         {
+          "title": "Has Schema",
           "required": [
             "schema"
           ]
         },
         {
+          "title": "Has Content",
           "required": [
             "content"
           ],
@@ -1057,7 +1059,8 @@
           "type": "string"
         },
         "in": {
-          "type": "string"
+          "type": "string",
+          "enum": ["path", "query", "header", "cookie"]
         },
         "description": {
           "type": "string"
@@ -1129,6 +1132,7 @@
       "description": "Parameter location",
       "oneOf": [
         {
+          "title": "Path Parameter",
           "description": "Parameter in path",
           "required": [
             "required"
@@ -1155,6 +1159,7 @@
           }
         },
         {
+          "title": "Query Parameter",
           "description": "Parameter in query",
           "properties": {
             "in": {
@@ -1174,6 +1179,7 @@
           }
         },
         {
+          "title": "Header Parameter",
           "description": "Parameter in header",
           "properties": {
             "in": {
@@ -1190,6 +1196,7 @@
           }
         },
         {
+          "title": "Cookie Parameter",
           "description": "Parameter in cookie",
           "properties": {
             "in": {
@@ -1380,6 +1387,7 @@
       "additionalProperties": false,
       "oneOf": [
         {
+          "title": "Bearer",
           "description": "Bearer",
           "properties": {
             "scheme": {
@@ -1390,6 +1398,7 @@
           }
         },
         {
+          "title": "Non Bearer",
           "description": "Non Bearer",
           "not": {
             "required": [
