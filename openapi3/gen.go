@@ -8,6 +8,7 @@ import (
 
 type Generator struct {
 	jsonschema.Generator
+	Spec *Spec
 }
 
 func (g *Generator) SetRequest(o *Operation, input interface{}) error {
@@ -19,6 +20,22 @@ func (g *Generator) SetRequest(o *Operation, input interface{}) error {
 	o.Parameters = append(o.Parameters, ParameterOrRef{
 		ParameterReference: &ParameterReference{Ref: schema.Ref},
 	})
+
+	for name, def := range schema.Definitions {
+		if g.Spec.Components == nil {
+			g.Spec.Components = &Components{}
+		}
+		if g.Spec.Components.Parameters == nil {
+			g.Spec.Components.Parameters = &ComponentsParameters{}
+		}
+		s := SchemaOrRef{}
+		s.FromSchema(def)
+
+		g.Spec.Components.Parameters.WithMapOfParameterOrRefValuesItem(name, ParameterOrRef{
+			Parameter: (&Parameter{}).WithSchema(s),
+		})
+	}
+
 	return nil
 }
 
@@ -30,6 +47,10 @@ func (g *Generator) SetResponse(o *Operation, output interface{}) error {
 
 	if o.Responses == nil {
 		o.Responses = &Responses{}
+	}
+
+	if o.Responses.MapOfResponseOrRefValues == nil {
+		o.Responses.MapOfResponseOrRefValues = make(map[string]ResponseOrRef, 1)
 	}
 
 	o.Responses.MapOfResponseOrRefValues[strconv.Itoa(http.StatusOK)] = ResponseOrRef{
@@ -47,6 +68,21 @@ func (g *Generator) SetResponse(o *Operation, output interface{}) error {
 			Links:         nil,
 			MapOfAnything: nil,
 		},
+	}
+
+	for name, def := range schema.Definitions {
+		if g.Spec.Components == nil {
+			g.Spec.Components = &Components{}
+		}
+		if g.Spec.Components.Responses == nil {
+			g.Spec.Components.Responses = &ComponentsResponses{}
+		}
+		s := SchemaOrRef{}
+		s.FromSchema(def)
+
+		g.Spec.Components.Responses.WithMapOfResponseOrRefValuesItem(name, ResponseOrRef{
+			Response: (&Response{}).WithContent(map[string]MediaType{"application/json": {Schema: &s}}),
+		})
 	}
 
 	return nil
