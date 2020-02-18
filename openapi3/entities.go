@@ -15,7 +15,7 @@ import (
 //
 // Validation schema for OpenAPI Specification 3.0.X.
 type Spec struct {
-	Openapi       *string                `json:"openapi,omitempty"`
+	Openapi       string                 `json:"openapi"`
 	Info          *Info                  `json:"info,omitempty"`
 	ExternalDocs  *ExternalDocumentation `json:"externalDocs,omitempty"`
 	Servers       []Server               `json:"servers,omitempty"`
