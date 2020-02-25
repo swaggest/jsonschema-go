@@ -1,0 +1,87 @@
+{
+ "openapi": "3.0.2",
+ "info": {
+  "title": "SampleAPI",
+  "version": "1.2.3"
+ },
+ "paths": {
+  "/somewhere/{in_path}": {
+   "summary": "Path Summary",
+   "description": "Path Description",
+   "get": {
+    "parameters": [
+     {
+      "name": "in_query",
+      "in": "query",
+      "description": "Query parameter.",
+      "required": true,
+      "schema": {
+       "type": "integer",
+       "description": "Query parameter."
+      }
+     },
+     {
+      "name": "in_path",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "integer"
+      }
+     },
+     {
+      "name": "in_cookie",
+      "in": "cookie",
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "name": "in_header",
+      "in": "header",
+      "schema": {
+       "type": "number"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "desc",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/responses/Openapi3TestResp"
+        }
+       }
+      }
+     }
+    }
+   }
+  }
+ },
+ "components": {
+  "responses": {
+   "Openapi3TestResp": {
+    "description": "",
+    "content": {
+     "application/json": {
+      "schema": {
+       "type": "object",
+       "properties": {
+        "field1": {
+         "type": "integer"
+        },
+        "field2": {
+         "type": "string"
+        },
+        "parent": {
+         "$ref": "#/components/responses/Openapi3TestResp"
+        }
+       },
+       "nullable": true
+      }
+     }
+    }
+   }
+  }
+ }
+}

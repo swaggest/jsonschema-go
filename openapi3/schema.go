@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-func (s *SchemaOrRef) FromSchema(schema jsonschema.Schema) {
+func (s *SchemaOrRef) FromJSONSchema(schema jsonschema.Schema) {
 	if schema.TypeBoolean != nil {
 		s.fromBool(*schema.TypeBoolean)
 		return
@@ -13,7 +13,7 @@ func (s *SchemaOrRef) FromSchema(schema jsonschema.Schema) {
 
 	js := schema.TypeObject
 	if js.Ref != nil {
-		s.SchemaReference = &SchemaReference{Ref: js.Ref}
+		s.SchemaReference = &SchemaReference{Ref: *js.Ref}
 		return
 	}
 
@@ -25,7 +25,7 @@ func (s *SchemaOrRef) FromSchema(schema jsonschema.Schema) {
 
 	if js.Not != nil {
 		os.Not = &SchemaOrRef{}
-		os.Not.FromSchema(*js.Not)
+		os.Not.FromJSONSchema(*js.Not)
 	}
 
 	fromSchemaArray(&os.OneOf, js.OneOf)
@@ -68,14 +68,14 @@ func (s *SchemaOrRef) FromSchema(schema jsonschema.Schema) {
 			os.AdditionalProperties.Bool = js.AdditionalProperties.TypeBoolean
 		} else {
 			ap := SchemaOrRef{}
-			ap.FromSchema(*js.AdditionalProperties)
+			ap.FromJSONSchema(*js.AdditionalProperties)
 			os.AdditionalProperties.SchemaOrRef = &ap
 		}
 	}
 
 	if js.Items != nil && js.Items.Schema != nil {
 		os.Items = &SchemaOrRef{}
-		os.Items.FromSchema(*js.Items.Schema)
+		os.Items.FromJSONSchema(*js.Items.Schema)
 	}
 
 	if js.ExclusiveMaximum != nil {
@@ -116,7 +116,7 @@ func (s *SchemaOrRef) FromSchema(schema jsonschema.Schema) {
 		os.Properties = make(map[string]SchemaOrRef, len(js.Properties))
 		for name, jsp := range js.Properties {
 			osp := SchemaOrRef{}
-			osp.FromSchema(jsp)
+			osp.FromJSONSchema(jsp)
 			os.Properties[name] = osp
 		}
 	}
@@ -153,7 +153,7 @@ func fromSchemaArray(os *[]SchemaOrRef, js []jsonschema.Schema) {
 	osa := make([]SchemaOrRef, len(js))
 	for i, jso := range js {
 		oso := SchemaOrRef{}
-		oso.FromSchema(jso)
+		oso.FromJSONSchema(jso)
 		osa[i] = oso
 	}
 	os = &osa

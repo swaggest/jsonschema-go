@@ -11,7 +11,8 @@
   "properties": {
     "openapi": {
       "type": "string",
-      "pattern": "^3\\.0\\.\\d(-.+)?$"
+      "pattern": "^3\\.0\\.\\d(-.+)?$",
+      "const": "3.0.2"
     },
     "info": {
       "$ref": "#/definitions/Info"

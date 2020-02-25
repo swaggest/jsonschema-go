@@ -18,22 +18,21 @@ var (
 	typeOfTextUnmarshaler = reflect.TypeOf((*encoding.TextUnmarshaler)(nil)).Elem()
 )
 
-type Ref string
+type Ref struct {
+	Path string
+	Name string
+}
 
 func (r Ref) Schema() CoreSchemaMetaSchema {
-	s := string(r)
+	s := r.Path + r.Name
 	return CoreSchemaMetaSchema{
 		Ref: &s,
 	}
 }
 
 type Generator struct {
-	typesMap        map[refl.TypeString]interface{}
-	definitions     map[refl.TypeString]CoreSchemaMetaSchema // list of all definition objects
-	definitionRefs  map[refl.TypeString]Ref
-	definitionAlloc map[string]refl.TypeString // index of allocated TypeNames
-	propertyNameTag string
-	reflectGoTypes  bool
+	typesMap       map[refl.TypeString]interface{}
+	reflectGoTypes bool
 }
 
 func (g *Generator) getMappedType(t reflect.Type) (dst interface{}, found bool) {
@@ -42,86 +41,30 @@ func (g *Generator) getMappedType(t reflect.Type) (dst interface{}, found bool) 
 	return
 }
 
-// reflectTypeReliableName returns real name of given reflect.Type
-func (g *Generator) reflectTypeReliableName(t reflect.Type) string {
-	if t.Name() != "" {
-		// todo consider optionally processing package
-		// return path.Base(t.PkgPath()) + t.Name()
-		return t.Name()
-	}
-	return fmt.Sprintf("anon_%08x", reflect.Indirect(reflect.ValueOf(t)).FieldByName("hash").Uint())
-}
+func (g *Generator) Parse(i interface{}, options ...func(*ParseContext)) (CoreSchemaMetaSchema, error) {
+	pc := ParseContext{}
+	pc.DefinitionsPrefix = "#/definitions/"
+	pc.PropertyNameTag = "json"
+	pc.Path = []string{"#"}
+	pc.typeCycles = make(map[refl.TypeString]bool)
 
-func (g *Generator) getDefinition(t reflect.Type) (typeDef CoreSchemaMetaSchema, found bool) {
-	typeDef, found = g.definitions[refl.GoType(t)]
-	if !found && t.Kind() == reflect.Ptr {
-		typeDef, found = g.definitions[refl.GoType(t.Elem())]
-	}
-	return
-}
-
-func (g *Generator) makeNameForType(t reflect.Type, baseTypeName string) string {
-	goTypeName := refl.GoType(t)
-	baseTypeName = strings.Title(baseTypeName)
-
-	if g.definitionAlloc == nil {
-		g.definitionAlloc = make(map[string]refl.TypeString, 1)
+	for _, option := range options {
+		option(&pc)
 	}
 
-	for typeName, allocatedGoTypeName := range g.definitionAlloc {
-		if goTypeName == allocatedGoTypeName {
-			return typeName
-		}
-	}
-
-	pkgPath := t.PkgPath()
-
-	if pkgPath != "" {
-		pref := strings.Title(path.Base(pkgPath))
-		baseTypeName = pref + baseTypeName
-		pkgPath = path.Dir(pkgPath)
-	}
-
-	allocatedType, isAllocated := g.definitionAlloc[baseTypeName]
-	if isAllocated && allocatedType != goTypeName {
-		typeIndex := 2
-		pref := strings.Title(path.Base(pkgPath))
-		for {
-			typeName := ""
-			if pkgPath != "" {
-				typeName = pref + baseTypeName
-			} else {
-				typeName = fmt.Sprintf("%sType%d", baseTypeName, typeIndex)
-				typeIndex++
-			}
-			allocatedType, isAllocated := g.definitionAlloc[typeName]
-
-			if !isAllocated || allocatedType == goTypeName {
-				baseTypeName = typeName
-				break
-			}
-			typeIndex++
-			pref = strings.Title(path.Base(pkgPath)) + pref
-			pkgPath = path.Dir(pkgPath)
-		}
-	}
-	g.definitionAlloc[baseTypeName] = goTypeName
-	return baseTypeName
-}
-
-func (g *Generator) Parse(i interface{}) (CoreSchemaMetaSchema, error) {
-	schema, err := g.parse(i)
-	if err == nil && len(g.definitions) > 0 {
-		schema.Definitions = make(map[string]Schema, len(g.definitions))
-		for typeString, def := range g.definitions {
+	schema, err := g.parse(i, &pc)
+	if err == nil && len(pc.definitions) > 0 {
+		schema.Definitions = make(map[string]Schema, len(pc.definitions))
+		for typeString, def := range pc.definitions {
 			def := def
-			schema.Definitions[string(typeString)] = def.ToSchema()
+			ref := pc.definitionRefs[typeString]
+			schema.Definitions[ref.Name] = def.ToSchema()
 		}
 	}
 	return schema, err
 }
 
-func (g *Generator) parse(i interface{}) (schema CoreSchemaMetaSchema, err error) {
+func (g *Generator) parse(i interface{}, pc *ParseContext) (schema CoreSchemaMetaSchema, err error) {
 	var (
 		typeString refl.TypeString
 		t          = reflect.TypeOf(i)
@@ -129,6 +72,8 @@ func (g *Generator) parse(i interface{}) (schema CoreSchemaMetaSchema, err error
 	)
 
 	defer func() {
+		pc.Path = pc.Path[:len(pc.Path)-1]
+
 		if schema.Ref != nil {
 			return
 		}
@@ -140,21 +85,30 @@ func (g *Generator) parse(i interface{}) (schema CoreSchemaMetaSchema, err error
 			err = customizer.CustomizeJSONSchema(&schema)
 		}
 
+		if pc.InlineRefs {
+			return
+		}
+
 		pkgPath := t.PkgPath()
 		if pkgPath == "" || pkgPath == "time" || pkgPath == "encoding/json" {
 			return
 		}
 
-		if g.definitions == nil {
-			g.definitions = make(map[refl.TypeString]CoreSchemaMetaSchema, 1)
-			g.definitionRefs = make(map[refl.TypeString]Ref, 1)
+		if pc.definitions == nil {
+			pc.definitions = make(map[refl.TypeString]CoreSchemaMetaSchema, 1)
+			pc.definitionRefs = make(map[refl.TypeString]Ref, 1)
 		}
-		g.definitions[typeString] = schema
-		g.definitionRefs[typeString] = Ref("#/definitions/" + typeString)
 
-		schema = Ref("#/definitions/" + typeString).Schema()
+		//defName := string(typeString)
+		defName := toCamel(path.Base(pkgPath)) + strings.Title(t.Name())
 
-		println(typeString, t.PkgPath())
+		pc.definitions[typeString] = schema
+		ref := Ref{Path: pc.DefinitionsPrefix, Name: defName}
+		pc.definitionRefs[typeString] = ref
+
+		schema = ref.Schema()
+
+		//println(typeString, t.PkgPath())
 	}()
 
 	if mappedTo, ok := g.getMappedType(t); ok {
@@ -185,9 +139,15 @@ func (g *Generator) parse(i interface{}) (schema CoreSchemaMetaSchema, err error
 		return
 	}
 
-	if ref, ok := g.definitionRefs[typeString]; ok {
+	if ref, ok := pc.definitionRefs[typeString]; ok {
 		return ref.Schema(), nil
 	}
+
+	if pc.typeCycles[typeString] {
+		return
+	}
+
+	pc.typeCycles[typeString] = true
 
 	switch t.Kind() {
 	case reflect.Struct:
@@ -196,7 +156,7 @@ func (g *Generator) parse(i interface{}) (schema CoreSchemaMetaSchema, err error
 			schema.AddType(String)
 		default:
 			schema.AddType(Object)
-			err = g.walkProperties(v, &schema)
+			err = g.walkProperties(v, &schema, pc)
 			if err != nil {
 				return schema, err
 			}
@@ -209,7 +169,8 @@ func (g *Generator) parse(i interface{}) (schema CoreSchemaMetaSchema, err error
 
 		elemType := refl.DeepIndirect(t.Elem())
 
-		itemsSchema, err := g.parse(reflect.Zero(elemType).Interface())
+		pc.Path = append(pc.Path, "[]")
+		itemsSchema, err := g.parse(reflect.Zero(elemType).Interface(), pc)
 		if err != nil {
 			return schema, err
 		}
@@ -220,7 +181,8 @@ func (g *Generator) parse(i interface{}) (schema CoreSchemaMetaSchema, err error
 	case reflect.Map:
 		elemType := refl.DeepIndirect(t.Elem())
 
-		additionalPropertiesSchema, err := g.parse(reflect.Zero(elemType))
+		pc.Path = append(pc.Path, "{}")
+		additionalPropertiesSchema, err := g.parse(reflect.Zero(elemType), pc)
 		if err != nil {
 			return schema, err
 		}
@@ -248,7 +210,7 @@ func (g *Generator) parse(i interface{}) (schema CoreSchemaMetaSchema, err error
 	return schema, nil
 }
 
-func (g *Generator) walkProperties(v reflect.Value, parent *CoreSchemaMetaSchema) error {
+func (g *Generator) walkProperties(v reflect.Value, parent *CoreSchemaMetaSchema, pc *ParseContext) error {
 	t := v.Type()
 	if t.Kind() == reflect.Ptr {
 		t = t.Elem()
@@ -259,15 +221,10 @@ func (g *Generator) walkProperties(v reflect.Value, parent *CoreSchemaMetaSchema
 		}
 	}
 
-	propertyNameTag := g.propertyNameTag
-	if propertyNameTag == "" {
-		propertyNameTag = "json"
-	}
-
 	for i := 0; i < t.NumField(); i++ {
 		field := t.Field(i)
 
-		var tag = field.Tag.Get(propertyNameTag)
+		var tag = field.Tag.Get(pc.PropertyNameTag)
 
 		// Skip explicitly discarded field.
 		if tag == "-" {
@@ -275,7 +232,7 @@ func (g *Generator) walkProperties(v reflect.Value, parent *CoreSchemaMetaSchema
 		}
 
 		if tag == "" && field.Anonymous {
-			err := g.walkProperties(v.Field(i), parent)
+			err := g.walkProperties(v.Field(i), parent, pc)
 			if err != nil {
 				return err
 			}
@@ -300,7 +257,8 @@ func (g *Generator) walkProperties(v reflect.Value, parent *CoreSchemaMetaSchema
 
 		fieldVal := v.Field(i).Interface()
 
-		propertySchema, err := g.parse(fieldVal)
+		pc.Path = append(pc.Path, propName)
+		propertySchema, err := g.parse(fieldVal, pc)
 		if err != nil {
 			return err
 		}
