@@ -9,6 +9,25 @@ import (
 	"testing"
 )
 
+type Resp struct {
+	HeaderField string `header:"X-Header-Field" description:"Sample header response."`
+	Field1      int    `json:"field1"`
+	Field2      string `json:"field2"`
+	Info        struct {
+		Foo string  `json:"foo" default:"baz" required:"true" pattern:"\\d+"`
+		Bar float64 `json:"bar" description:"This is Bar."`
+	} `json:"info"`
+	Parent *Resp `json:"parent"`
+}
+
+func (r Resp) Describe() string {
+	return "This is a sample response."
+}
+
+func (r Resp) Title() string {
+	return "Sample Response"
+}
+
 func TestGenerator_SetResponse(t *testing.T) {
 	type Req struct {
 		InQuery  int     `query:"in_query" required:"true" description:"Query parameter."`
@@ -17,12 +36,6 @@ func TestGenerator_SetResponse(t *testing.T) {
 		InHeader float64 `header:"in_header"`
 		InBody1  int     `json:"in_body1"`
 		InBody2  string  `json:"in_body2"`
-	}
-
-	type Resp struct {
-		Field1 int    `json:"field1"`
-		Field2 string `json:"field2"`
-		Parent *Resp  `json:"parent"`
 	}
 
 	g := openapi3.Generator{}

@@ -45,11 +45,21 @@
     ],
     "responses": {
      "200": {
-      "description": "desc",
+      "description": "",
+      "headers": {
+       "X-Header-Field": {
+        "style": "simple",
+        "description": "Sample header response.",
+        "schema": {
+         "type": "string",
+         "description": "Sample header response."
+        }
+       }
+      },
       "content": {
        "application/json": {
         "schema": {
-         "$ref": "#/components/responses/Openapi3TestResp"
+         "$ref": "#/components/schemas/Openapi3TestResp"
         }
        }
       }
@@ -59,28 +69,39 @@
   }
  },
  "components": {
-  "responses": {
+  "schemas": {
    "Openapi3TestResp": {
-    "description": "",
-    "content": {
-     "application/json": {
-      "schema": {
-       "type": "object",
-       "properties": {
-        "field1": {
-         "type": "integer"
-        },
-        "field2": {
-         "type": "string"
-        },
-        "parent": {
-         "$ref": "#/components/responses/Openapi3TestResp"
-        }
+    "title": "Sample Response",
+    "type": "object",
+    "properties": {
+     "field1": {
+      "type": "integer"
+     },
+     "field2": {
+      "type": "string"
+     },
+     "info": {
+      "required": [
+       "foo"
+      ],
+      "type": "object",
+      "properties": {
+       "bar": {
+        "type": "number",
+        "description": "This is Bar."
        },
-       "nullable": true
+       "foo": {
+        "pattern": "\\d+",
+        "type": "string"
+       }
       }
+     },
+     "parent": {
+      "$ref": "#/components/schemas/Openapi3TestResp"
      }
-    }
+    },
+    "description": "This is a sample response.",
+    "nullable": true
    }
   }
  }

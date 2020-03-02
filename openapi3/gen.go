@@ -42,22 +42,21 @@ func (g *Generator) parseParametersIn(o *Operation, input interface{}, in Parame
 
 		p := ParameterOrRef{
 			Parameter: &Parameter{
-				Name:             name,
-				In:               in,
-				Description:      prop.TypeObject.Description,
-				Required:         nil,
-				Deprecated:       s.Schema.Deprecated,
-				AllowEmptyValue:  nil,
-				Style:            nil,
-				Explode:          nil,
-				AllowReserved:    nil,
-				Schema:           &s,
-				Content:          nil,
-				Example:          nil,
-				Examples:         nil,
-				SchemaXORContent: nil,
-				Location:         nil,
-				MapOfAnything:    nil,
+				Name:            name,
+				In:              in,
+				Description:     prop.TypeObject.Description,
+				Required:        nil,
+				Deprecated:      s.Schema.Deprecated,
+				AllowEmptyValue: nil,
+				Style:           nil,
+				Explode:         nil,
+				AllowReserved:   nil,
+				Schema:          &s,
+				Content:         nil,
+				Example:         nil,
+				Examples:        nil,
+				Location:        nil,
+				MapOfAnything:   nil,
 			},
 		}
 
@@ -92,8 +91,54 @@ func (g *Generator) parseParametersIn(o *Operation, input interface{}, in Parame
 	return nil
 }
 
+func (g *Generator) parseResponseHeader(output interface{}) (map[string]HeaderOrRef, error) {
+	schema, err := g.Parse(output,
+		jsonschema.DefinitionsPrefix("#/components/headers/"),
+		jsonschema.InlineRefs,
+		jsonschema.PropertyNameTag("header"),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	required := map[string]bool{}
+	for _, name := range schema.Required {
+		required[name] = true
+	}
+
+	res := make(map[string]HeaderOrRef, len(schema.Properties))
+
+	for name, prop := range schema.Properties {
+		s := SchemaOrRef{}
+		s.FromJSONSchema(prop)
+
+		header := Header{
+			Description:     prop.TypeObject.Description,
+			Deprecated:      s.Schema.Deprecated,
+			AllowEmptyValue: nil,
+			Explode:         nil,
+			AllowReserved:   nil,
+			Schema:          &s,
+			Content:         nil,
+			Example:         nil,
+			Examples:        nil,
+			MapOfAnything:   nil,
+		}
+
+		if required[name] {
+			header.WithRequired(true)
+		}
+
+		res[name] = HeaderOrRef{
+			Header: &header,
+		}
+	}
+
+	return res, nil
+}
+
 func (g *Generator) SetResponse(o *Operation, output interface{}) error {
-	schema, err := g.Parse(output, jsonschema.DefinitionsPrefix("#/components/responses/"))
+	schema, err := g.Parse(output, jsonschema.DefinitionsPrefix("#/components/schemas/"))
 	if err != nil {
 		return err
 	}
@@ -102,36 +147,65 @@ func (g *Generator) SetResponse(o *Operation, output interface{}) error {
 		o.Responses.MapOfResponseOrRefValues = make(map[string]ResponseOrRef, 1)
 	}
 
-	o.Responses.MapOfResponseOrRefValues[strconv.Itoa(http.StatusOK)] = ResponseOrRef{
-		Response: &Response{
-			Description: "desc",
-			Headers:     nil,
-			Content: map[string]MediaType{
-				"application/json": {
-					Schema: &SchemaOrRef{
-						SchemaReference: &SchemaReference{Ref: *schema.Ref},
-					},
-					Encoding: map[string]Encoding{},
+	resp := Response{
+		//Description: "desc",
+		//Headers: map[string]HeaderOrRef{
+		//	"X-Foo": {
+		//		Header: &Header{
+		//			Description:     nil,
+		//			Required:        nil,
+		//			Deprecated:      nil,
+		//			AllowEmptyValue: nil,
+		//			Explode:         nil,
+		//			AllowReserved:   nil,
+		//			Schema:          nil,
+		//			Content:         nil,
+		//			Example:         nil,
+		//			Examples:        nil,
+		//			MapOfAnything:   nil,
+		//		},
+		//	},
+		//},
+		Content: map[string]MediaType{
+			"application/json": {
+				Schema: &SchemaOrRef{
+					SchemaReference: &SchemaReference{Ref: *schema.Ref},
 				},
+				Example:       nil,
+				Examples:      nil,
+				Encoding:      nil,
+				MapOfAnything: nil,
 			},
-			Links:         nil,
-			MapOfAnything: nil,
 		},
+		//Links:         nil,
+		//MapOfAnything: nil,
+	}
+
+	if schema.Description != nil {
+		resp.Description = *schema.Description
+	}
+
+	resp.Headers, err = g.parseResponseHeader(output)
+	if err != nil {
+		return err
+	}
+
+	o.Responses.MapOfResponseOrRefValues[strconv.Itoa(http.StatusOK)] = ResponseOrRef{
+		//ResponseReference: &ResponseReference{Ref:*schema.Ref},
+		Response: &resp,
 	}
 
 	for name, def := range schema.Definitions {
 		if g.Spec.Components == nil {
 			g.Spec.Components = &Components{}
 		}
-		if g.Spec.Components.Responses == nil {
-			g.Spec.Components.Responses = &ComponentsResponses{}
+		if g.Spec.Components.Schemas == nil {
+			g.Spec.Components.Schemas = &ComponentsSchemas{}
 		}
 		s := SchemaOrRef{}
 		s.FromJSONSchema(def)
 
-		g.Spec.Components.Responses.WithMapOfResponseOrRefValuesItem(name, ResponseOrRef{
-			Response: (&Response{}).WithContent(map[string]MediaType{"application/json": {Schema: &s}}),
-		})
+		g.Spec.Components.Schemas.WithMapOfSchemaOrRefValuesItem(name, s)
 	}
 
 	return nil

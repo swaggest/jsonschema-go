@@ -18,6 +18,14 @@ var (
 	typeOfTextUnmarshaler = reflect.TypeOf((*encoding.TextUnmarshaler)(nil)).Elem()
 )
 
+type Described interface {
+	Describe() string
+}
+
+type Titled interface {
+	Title() string
+}
+
 type Ref struct {
 	Path string
 	Name string
@@ -147,7 +155,17 @@ func (g *Generator) parse(i interface{}, pc *ParseContext) (schema CoreSchemaMet
 		return
 	}
 
-	pc.typeCycles[typeString] = true
+	if t.PkgPath() != "" {
+		pc.typeCycles[typeString] = true
+	}
+
+	if vd, ok := v.Interface().(Described); ok {
+		schema.WithDescription(vd.Describe())
+	}
+
+	if vt, ok := v.Interface().(Titled); ok {
+		schema.WithTitle(vt.Title())
+	}
 
 	switch t.Kind() {
 	case reflect.Struct:
