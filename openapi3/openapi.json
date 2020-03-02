@@ -8,7 +8,7 @@
   "/somewhere/{in_path}": {
    "summary": "Path Summary",
    "description": "Path Description",
-   "get": {
+   "post": {
     "parameters": [
      {
       "name": "in_query",
@@ -43,6 +43,20 @@
       }
      }
     ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/JsonOpenapi3TestReq"
+       }
+      },
+      "application/x-www-form-urlencoded": {
+       "schema": {
+        "$ref": "#/components/schemas/FormDataOpenapi3TestReq"
+       }
+      }
+     }
+    },
     "responses": {
      "200": {
       "description": "",
@@ -70,6 +84,30 @@
  },
  "components": {
   "schemas": {
+   "FormDataOpenapi3TestReq": {
+    "type": "object",
+    "properties": {
+     "in_form1": {
+      "type": "string"
+     },
+     "in_form2": {
+      "type": "string"
+     }
+    },
+    "nullable": true
+   },
+   "JsonOpenapi3TestReq": {
+    "type": "object",
+    "properties": {
+     "in_body1": {
+      "type": "integer"
+     },
+     "in_body2": {
+      "type": "string"
+     }
+    },
+    "nullable": true
+   },
    "Openapi3TestResp": {
     "title": "Sample Response",
     "type": "object",

@@ -5,6 +5,7 @@ import (
 	"github.com/swaggest/jsonschema-go/refl"
 	"net/http"
 	"strconv"
+	"strings"
 )
 
 type Generator struct {
@@ -18,7 +19,57 @@ func (g *Generator) SetRequest(o *Operation, input interface{}) error {
 		g.parseParametersIn(o, input, ParameterInPath),
 		g.parseParametersIn(o, input, ParameterInCookie),
 		g.parseParametersIn(o, input, ParameterInHeader),
+		g.parseRequestBody(o, input, "json", "application/json"),
+		g.parseRequestBody(o, input, "formData", "application/x-www-form-urlencoded"),
 	)
+}
+
+func (g *Generator) parseRequestBody(o *Operation, input interface{}, tag, mime string) error {
+	schema, err := g.Parse(input,
+		jsonschema.DefinitionsPrefix("#/components/schemas/"+strings.Title(tag)),
+		jsonschema.PropertyNameTag(tag),
+	)
+	if err != nil {
+		return err
+	}
+
+	mt := MediaType{
+		Schema: &SchemaOrRef{
+			SchemaReference: &SchemaReference{Ref: *schema.Ref},
+		},
+		Example:       nil,
+		Examples:      nil,
+		Encoding:      nil,
+		MapOfAnything: nil,
+	}
+
+	for name, def := range schema.Definitions {
+		if g.Spec.Components == nil {
+			g.Spec.Components = &Components{}
+		}
+		if g.Spec.Components.Schemas == nil {
+			g.Spec.Components.Schemas = &ComponentsSchemas{}
+		}
+		s := SchemaOrRef{}
+		s.FromJSONSchema(def)
+
+		g.Spec.Components.Schemas.WithMapOfSchemaOrRefValuesItem(strings.Title(tag)+name, s)
+	}
+
+	if o.RequestBody == nil {
+		o.RequestBody = &RequestBodyOrRef{}
+	}
+
+	if o.RequestBody.RequestBody == nil {
+		o.RequestBody.RequestBody = &RequestBody{}
+	}
+
+	if o.RequestBody.RequestBody.Content == nil {
+		o.RequestBody.RequestBody.Content = map[string]MediaType{}
+	}
+	o.RequestBody.RequestBody.Content[mime] = mt
+
+	return nil
 }
 
 func (g *Generator) parseParametersIn(o *Operation, input interface{}, in ParameterIn) error {
@@ -66,27 +117,6 @@ func (g *Generator) parseParametersIn(o *Operation, input interface{}, in Parame
 
 		o.Parameters = append(o.Parameters, p)
 	}
-
-	//if schema.Ref != nil {
-	//	o.Parameters = append(o.Parameters, ParameterOrRef{
-	//		ParameterReference: &ParameterReference{Ref: *schema.Ref},
-	//	})
-	//}
-	//
-	//for name, def := range schema.Definitions {
-	//	if g.Spec.Components == nil {
-	//		g.Spec.Components = &Components{}
-	//	}
-	//	if g.Spec.Components.Parameters == nil {
-	//		g.Spec.Components.Parameters = &ComponentsParameters{}
-	//	}
-	//	s := SchemaOrRef{}
-	//	s.FromJSONSchema(def)
-	//
-	//	g.Spec.Components.Parameters.WithMapOfParameterOrRefValuesItem(name, ParameterOrRef{
-	//		Parameter: (&Parameter{}).WithSchema(s),
-	//	})
-	//}
 
 	return nil
 }
@@ -137,7 +167,7 @@ func (g *Generator) parseResponseHeader(output interface{}) (map[string]HeaderOr
 	return res, nil
 }
 
-func (g *Generator) SetResponse(o *Operation, output interface{}) error {
+func (g *Generator) SetJSONResponse(o *Operation, output interface{}) error {
 	schema, err := g.Parse(output, jsonschema.DefinitionsPrefix("#/components/schemas/"))
 	if err != nil {
 		return err
@@ -148,24 +178,6 @@ func (g *Generator) SetResponse(o *Operation, output interface{}) error {
 	}
 
 	resp := Response{
-		//Description: "desc",
-		//Headers: map[string]HeaderOrRef{
-		//	"X-Foo": {
-		//		Header: &Header{
-		//			Description:     nil,
-		//			Required:        nil,
-		//			Deprecated:      nil,
-		//			AllowEmptyValue: nil,
-		//			Explode:         nil,
-		//			AllowReserved:   nil,
-		//			Schema:          nil,
-		//			Content:         nil,
-		//			Example:         nil,
-		//			Examples:        nil,
-		//			MapOfAnything:   nil,
-		//		},
-		//	},
-		//},
 		Content: map[string]MediaType{
 			"application/json": {
 				Schema: &SchemaOrRef{
@@ -177,22 +189,11 @@ func (g *Generator) SetResponse(o *Operation, output interface{}) error {
 				MapOfAnything: nil,
 			},
 		},
-		//Links:         nil,
-		//MapOfAnything: nil,
-	}
-
-	if schema.Description != nil {
-		resp.Description = *schema.Description
 	}
 
 	resp.Headers, err = g.parseResponseHeader(output)
 	if err != nil {
 		return err
-	}
-
-	o.Responses.MapOfResponseOrRefValues[strconv.Itoa(http.StatusOK)] = ResponseOrRef{
-		//ResponseReference: &ResponseReference{Ref:*schema.Ref},
-		Response: &resp,
 	}
 
 	for name, def := range schema.Definitions {
@@ -206,6 +207,10 @@ func (g *Generator) SetResponse(o *Operation, output interface{}) error {
 		s.FromJSONSchema(def)
 
 		g.Spec.Components.Schemas.WithMapOfSchemaOrRefValuesItem(name, s)
+	}
+
+	o.Responses.MapOfResponseOrRefValues[strconv.Itoa(http.StatusOK)] = ResponseOrRef{
+		Response: &resp,
 	}
 
 	return nil

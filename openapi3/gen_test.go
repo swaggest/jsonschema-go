@@ -28,16 +28,18 @@ func (r Resp) Title() string {
 	return "Sample Response"
 }
 
-func TestGenerator_SetResponse(t *testing.T) {
-	type Req struct {
-		InQuery  int     `query:"in_query" required:"true" description:"Query parameter."`
-		InPath   int     `path:"in_path"`
-		InCookie string  `cookie:"in_cookie" deprecated:"true"`
-		InHeader float64 `header:"in_header"`
-		InBody1  int     `json:"in_body1"`
-		InBody2  string  `json:"in_body2"`
-	}
+type Req struct {
+	InQuery  int     `query:"in_query" required:"true" description:"Query parameter."`
+	InPath   int     `path:"in_path"`
+	InCookie string  `cookie:"in_cookie" deprecated:"true"`
+	InHeader float64 `header:"in_header"`
+	InBody1  int     `json:"in_body1"`
+	InBody2  string  `json:"in_body2"`
+	InForm1  string  `formData:"in_form1"`
+	InForm2  string  `formData:"in_form2"`
+}
 
+func TestGenerator_SetResponse(t *testing.T) {
 	g := openapi3.Generator{}
 
 	s := openapi3.Spec{}
@@ -53,7 +55,7 @@ func TestGenerator_SetResponse(t *testing.T) {
 	err := g.SetRequest(&op, new(Req))
 	assert.NoError(t, err)
 
-	err = g.SetResponse(&op, new(Resp))
+	err = g.SetJSONResponse(&op, new(Resp))
 	assert.NoError(t, err)
 
 	s.Paths.WithMapOfPathItemValuesItem(
@@ -61,7 +63,7 @@ func TestGenerator_SetResponse(t *testing.T) {
 		*((&openapi3.PathItem{}).
 			WithSummary("Path Summary").
 			WithDescription("Path Description").
-			WithOperation(http.MethodGet, op)),
+			WithOperation(http.MethodPost, op)),
 	)
 
 	b, err := json.MarshalIndent(s, "", " ")
