@@ -5,6 +5,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/swaggest/jsonschema-go/openapi3"
 	"io/ioutil"
+	"mime/multipart"
 	"net/http"
 	"testing"
 )
@@ -29,14 +30,16 @@ func (r Resp) Title() string {
 }
 
 type Req struct {
-	InQuery  int     `query:"in_query" required:"true" description:"Query parameter."`
-	InPath   int     `path:"in_path"`
-	InCookie string  `cookie:"in_cookie" deprecated:"true"`
-	InHeader float64 `header:"in_header"`
-	InBody1  int     `json:"in_body1"`
-	InBody2  string  `json:"in_body2"`
-	InForm1  string  `formData:"in_form1"`
-	InForm2  string  `formData:"in_form2"`
+	InQuery  int                   `query:"in_query" required:"true" description:"Query parameter."`
+	InPath   int                   `path:"in_path"`
+	InCookie string                `cookie:"in_cookie" deprecated:"true"`
+	InHeader float64               `header:"in_header"`
+	InBody1  int                   `json:"in_body1"`
+	InBody2  string                `json:"in_body2"`
+	InForm1  string                `formData:"in_form1"`
+	InForm2  string                `formData:"in_form2"`
+	File1    multipart.File        `formData:"upload1"`
+	File2    *multipart.FileHeader `formData:"upload2"`
 }
 
 func TestGenerator_SetResponse(t *testing.T) {

@@ -3,7 +3,9 @@ package openapi3
 import (
 	jsonschema "github.com/swaggest/jsonschema-go/draft-07"
 	"github.com/swaggest/jsonschema-go/refl"
+	"mime/multipart"
 	"net/http"
+	"reflect"
 	"strconv"
 	"strings"
 )
@@ -19,15 +21,41 @@ func (g *Generator) SetRequest(o *Operation, input interface{}) error {
 		g.parseParametersIn(o, input, ParameterInPath),
 		g.parseParametersIn(o, input, ParameterInCookie),
 		g.parseParametersIn(o, input, ParameterInHeader),
-		g.parseRequestBody(o, input, "json", "application/json"),
-		g.parseRequestBody(o, input, "formData", "application/x-www-form-urlencoded"),
+		g.parseRequestBody(o, input, "json", mimeJSON),
+		g.parseRequestBody(o, input, "formData", mimeFormUrlencoded),
 	)
 }
 
+var (
+	typeOfmultipartFile       = reflect.TypeOf((*multipart.File)(nil)).Elem()
+	typeOfmultipartFileHeader = reflect.TypeOf((*multipart.FileHeader)(nil)).Elem()
+)
+
+const (
+	xIsFile            = "x-is-file"
+	mimeJSON           = "application/json"
+	mimeFormUrlencoded = "application/x-www-form-urlencoded"
+	mimeMultipart      = "multipart/form-data"
+)
+
 func (g *Generator) parseRequestBody(o *Operation, input interface{}, tag, mime string) error {
+	hasFileUpload := false
+
 	schema, err := g.Parse(input,
 		jsonschema.DefinitionsPrefix("#/components/schemas/"+strings.Title(tag)),
 		jsonschema.PropertyNameTag(tag),
+		jsonschema.HijackType(func(t reflect.Type, s *jsonschema.CoreSchemaMetaSchema) (bool, error) {
+			if t.Implements(typeOfmultipartFile) || t == typeOfmultipartFileHeader {
+				s.AddType(jsonschema.String)
+				s.WithFormat("binary")
+				s.WithExtraPropertiesItem(xIsFile, true)
+
+				hasFileUpload = true
+				return true, nil
+			}
+
+			return false, nil
+		}),
 	)
 	if err != nil {
 		return err
@@ -37,10 +65,6 @@ func (g *Generator) parseRequestBody(o *Operation, input interface{}, tag, mime 
 		Schema: &SchemaOrRef{
 			SchemaReference: &SchemaReference{Ref: *schema.Ref},
 		},
-		Example:       nil,
-		Examples:      nil,
-		Encoding:      nil,
-		MapOfAnything: nil,
 	}
 
 	for name, def := range schema.Definitions {
@@ -67,6 +91,11 @@ func (g *Generator) parseRequestBody(o *Operation, input interface{}, tag, mime 
 	if o.RequestBody.RequestBody.Content == nil {
 		o.RequestBody.RequestBody.Content = map[string]MediaType{}
 	}
+
+	if mime == mimeFormUrlencoded && hasFileUpload {
+		mime = mimeMultipart
+	}
+
 	o.RequestBody.RequestBody.Content[mime] = mt
 
 	return nil

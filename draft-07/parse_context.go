@@ -1,6 +1,9 @@
 package jsonschema
 
-import "github.com/swaggest/jsonschema-go/refl"
+import (
+	"github.com/swaggest/jsonschema-go/refl"
+	"reflect"
+)
 
 func DefinitionsPrefix(prefix string) func(*ParseContext) {
 	return func(pc *ParseContext) {
@@ -14,6 +17,12 @@ func PropertyNameTag(tag string) func(*ParseContext) {
 	}
 }
 
+func HijackType(f func(t reflect.Type, s *CoreSchemaMetaSchema) (bool, error)) func(*ParseContext) {
+	return func(pc *ParseContext) {
+		pc.HijackType = f
+	}
+}
+
 func InlineRefs(pc *ParseContext) {
 	pc.InlineRefs = true
 }
@@ -23,6 +32,7 @@ type ParseContext struct {
 	PropertyNameTag   string
 	InlineRefs        bool
 	InlineRoot        bool
+	HijackType        func(t reflect.Type, s *CoreSchemaMetaSchema) (bool, error)
 
 	Path            []string
 	definitions     map[refl.TypeString]CoreSchemaMetaSchema // list of all definition objects

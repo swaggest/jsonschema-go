@@ -147,6 +147,14 @@ func (g *Generator) parse(i interface{}, pc *ParseContext) (schema CoreSchemaMet
 		return
 	}
 
+	if pc.HijackType != nil {
+		var ret bool
+		ret, err = pc.HijackType(t, &schema)
+		if err != nil || ret {
+			return schema, err
+		}
+	}
+
 	if ref, ok := pc.definitionRefs[typeString]; ok {
 		return ref.Schema(), nil
 	}
@@ -274,6 +282,10 @@ func (g *Generator) walkProperties(v reflect.Value, parent *CoreSchemaMetaSchema
 		}
 
 		fieldVal := v.Field(i).Interface()
+
+		if fieldVal == nil {
+			fieldVal = reflect.New(t.Field(i).Type).Interface()
+		}
 
 		pc.Path = append(pc.Path, propName)
 		propertySchema, err := g.parse(fieldVal, pc)

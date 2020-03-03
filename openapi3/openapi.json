@@ -50,7 +50,7 @@
         "$ref": "#/components/schemas/JsonOpenapi3TestReq"
        }
       },
-      "application/x-www-form-urlencoded": {
+      "multipart/form-data": {
        "schema": {
         "$ref": "#/components/schemas/FormDataOpenapi3TestReq"
        }
@@ -84,6 +84,18 @@
  },
  "components": {
   "schemas": {
+   "FormDataMultipartFile": {
+    "type": "string",
+    "format": "binary",
+    "nullable": true,
+    "x-is-file": true
+   },
+   "FormDataMultipartFileHeader": {
+    "type": "string",
+    "format": "binary",
+    "nullable": true,
+    "x-is-file": true
+   },
    "FormDataOpenapi3TestReq": {
     "type": "object",
     "properties": {
@@ -92,6 +104,12 @@
      },
      "in_form2": {
       "type": "string"
+     },
+     "upload1": {
+      "$ref": "#/components/schemas/FormDataMultipartFile"
+     },
+     "upload2": {
+      "$ref": "#/components/schemas/FormDataMultipartFileHeader"
      }
     },
     "nullable": true
