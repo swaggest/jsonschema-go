@@ -87,14 +87,12 @@
    "FormDataMultipartFile": {
     "type": "string",
     "format": "binary",
-    "nullable": true,
-    "x-is-file": true
+    "nullable": true
    },
    "FormDataMultipartFileHeader": {
     "type": "string",
     "format": "binary",
-    "nullable": true,
-    "x-is-file": true
+    "nullable": true
    },
    "FormDataOpenapi3TestReq": {
     "type": "object",

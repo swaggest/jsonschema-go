@@ -27,12 +27,11 @@ func (g *Generator) SetRequest(o *Operation, input interface{}) error {
 }
 
 var (
-	typeOfmultipartFile       = reflect.TypeOf((*multipart.File)(nil)).Elem()
-	typeOfmultipartFileHeader = reflect.TypeOf((*multipart.FileHeader)(nil)).Elem()
+	typeOfMultipartFile       = reflect.TypeOf((*multipart.File)(nil)).Elem()
+	typeOfMultipartFileHeader = reflect.TypeOf((*multipart.FileHeader)(nil)).Elem()
 )
 
 const (
-	xIsFile            = "x-is-file"
 	mimeJSON           = "application/json"
 	mimeFormUrlencoded = "application/x-www-form-urlencoded"
 	mimeMultipart      = "multipart/form-data"
@@ -45,10 +44,9 @@ func (g *Generator) parseRequestBody(o *Operation, input interface{}, tag, mime 
 		jsonschema.DefinitionsPrefix("#/components/schemas/"+strings.Title(tag)),
 		jsonschema.PropertyNameTag(tag),
 		jsonschema.HijackType(func(t reflect.Type, s *jsonschema.CoreSchemaMetaSchema) (bool, error) {
-			if t.Implements(typeOfmultipartFile) || t == typeOfmultipartFileHeader {
+			if t.Implements(typeOfMultipartFile) || t == typeOfMultipartFileHeader {
 				s.AddType(jsonschema.String)
 				s.WithFormat("binary")
-				s.WithExtraPropertiesItem(xIsFile, true)
 
 				hasFileUpload = true
 				return true, nil
