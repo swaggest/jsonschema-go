@@ -41,7 +41,9 @@ func (r Resp) Title() string {
 }
 
 type Req struct {
-	InQuery  int                   `query:"in_query" required:"true" description:"Query parameter."`
+	InQuery1 int                   `query:"in_query1" required:"true" description:"Query parameter."`
+	InQuery2 int                   `query:"in_query2" required:"true" description:"Query parameter."`
+	InQuery3 int                   `query:"in_query3" required:"true" description:"Query parameter."`
 	InPath   int                   `path:"in_path"`
 	InCookie string                `cookie:"in_cookie" deprecated:"true"`
 	InHeader float64               `header:"in_header"`
@@ -54,7 +56,9 @@ type Req struct {
 }
 
 type GetReq struct {
-	InQuery  int     `query:"in_query" required:"true" description:"Query parameter."`
+	InQuery1 int     `query:"in_query1" required:"true" description:"Query parameter."`
+	InQuery2 int     `query:"in_query2" required:"true" description:"Query parameter."`
+	InQuery3 int     `query:"in_query3" required:"true" description:"Query parameter."`
 	InPath   int     `path:"in_path"`
 	InCookie string  `cookie:"in_cookie" deprecated:"true"`
 	InHeader float64 `header:"in_header"`

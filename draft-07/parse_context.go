@@ -34,9 +34,10 @@ type ParseContext struct {
 	InlineRoot        bool
 	HijackType        func(t reflect.Type, s *CoreSchemaMetaSchema) (bool, error)
 
-	Path            []string
-	definitions     map[refl.TypeString]CoreSchemaMetaSchema // list of all definition objects
-	definitionRefs  map[refl.TypeString]Ref
-	definitionAlloc map[string]refl.TypeString // index of allocated TypeNames
-	typeCycles      map[refl.TypeString]bool
+	Path             []string
+	WalkedProperties []string
+	definitions      map[refl.TypeString]CoreSchemaMetaSchema // list of all definition objects
+	definitionRefs   map[refl.TypeString]Ref
+	definitionAlloc  map[string]refl.TypeString // index of allocated TypeNames
+	typeCycles       map[refl.TypeString]bool
 }

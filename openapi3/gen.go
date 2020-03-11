@@ -106,10 +106,13 @@ func (g *Generator) parseRequestBody(o *Operation, input interface{}, tag, mime 
 }
 
 func (g *Generator) parseParametersIn(o *Operation, input interface{}, in ParameterIn) error {
+	var jpc *jsonschema.ParseContext
+
 	schema, err := g.Parse(input,
 		jsonschema.DefinitionsPrefix("#/components/parameters/"),
 		jsonschema.InlineRefs,
 		jsonschema.PropertyNameTag(string(in)),
+		func(pc *jsonschema.ParseContext) { jpc = pc },
 	)
 	if err != nil {
 		return err
@@ -120,7 +123,12 @@ func (g *Generator) parseParametersIn(o *Operation, input interface{}, in Parame
 		required[name] = true
 	}
 
-	for name, prop := range schema.Properties {
+	for _, name := range jpc.WalkedProperties {
+		prop, ok := schema.Properties[name]
+		if !ok {
+			continue
+		}
+
 		s := SchemaOrRef{}
 		s.FromJSONSchema(prop)
 
@@ -155,10 +163,13 @@ func (g *Generator) parseParametersIn(o *Operation, input interface{}, in Parame
 }
 
 func (g *Generator) parseResponseHeader(output interface{}) (map[string]HeaderOrRef, error) {
+	var jpc *jsonschema.ParseContext
+
 	schema, err := g.Parse(output,
 		jsonschema.DefinitionsPrefix("#/components/headers/"),
 		jsonschema.InlineRefs,
 		jsonschema.PropertyNameTag("header"),
+		func(pc *jsonschema.ParseContext) { jpc = pc },
 	)
 	if err != nil {
 		return nil, err
@@ -171,7 +182,12 @@ func (g *Generator) parseResponseHeader(output interface{}) (map[string]HeaderOr
 
 	res := make(map[string]HeaderOrRef, len(schema.Properties))
 
-	for name, prop := range schema.Properties {
+	for _, name := range jpc.WalkedProperties {
+		prop, ok := schema.Properties[name]
+		if !ok {
+			continue
+		}
+
 		s := SchemaOrRef{}
 		s.FromJSONSchema(prop)
 

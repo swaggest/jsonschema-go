@@ -302,6 +302,8 @@ func (g *Generator) walkProperties(v reflect.Value, parent *CoreSchemaMetaSchema
 
 		propName := strings.Split(tag, ",")[0]
 
+		pc.WalkedProperties = append(pc.WalkedProperties, propName)
+
 		required := false
 		err := refl.ReadBoolTag(field.Tag, "required", &required)
 		if err != nil {

@@ -11,7 +11,27 @@
    "get": {
     "parameters": [
      {
-      "name": "in_query",
+      "name": "in_query1",
+      "in": "query",
+      "description": "Query parameter.",
+      "required": true,
+      "schema": {
+       "type": "integer",
+       "description": "Query parameter."
+      }
+     },
+     {
+      "name": "in_query2",
+      "in": "query",
+      "description": "Query parameter.",
+      "required": true,
+      "schema": {
+       "type": "integer",
+       "description": "Query parameter."
+      }
+     },
+     {
+      "name": "in_query3",
       "in": "query",
       "description": "Query parameter.",
       "required": true,
@@ -69,7 +89,27 @@
    "post": {
     "parameters": [
      {
-      "name": "in_query",
+      "name": "in_query1",
+      "in": "query",
+      "description": "Query parameter.",
+      "required": true,
+      "schema": {
+       "type": "integer",
+       "description": "Query parameter."
+      }
+     },
+     {
+      "name": "in_query2",
+      "in": "query",
+      "description": "Query parameter.",
+      "required": true,
+      "schema": {
+       "type": "integer",
+       "description": "Query parameter."
+      }
+     },
+     {
+      "name": "in_query3",
       "in": "query",
       "description": "Query parameter.",
       "required": true,
