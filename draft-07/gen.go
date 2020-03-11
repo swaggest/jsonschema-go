@@ -215,7 +215,7 @@ func (g *Generator) parse(i interface{}, pc *ParseContext) (schema CoreSchemaMet
 		elemType := refl.DeepIndirect(t.Elem())
 
 		pc.Path = append(pc.Path, "{}")
-		additionalPropertiesSchema, err := g.parse(reflect.Zero(elemType), pc)
+		additionalPropertiesSchema, err := g.parse(reflect.Zero(elemType).Interface(), pc)
 		if err != nil {
 			return schema, err
 		}

@@ -150,6 +150,12 @@
        }
       }
      },
+     "map": {
+      "type": "object",
+      "additionalProperties": {
+       "type": "integer"
+      }
+     },
      "parent": {
       "$ref": "#/components/schemas/Openapi3TestResp"
      }
