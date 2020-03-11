@@ -16,6 +16,7 @@ var (
 	typeOfJSONRawMsg      = reflect.TypeOf(json.RawMessage{})
 	typeOfTime            = reflect.TypeOf(time.Time{})
 	typeOfTextUnmarshaler = reflect.TypeOf((*encoding.TextUnmarshaler)(nil)).Elem()
+	typeOfEmptyInterface  = reflect.TypeOf((*interface{})(nil)).Elem()
 )
 
 type Described interface {
@@ -86,12 +87,12 @@ func (g *Generator) parse(i interface{}, pc *ParseContext) (schema CoreSchemaMet
 		v          = reflect.ValueOf(i)
 	)
 
-	if t == nil {
-		return CoreSchemaMetaSchema{}, nil
-	}
-
 	defer func() {
 		pc.Path = pc.Path[:len(pc.Path)-1]
+
+		if t == nil {
+			return
+		}
 
 		if schema.Ref != nil {
 			return
@@ -130,14 +131,8 @@ func (g *Generator) parse(i interface{}, pc *ParseContext) (schema CoreSchemaMet
 		//println(typeString, t.PkgPath())
 	}()
 
-	if mappedTo, ok := g.getMappedType(t); ok {
-		t = reflect.TypeOf(mappedTo)
-		v = reflect.ValueOf(mappedTo)
-	}
-
-	// Shortcut on embedded map or slice.
-	if et := refl.FindEmbeddedSliceOrMap(i); et != nil {
-		t = et
+	if t == nil || t == typeOfEmptyInterface {
+		return schema, nil
 	}
 
 	if t.Kind() == reflect.Ptr {
@@ -146,6 +141,22 @@ func (g *Generator) parse(i interface{}, pc *ParseContext) (schema CoreSchemaMet
 
 	t = refl.DeepIndirect(t)
 	typeString = refl.GoType(t)
+
+	if t == nil || t == typeOfEmptyInterface {
+		return schema, nil
+	}
+
+	if mappedTo, found := g.typesMap[typeString]; found {
+		t = refl.DeepIndirect(reflect.TypeOf(mappedTo))
+		typeString = refl.GoType(t)
+
+		v = reflect.ValueOf(mappedTo)
+	}
+
+	// Shortcut on embedded map or slice.
+	if et := refl.FindEmbeddedSliceOrMap(i); et != nil {
+		t = et
+	}
 
 	if t == typeOfTime {
 		schema.AddType(String)
@@ -295,7 +306,8 @@ func (g *Generator) walkProperties(v reflect.Value, parent *CoreSchemaMetaSchema
 		fieldVal := v.Field(i).Interface()
 
 		ft := t.Field(i).Type
-		if fieldVal == nil && ft.String() != "interface {}" {
+
+		if fieldVal == nil && ft != typeOfEmptyInterface {
 			fieldVal = reflect.New(t.Field(i).Type).Interface()
 		}
 

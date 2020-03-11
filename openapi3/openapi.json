@@ -164,6 +164,9 @@
       "type": "object",
       "additionalProperties": {}
      },
+     "nullableWhatever": {
+      "nullable": true
+     },
      "parent": {
       "$ref": "#/components/schemas/Openapi3TestResp"
      },
