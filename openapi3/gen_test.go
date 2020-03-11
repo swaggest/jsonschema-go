@@ -22,12 +22,14 @@ type Resp struct {
 		Foo string  `json:"foo" default:"baz" required:"true" pattern:"\\d+"`
 		Bar float64 `json:"bar" description:"This is Bar."`
 	} `json:"info"`
-	Parent           *Resp                  `json:"parent"`
-	Map              map[string]int64       `json:"map"`
-	MapOfAnything    map[string]interface{} `json:"mapOfAnything"`
-	ArrayOfAnything  []interface{}          `json:"arrayOfAnything"`
-	Whatever         interface{}            `json:"whatever"`
-	NullableWhatever *interface{}           `json:"nullableWhatever,omitempty"`
+	Parent               *Resp                  `json:"parent"`
+	Map                  map[string]int64       `json:"map"`
+	MapOfAnything        map[string]interface{} `json:"mapOfAnything"`
+	ArrayOfAnything      []interface{}          `json:"arrayOfAnything"`
+	Whatever             interface{}            `json:"whatever"`
+	NullableWhatever     *interface{}           `json:"nullableWhatever,omitempty"`
+	RecursiveArray       []WeirdResp            `json:"recursiveArray"`
+	RecursiveStructArray []Resp                 `json:"recursiveStructArray"`
 }
 
 func (r Resp) Describe() string {
@@ -69,6 +71,9 @@ func TestGenerator_SetResponse(t *testing.T) {
 	assert.NoError(t, err)
 
 	err = g.SetJSONResponse(&op, new(WeirdResp), http.StatusOK)
+	assert.NoError(t, err)
+
+	err = g.SetJSONResponse(&op, new([]WeirdResp), http.StatusConflict)
 	assert.NoError(t, err)
 
 	s.Paths.WithMapOfPathItemValuesItem(

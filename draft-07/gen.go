@@ -218,7 +218,11 @@ func (g *Generator) parse(i interface{}, pc *ParseContext) (schema CoreSchemaMet
 		elemType := refl.DeepIndirect(t.Elem())
 
 		pc.Path = append(pc.Path, "[]")
-		itemsSchema, err := g.parse(reflect.Zero(elemType).Interface(), pc)
+		itemValue := reflect.Zero(elemType).Interface()
+		if itemValue == nil && elemType != typeOfEmptyInterface {
+			itemValue = reflect.New(elemType).Interface()
+		}
+		itemsSchema, err := g.parse(itemValue, pc)
 		if err != nil {
 			return schema, err
 		}
@@ -230,7 +234,11 @@ func (g *Generator) parse(i interface{}, pc *ParseContext) (schema CoreSchemaMet
 		elemType := refl.DeepIndirect(t.Elem())
 
 		pc.Path = append(pc.Path, "{}")
-		additionalPropertiesSchema, err := g.parse(reflect.Zero(elemType).Interface(), pc)
+		itemValue := reflect.Zero(elemType).Interface()
+		if itemValue == nil && elemType != typeOfEmptyInterface {
+			itemValue = reflect.New(elemType).Interface()
+		}
+		additionalPropertiesSchema, err := g.parse(itemValue, pc)
 		if err != nil {
 			return schema, err
 		}

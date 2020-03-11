@@ -203,12 +203,13 @@ func (g *Generator) SetJSONResponse(o *Operation, output interface{}, httpStatus
 		o.Responses.MapOfResponseOrRefValues = make(map[string]ResponseOrRef, 1)
 	}
 
+	oaiSchema := SchemaOrRef{}
+	oaiSchema.FromJSONSchema(schema.ToSchema())
+
 	resp := Response{
 		Content: map[string]MediaType{
 			"application/json": {
-				Schema: &SchemaOrRef{
-					SchemaReference: &SchemaReference{Ref: *schema.Ref},
-				},
+				Schema:        &oaiSchema,
 				Example:       nil,
 				Examples:      nil,
 				Encoding:      nil,

@@ -77,6 +77,20 @@
         }
        }
       }
+     },
+     "409": {
+      "description": "",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "array",
+         "items": {
+          "$ref": "#/components/schemas/Openapi3TestResp"
+         },
+         "nullable": true
+        }
+       }
+      }
      }
     }
    }
@@ -169,6 +183,18 @@
      },
      "parent": {
       "$ref": "#/components/schemas/Openapi3TestResp"
+     },
+     "recursiveArray": {
+      "type": "array",
+      "items": {
+       "$ref": "#/components/schemas/Openapi3TestResp"
+      }
+     },
+     "recursiveStructArray": {
+      "type": "array",
+      "items": {
+       "$ref": "#/components/schemas/Openapi3TestResp"
+      }
      },
      "whatever": {}
     },
