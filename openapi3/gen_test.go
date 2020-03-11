@@ -53,6 +53,13 @@ type Req struct {
 	File2    *multipart.FileHeader `formData:"upload2"`
 }
 
+type GetReq struct {
+	InQuery  int     `query:"in_query" required:"true" description:"Query parameter."`
+	InPath   int     `path:"in_path"`
+	InCookie string  `cookie:"in_cookie" deprecated:"true"`
+	InHeader float64 `header:"in_header"`
+}
+
 func TestGenerator_SetResponse(t *testing.T) {
 	g := openapi3.Generator{}
 
@@ -67,7 +74,7 @@ func TestGenerator_SetResponse(t *testing.T) {
 
 	//op.WithDeprecated(true)
 
-	err := g.SetRequest(&op, new(Req))
+	err := g.SetRequest(&op, new(Req), http.MethodPost)
 	assert.NoError(t, err)
 
 	err = g.SetJSONResponse(&op, new(WeirdResp), http.StatusOK)
@@ -76,12 +83,26 @@ func TestGenerator_SetResponse(t *testing.T) {
 	err = g.SetJSONResponse(&op, new([]WeirdResp), http.StatusConflict)
 	assert.NoError(t, err)
 
+	pathItem := s.Paths.MapOfPathItemValues["/somewhere/{in_path}"]
+	pathItem.
+		WithSummary("Path Summary").
+		WithDescription("Path Description")
+
+	pathItem.WithOperation(http.MethodPost, op)
+
+	op = openapi3.Operation{}
+
+	err = g.SetRequest(&op, new(GetReq), http.MethodGet)
+	assert.NoError(t, err)
+
+	err = g.SetJSONResponse(&op, new(Resp), http.StatusOK)
+	assert.NoError(t, err)
+
+	pathItem.WithOperation(http.MethodGet, op)
+
 	s.Paths.WithMapOfPathItemValuesItem(
 		"/somewhere/{in_path}",
-		*((&openapi3.PathItem{}).
-			WithSummary("Path Summary").
-			WithDescription("Path Description").
-			WithOperation(http.MethodPost, op)),
+		pathItem,
 	)
 
 	b, err := json.MarshalIndent(s, "", " ")

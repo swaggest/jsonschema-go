@@ -4,6 +4,7 @@ import (
 	jsonschema "github.com/swaggest/jsonschema-go/draft-07"
 	"github.com/swaggest/jsonschema-go/refl"
 	"mime/multipart"
+	"net/http"
 	"reflect"
 	"strconv"
 	"strings"
@@ -14,14 +15,14 @@ type Generator struct {
 	Spec *Spec
 }
 
-func (g *Generator) SetRequest(o *Operation, input interface{}) error {
+func (g *Generator) SetRequest(o *Operation, input interface{}, httpMethod string) error {
 	return refl.JoinErrors(
 		g.parseParametersIn(o, input, ParameterInQuery),
 		g.parseParametersIn(o, input, ParameterInPath),
 		g.parseParametersIn(o, input, ParameterInCookie),
 		g.parseParametersIn(o, input, ParameterInHeader),
-		g.parseRequestBody(o, input, "json", mimeJSON),
-		g.parseRequestBody(o, input, "formData", mimeFormUrlencoded),
+		g.parseRequestBody(o, input, "json", mimeJSON, httpMethod),
+		g.parseRequestBody(o, input, "formData", mimeFormUrlencoded, httpMethod),
 	)
 }
 
@@ -36,7 +37,13 @@ const (
 	mimeMultipart      = "multipart/form-data"
 )
 
-func (g *Generator) parseRequestBody(o *Operation, input interface{}, tag, mime string) error {
+func (g *Generator) parseRequestBody(o *Operation, input interface{}, tag, mime string, httpMethod string) error {
+	httpMethod = strings.ToUpper(httpMethod)
+
+	if httpMethod == http.MethodGet || httpMethod == http.MethodHead || !refl.HasTaggedFields(input, tag) {
+		return nil
+	}
+
 	hasFileUpload := false
 
 	schema, err := g.Parse(input,
