@@ -40,6 +40,7 @@ func (r Ref) Schema() CoreSchemaMetaSchema {
 }
 
 type Generator struct {
+	DefaultOptions []func(*ParseContext)
 	typesMap       map[refl.TypeString]interface{}
 	reflectGoTypes bool
 }
@@ -63,6 +64,10 @@ func (g *Generator) Parse(i interface{}, options ...func(*ParseContext)) (CoreSc
 	pc.PropertyNameTag = "json"
 	pc.Path = []string{"#"}
 	pc.typeCycles = make(map[refl.TypeString]bool)
+
+	for _, option := range g.DefaultOptions {
+		option(&pc)
+	}
 
 	for _, option := range options {
 		option(&pc)

@@ -19,7 +19,18 @@ func PropertyNameTag(tag string) func(*ParseContext) {
 
 func HijackType(f func(t reflect.Type, s *CoreSchemaMetaSchema) (bool, error)) func(*ParseContext) {
 	return func(pc *ParseContext) {
-		pc.HijackType = f
+		if pc.HijackType != nil {
+			prev := pc.HijackType
+			pc.HijackType = func(t reflect.Type, s *CoreSchemaMetaSchema) (b bool, err error) {
+				ret, err := prev(t, s)
+				if err != nil || ret {
+					return ret, err
+				}
+				return f(t, s)
+			}
+		} else {
+			pc.HijackType = f
+		}
 	}
 }
 

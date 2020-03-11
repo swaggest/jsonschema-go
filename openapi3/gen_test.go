@@ -3,12 +3,30 @@ package openapi3_test
 import (
 	"encoding/json"
 	"github.com/stretchr/testify/assert"
+	jsonschema "github.com/swaggest/jsonschema-go/draft-07"
 	"github.com/swaggest/jsonschema-go/openapi3"
+	"github.com/swaggest/swgen"
 	"io/ioutil"
 	"mime/multipart"
 	"net/http"
+	"reflect"
 	"testing"
 )
+
+// ISOWeek is a week identifier.
+type ISOWeek string
+
+// SwaggerDef returns swagger definition.
+func (ISOWeek) SwaggerDef() swgen.SwaggerData {
+	s := swgen.SwaggerData{}
+
+	s.Description = "ISO Week"
+	s.Example = "2006-W43"
+	s.Type = "string"
+	s.Pattern = `^[0-9]{4}-W(0[1-9]|[1-4][0-9]|5[0-2])$`
+
+	return s
+}
 
 type WeirdResp interface {
 	Boo()
@@ -30,6 +48,7 @@ type Resp struct {
 	NullableWhatever     *interface{}           `json:"nullableWhatever,omitempty"`
 	RecursiveArray       []WeirdResp            `json:"recursiveArray"`
 	RecursiveStructArray []Resp                 `json:"recursiveStructArray"`
+	CustomType           ISOWeek                `json:"customType"`
 }
 
 func (r Resp) Describe() string {
@@ -66,6 +85,17 @@ type GetReq struct {
 
 func TestGenerator_SetResponse(t *testing.T) {
 	g := openapi3.Generator{}
+	g.DefaultOptions = append(g.DefaultOptions,
+		jsonschema.HijackType(func(t reflect.Type, s *jsonschema.CoreSchemaMetaSchema) (bool, error) {
+			v := reflect.Zero(t).Interface()
+			if def, ok := v.(swgen.SchemaDefinition); ok {
+				d := def.SwaggerDef()
+				openapi3.LoadFromSwgen(d, s)
+			}
+
+			return false, nil
+		}),
+	)
 
 	s := openapi3.Spec{}
 	s.Info.Title = "SampleAPI"

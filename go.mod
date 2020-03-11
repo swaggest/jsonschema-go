@@ -7,6 +7,7 @@ require (
 	github.com/segmentio/encoding v0.1.0
 	github.com/stretchr/testify v1.4.0
 	github.com/swaggest/assertjson v1.0.0
+	github.com/swaggest/swgen v0.6.18
 	github.com/swaggest/swgui v1.0.6
 	github.com/yudai/gojsondiff v1.0.0
 )
