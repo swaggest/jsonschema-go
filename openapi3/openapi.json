@@ -166,7 +166,8 @@
      },
      "parent": {
       "$ref": "#/components/schemas/Openapi3TestResp"
-     }
+     },
+     "whatever": {}
     },
     "description": "This is a sample response.",
     "nullable": true

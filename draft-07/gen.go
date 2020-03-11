@@ -294,7 +294,8 @@ func (g *Generator) walkProperties(v reflect.Value, parent *CoreSchemaMetaSchema
 
 		fieldVal := v.Field(i).Interface()
 
-		if fieldVal == nil {
+		ft := t.Field(i).Type
+		if fieldVal == nil && ft.String() != "interface {}" {
 			fieldVal = reflect.New(t.Field(i).Type).Interface()
 		}
 

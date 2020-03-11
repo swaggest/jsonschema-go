@@ -26,6 +26,7 @@ type Resp struct {
 	Map             map[string]int64       `json:"map"`
 	MapOfAnything   map[string]interface{} `json:"mapOfAnything"`
 	ArrayOfAnything []interface{}          `json:"arrayOfAnything"`
+	Whatever        interface{}            `json:"whatever"`
 }
 
 func (r Resp) Describe() string {
