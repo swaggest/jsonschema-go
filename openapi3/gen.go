@@ -4,7 +4,6 @@ import (
 	jsonschema "github.com/swaggest/jsonschema-go/draft-07"
 	"github.com/swaggest/jsonschema-go/refl"
 	"mime/multipart"
-	"net/http"
 	"reflect"
 	"strconv"
 	"strings"
@@ -194,7 +193,7 @@ func (g *Generator) parseResponseHeader(output interface{}) (map[string]HeaderOr
 	return res, nil
 }
 
-func (g *Generator) SetJSONResponse(o *Operation, output interface{}) error {
+func (g *Generator) SetJSONResponse(o *Operation, output interface{}, httpStatus int) error {
 	schema, err := g.Parse(output, jsonschema.DefinitionsPrefix("#/components/schemas/"))
 	if err != nil {
 		return err
@@ -236,7 +235,7 @@ func (g *Generator) SetJSONResponse(o *Operation, output interface{}) error {
 		g.Spec.Components.Schemas.WithMapOfSchemaOrRefValuesItem(name, s)
 	}
 
-	o.Responses.MapOfResponseOrRefValues[strconv.Itoa(http.StatusOK)] = ResponseOrRef{
+	o.Responses.MapOfResponseOrRefValues[strconv.Itoa(httpStatus)] = ResponseOrRef{
 		Response: &resp,
 	}
 

@@ -10,6 +10,10 @@ import (
 	"testing"
 )
 
+type WeirdResp interface {
+	Boo()
+}
+
 type Resp struct {
 	HeaderField string `header:"X-Header-Field" description:"Sample header response."`
 	Field1      int    `json:"field1"`
@@ -50,6 +54,7 @@ func TestGenerator_SetResponse(t *testing.T) {
 	s.Info.Version = "1.2.3"
 
 	g.Spec = &s
+	g.AddTypeMapping(new(WeirdResp), new(Resp))
 
 	op := openapi3.Operation{}
 
@@ -58,7 +63,7 @@ func TestGenerator_SetResponse(t *testing.T) {
 	err := g.SetRequest(&op, new(Req))
 	assert.NoError(t, err)
 
-	err = g.SetJSONResponse(&op, new(Resp))
+	err = g.SetJSONResponse(&op, new(WeirdResp), http.StatusOK)
 	assert.NoError(t, err)
 
 	s.Paths.WithMapOfPathItemValuesItem(

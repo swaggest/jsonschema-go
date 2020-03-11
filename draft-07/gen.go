@@ -43,6 +43,13 @@ type Generator struct {
 	reflectGoTypes bool
 }
 
+func (g *Generator) AddTypeMapping(src, dst interface{}) {
+	if g.typesMap == nil {
+		g.typesMap = map[refl.TypeString]interface{}{}
+	}
+	g.typesMap[refl.GoType(refl.DeepIndirect(reflect.TypeOf(src)))] = dst
+}
+
 func (g *Generator) getMappedType(t reflect.Type) (dst interface{}, found bool) {
 	goTypeName := refl.GoType(refl.DeepIndirect(t))
 	dst, found = g.typesMap[goTypeName]
