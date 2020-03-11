@@ -128,6 +128,10 @@
     "title": "Sample Response",
     "type": "object",
     "properties": {
+     "arrayOfAnything": {
+      "type": "array",
+      "items": {}
+     },
      "field1": {
       "type": "integer"
      },
@@ -155,6 +159,10 @@
       "additionalProperties": {
        "type": "integer"
       }
+     },
+     "mapOfAnything": {
+      "type": "object",
+      "additionalProperties": {}
      },
      "parent": {
       "$ref": "#/components/schemas/Openapi3TestResp"

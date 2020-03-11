@@ -86,6 +86,10 @@ func (g *Generator) parse(i interface{}, pc *ParseContext) (schema CoreSchemaMet
 		v          = reflect.ValueOf(i)
 	)
 
+	if t == nil {
+		return CoreSchemaMetaSchema{}, nil
+	}
+
 	defer func() {
 		pc.Path = pc.Path[:len(pc.Path)-1]
 
