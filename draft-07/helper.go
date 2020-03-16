@@ -21,23 +21,25 @@ type Enum interface {
 }
 
 // Exporter returns JSON Schema in library agnostic way.
+//
+// TODO remove?
 type Exporter interface {
 	JSONSchema() (map[string]interface{}, error)
 }
 
-// Customizer alters reflected JSON Schema.
-type Customizer interface {
-	CustomizeJSONSchema(schema *CoreSchemaMetaSchema) error
+// Setup alters reflected JSON Schema.
+type Setup interface {
+	SetUpJSONSchema(schema *Schema) error
 }
 
-func (i *CoreSchemaMetaSchema) ToSchema() Schema {
-	return Schema{
+func (i *Schema) ToSchema() SchemaOrBool {
+	return SchemaOrBool{
 		TypeObject: i,
 	}
 }
 
 // JSONSchema exports JSON Schema as a map.
-func (i CoreSchemaMetaSchema) JSONSchema() (map[string]interface{}, error) {
+func (i Schema) JSONSchema() (map[string]interface{}, error) {
 	jsonBytes, err := json.Marshal(i)
 	if err != nil {
 		return nil, err
@@ -57,11 +59,11 @@ func (i CoreSchemaMetaSchema) JSONSchema() (map[string]interface{}, error) {
 }
 
 // Type references simple type.
-func (i SimpleTypes) Type() Type {
+func (i SimpleType) Type() Type {
 	return Type{SimpleTypes: &i}
 }
 
-func (i *CoreSchemaMetaSchema) AddType(t SimpleTypes) {
+func (i *Schema) AddType(t SimpleType) {
 	if i.Type == nil {
 		i.WithType(t.Type())
 		return
@@ -71,7 +73,7 @@ func (i *CoreSchemaMetaSchema) AddType(t SimpleTypes) {
 		if *i.Type.SimpleTypes == t {
 			return
 		} else {
-			i.Type.SliceOfSimpleTypesValues = []SimpleTypes{*i.Type.SimpleTypes, t}
+			i.Type.SliceOfSimpleTypesValues = []SimpleType{*i.Type.SimpleTypes, t}
 			i.Type.SimpleTypes = nil
 			return
 		}

@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-func (s *SchemaOrRef) FromJSONSchema(schema jsonschema.Schema) {
+func (s *SchemaOrRef) FromJSONSchema(schema jsonschema.SchemaOrBool) {
 	if schema.TypeBoolean != nil {
 		s.fromBool(*schema.TypeBoolean)
 		return
@@ -145,7 +145,7 @@ func (s *SchemaOrRef) FromJSONSchema(schema jsonschema.Schema) {
 	// * os.XML
 }
 
-func fromSchemaArray(os *[]SchemaOrRef, js []jsonschema.Schema) {
+func fromSchemaArray(os *[]SchemaOrRef, js []jsonschema.SchemaOrBool) {
 	if len(js) == 0 {
 		return
 	}

@@ -5,11 +5,27 @@ package openapi3
 import (
 	jsonschema "github.com/swaggest/jsonschema-go/draft-07"
 	"github.com/swaggest/swgen"
+	"reflect"
 )
 
-func LoadFromSwgen(d swgen.SwaggerData, s *jsonschema.CoreSchemaMetaSchema) {
+func SwgenHijacker(v reflect.Value, s *jsonschema.Schema) (bool, error) {
+	i := v.Interface()
+	if def, ok := i.(swgen.SwaggerData); ok {
+		LoadFromSwgen(def, s)
+		return true, nil
+	}
+
+	if def, ok := i.(swgen.SchemaDefinition); ok {
+		d := def.SwaggerDef()
+		LoadFromSwgen(d, s)
+	}
+
+	return false, nil
+}
+
+func LoadFromSwgen(d swgen.SwaggerData, s *jsonschema.Schema) {
 	if d.Type != "" {
-		s.AddType(jsonschema.SimpleTypes(d.Type))
+		s.AddType(jsonschema.SimpleType(d.Type))
 	}
 	if d.Nullable {
 		s.AddType(jsonschema.Null)

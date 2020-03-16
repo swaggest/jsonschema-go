@@ -39,7 +39,7 @@ type Person struct {
 	Role      Role   `json:"role" description:"The role of person."`
 }
 
-func (p *Person) CustomizeJSONSchema(schema *jsonschema.CoreSchemaMetaSchema) error {
+func (p *Person) SetUpJSONSchema(schema *jsonschema.Schema) error {
 	schema.WithTitle("Person")
 	return nil
 }
@@ -49,7 +49,7 @@ type Org struct {
 	Employees    []Person `json:"employees"`
 }
 
-func (o Org) CustomizeJSONSchema(schema *jsonschema.CoreSchemaMetaSchema) error {
+func (o Org) SetUpJSONSchema(schema *jsonschema.Schema) error {
 	schema.WithTitle("Organization")
 	return nil
 }

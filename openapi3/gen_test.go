@@ -9,7 +9,6 @@ import (
 	"io/ioutil"
 	"mime/multipart"
 	"net/http"
-	"reflect"
 	"testing"
 )
 
@@ -32,6 +31,8 @@ type WeirdResp interface {
 	Boo()
 }
 
+type UUID [16]byte
+
 type Resp struct {
 	HeaderField string `header:"X-Header-Field" description:"Sample header response."`
 	Field1      int    `json:"field1"`
@@ -49,13 +50,14 @@ type Resp struct {
 	RecursiveArray       []WeirdResp            `json:"recursiveArray"`
 	RecursiveStructArray []Resp                 `json:"recursiveStructArray"`
 	CustomType           ISOWeek                `json:"customType"`
+	UUID                 UUID                   `json:"uuid"`
 }
 
-func (r Resp) Describe() string {
+func (r *Resp) Describe() string {
 	return "This is a sample response."
 }
 
-func (r Resp) Title() string {
+func (r *Resp) Title() string {
 	return "Sample Response"
 }
 
@@ -72,6 +74,7 @@ type Req struct {
 	InForm2  string                `formData:"in_form2"`
 	File1    multipart.File        `formData:"upload1"`
 	File2    *multipart.FileHeader `formData:"upload2"`
+	UUID     UUID                  `header:"uuid"`
 }
 
 type GetReq struct {
@@ -85,17 +88,15 @@ type GetReq struct {
 
 func TestGenerator_SetResponse(t *testing.T) {
 	g := openapi3.Generator{}
-	g.DefaultOptions = append(g.DefaultOptions,
-		jsonschema.HijackType(func(t reflect.Type, s *jsonschema.CoreSchemaMetaSchema) (bool, error) {
-			v := reflect.Zero(t).Interface()
-			if def, ok := v.(swgen.SchemaDefinition); ok {
-				d := def.SwaggerDef()
-				openapi3.LoadFromSwgen(d, s)
-			}
+	g.DefaultOptions = append(g.DefaultOptions, jsonschema.HijackType(openapi3.SwgenHijacker))
 
-			return false, nil
-		}),
-	)
+	// Add custom type mappings
+	uuidDef := swgen.SwaggerData{}
+	uuidDef.Type = "string"
+	uuidDef.Format = "uuid"
+	uuidDef.Example = "248df4b7-aa70-47b8-a036-33ac447e668d"
+
+	g.AddTypeMapping(UUID{}, uuidDef)
 
 	s := openapi3.Spec{}
 	s.Info.Title = "SampleAPI"

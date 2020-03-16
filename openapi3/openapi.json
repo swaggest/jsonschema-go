@@ -139,6 +139,13 @@
       "schema": {
        "type": "number"
       }
+     },
+     {
+      "name": "uuid",
+      "in": "header",
+      "schema": {
+       "$ref": "#/components/schemas/Openapi3TestUUID"
+      }
      }
     ],
     "requestBody": {
@@ -171,7 +178,7 @@
       "content": {
        "application/json": {
         "schema": {
-         "$ref": "#/components/schemas/Openapi3TestResp"
+         "$ref": "#/components/schemas/Openapi3TestWeirdResp"
         }
        }
       }
@@ -183,7 +190,7 @@
         "schema": {
          "type": "array",
          "items": {
-          "$ref": "#/components/schemas/Openapi3TestResp"
+          "$ref": "#/components/schemas/Openapi3TestWeirdResp"
          },
          "nullable": true
         }
@@ -294,7 +301,7 @@
      "recursiveArray": {
       "type": "array",
       "items": {
-       "$ref": "#/components/schemas/Openapi3TestResp"
+       "$ref": "#/components/schemas/Openapi3TestWeirdResp"
       }
      },
      "recursiveStructArray": {
@@ -302,6 +309,83 @@
       "items": {
        "$ref": "#/components/schemas/Openapi3TestResp"
       }
+     },
+     "uuid": {
+      "$ref": "#/components/schemas/Openapi3TestUUID"
+     },
+     "whatever": {}
+    },
+    "description": "This is a sample response.",
+    "nullable": true
+   },
+   "Openapi3TestUUID": {
+    "type": "string",
+    "format": "uuid",
+    "example": "248df4b7-aa70-47b8-a036-33ac447e668d"
+   },
+   "Openapi3TestWeirdResp": {
+    "title": "Sample Response",
+    "type": "object",
+    "properties": {
+     "arrayOfAnything": {
+      "type": "array",
+      "items": {}
+     },
+     "customType": {
+      "$ref": "#/components/schemas/Openapi3TestISOWeek"
+     },
+     "field1": {
+      "type": "integer"
+     },
+     "field2": {
+      "type": "string"
+     },
+     "info": {
+      "required": [
+       "foo"
+      ],
+      "type": "object",
+      "properties": {
+       "bar": {
+        "type": "number",
+        "description": "This is Bar."
+       },
+       "foo": {
+        "pattern": "\\d+",
+        "type": "string"
+       }
+      }
+     },
+     "map": {
+      "type": "object",
+      "additionalProperties": {
+       "type": "integer"
+      }
+     },
+     "mapOfAnything": {
+      "type": "object",
+      "additionalProperties": {}
+     },
+     "nullableWhatever": {
+      "nullable": true
+     },
+     "parent": {
+      "$ref": "#/components/schemas/Openapi3TestResp"
+     },
+     "recursiveArray": {
+      "type": "array",
+      "items": {
+       "$ref": "#/components/schemas/Openapi3TestWeirdResp"
+      }
+     },
+     "recursiveStructArray": {
+      "type": "array",
+      "items": {
+       "$ref": "#/components/schemas/Openapi3TestResp"
+      }
+     },
+     "uuid": {
+      "$ref": "#/components/schemas/Openapi3TestUUID"
      },
      "whatever": {}
     },

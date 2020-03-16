@@ -49,8 +49,23 @@ func (g *Generator) parseRequestBody(o *Operation, input interface{}, tag, mime 
 	schema, err := g.Parse(input,
 		jsonschema.DefinitionsPrefix("#/components/schemas/"+strings.Title(tag)),
 		jsonschema.PropertyNameTag(tag),
-		jsonschema.HijackType(func(t reflect.Type, s *jsonschema.CoreSchemaMetaSchema) (bool, error) {
-			if t.Implements(typeOfMultipartFile) || t == typeOfMultipartFileHeader {
+		jsonschema.HijackType(func(v reflect.Value, s *jsonschema.Schema) (bool, error) {
+			vv := v.Interface()
+
+			found := false
+			if _, ok := vv.(*multipart.File); ok {
+				found = true
+			}
+
+			if _, ok := vv.(*multipart.FileHeader); ok {
+				found = true
+			}
+
+			if v.Type().Implements(typeOfMultipartFile) || v.Type() == typeOfMultipartFileHeader {
+				found = true
+			}
+
+			if found {
 				s.AddType(jsonschema.String)
 				s.WithFormat("binary")
 
@@ -109,8 +124,8 @@ func (g *Generator) parseParametersIn(o *Operation, input interface{}, in Parame
 	var jpc *jsonschema.ParseContext
 
 	schema, err := g.Parse(input,
-		jsonschema.DefinitionsPrefix("#/components/parameters/"),
-		jsonschema.InlineRefs,
+		jsonschema.DefinitionsPrefix("#/components/schemas/"),
+		jsonschema.InlineRoot,
 		jsonschema.PropertyNameTag(string(in)),
 		func(pc *jsonschema.ParseContext) { jpc = pc },
 	)
@@ -138,7 +153,6 @@ func (g *Generator) parseParametersIn(o *Operation, input interface{}, in Parame
 				In:              in,
 				Description:     prop.TypeObject.Description,
 				Required:        nil,
-				Deprecated:      s.Schema.Deprecated,
 				AllowEmptyValue: nil,
 				Style:           nil,
 				Explode:         nil,
@@ -150,6 +164,10 @@ func (g *Generator) parseParametersIn(o *Operation, input interface{}, in Parame
 				Location:        nil,
 				MapOfAnything:   nil,
 			},
+		}
+
+		if s.Schema != nil {
+			p.Parameter.Deprecated = s.Schema.Deprecated
 		}
 
 		if in == ParameterInPath || required[name] {
@@ -167,7 +185,7 @@ func (g *Generator) parseResponseHeader(output interface{}) (map[string]HeaderOr
 
 	schema, err := g.Parse(output,
 		jsonschema.DefinitionsPrefix("#/components/headers/"),
-		jsonschema.InlineRefs,
+		jsonschema.InlineRoot,
 		jsonschema.PropertyNameTag("header"),
 		func(pc *jsonschema.ParseContext) { jpc = pc },
 	)

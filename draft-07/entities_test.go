@@ -19,7 +19,7 @@ func TestSchema_MarshalJSON_roundtrip_draft7(t *testing.T) {
 	data, err := ioutil.ReadFile("../resources/schema/draft-07.json")
 	require.NoError(t, err)
 
-	s := jsonschema.Schema{}
+	s := jsonschema.SchemaOrBool{}
 	require.NoError(t, json.Unmarshal(data, &s))
 
 	marshaled, err := json.Marshal(s)
@@ -78,7 +78,7 @@ func BenchmarkSchema_UnmarshalJSON(b *testing.B) {
 	b.ReportAllocs()
 	b.ResetTimer()
 
-	s := jsonschema.Schema{}
+	s := jsonschema.SchemaOrBool{}
 	for i := 0; i < b.N; i++ {
 		_ = json.Unmarshal(data, &s)
 	}
@@ -90,7 +90,7 @@ func BenchmarkSchema_UnmarshalJSON_segment(b *testing.B) {
 	b.ReportAllocs()
 	b.ResetTimer()
 
-	s := jsonschema.Schema{}
+	s := jsonschema.SchemaOrBool{}
 	for i := 0; i < b.N; i++ {
 		_ = sejson.Unmarshal(data, &s)
 	}
@@ -102,7 +102,7 @@ func BenchmarkSchema_UnmarshalJSON_jsoniter(b *testing.B) {
 	b.ReportAllocs()
 	b.ResetTimer()
 
-	s := jsonschema.Schema{}
+	s := jsonschema.SchemaOrBool{}
 	for i := 0; i < b.N; i++ {
 		_ = jsoni.Unmarshal(data, &s)
 	}
@@ -125,7 +125,7 @@ func BenchmarkSchema_MarshalJSON_raw(b *testing.B) {
 func BenchmarkSchema_MarshalJSON(b *testing.B) {
 	data, err := ioutil.ReadFile("../resources/schema/draft-07.json")
 	require.NoError(b, err)
-	s := jsonschema.Schema{}
+	s := jsonschema.SchemaOrBool{}
 	require.NoError(b, json.Unmarshal(data, &s))
 
 	b.ReportAllocs()
@@ -139,7 +139,7 @@ func BenchmarkSchema_MarshalJSON(b *testing.B) {
 func BenchmarkSchema_MarshalJSON_segment(b *testing.B) {
 	data, err := ioutil.ReadFile("../resources/schema/draft-07.json")
 	require.NoError(b, err)
-	s := jsonschema.Schema{}
+	s := jsonschema.SchemaOrBool{}
 	require.NoError(b, sejson.Unmarshal(data, &s))
 
 	b.ReportAllocs()
@@ -153,7 +153,7 @@ func BenchmarkSchema_MarshalJSON_segment(b *testing.B) {
 func BenchmarkSchema_MarshalJSON_jsoniter(b *testing.B) {
 	data, err := ioutil.ReadFile("../resources/schema/draft-07.json")
 	require.NoError(b, err)
-	s := jsonschema.Schema{}
+	s := jsonschema.SchemaOrBool{}
 	require.NoError(b, jsoni.Unmarshal(data, &s))
 
 	b.ReportAllocs()

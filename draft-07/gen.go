@@ -32,9 +32,9 @@ type Ref struct {
 	Name string
 }
 
-func (r Ref) Schema() CoreSchemaMetaSchema {
+func (r Ref) Schema() Schema {
 	s := r.Path + r.Name
-	return CoreSchemaMetaSchema{
+	return Schema{
 		Ref: &s,
 	}
 }
@@ -58,7 +58,7 @@ func (g *Generator) getMappedType(t reflect.Type) (dst interface{}, found bool) 
 	return
 }
 
-func (g *Generator) Parse(i interface{}, options ...func(*ParseContext)) (CoreSchemaMetaSchema, error) {
+func (g *Generator) Parse(i interface{}, options ...func(*ParseContext)) (Schema, error) {
 	pc := ParseContext{}
 	pc.DefinitionsPrefix = "#/definitions/"
 	pc.PropertyNameTag = "json"
@@ -75,7 +75,7 @@ func (g *Generator) Parse(i interface{}, options ...func(*ParseContext)) (CoreSc
 
 	schema, err := g.parse(i, &pc)
 	if err == nil && len(pc.definitions) > 0 {
-		schema.Definitions = make(map[string]Schema, len(pc.definitions))
+		schema.Definitions = make(map[string]SchemaOrBool, len(pc.definitions))
 		for typeString, def := range pc.definitions {
 			def := def
 			ref := pc.definitionRefs[typeString]
@@ -85,9 +85,10 @@ func (g *Generator) Parse(i interface{}, options ...func(*ParseContext)) (CoreSc
 	return schema, err
 }
 
-func (g *Generator) parse(i interface{}, pc *ParseContext) (schema CoreSchemaMetaSchema, err error) {
+func (g *Generator) parse(i interface{}, pc *ParseContext) (schema Schema, err error) {
 	var (
 		typeString refl.TypeString
+		defName    string
 		t          = reflect.TypeOf(i)
 		v          = reflect.ValueOf(i)
 	)
@@ -106,34 +107,32 @@ func (g *Generator) parse(i interface{}, pc *ParseContext) (schema CoreSchemaMet
 		if err != nil {
 			return
 		}
-		if customizer, ok := i.(Customizer); ok {
-			err = customizer.CustomizeJSONSchema(&schema)
+		if customizer, ok := i.(Setup); ok { // TODO remove in favor of hijacker?
+			err = customizer.SetUpJSONSchema(&schema)
 		}
 
 		if pc.InlineRefs {
 			return
 		}
 
-		pkgPath := t.PkgPath()
-		if pkgPath == "" || pkgPath == "time" || pkgPath == "encoding/json" {
+		if pc.InlineRoot && len(pc.Path) == 0 {
+			return
+		}
+
+		if defName == "" {
 			return
 		}
 
 		if pc.definitions == nil {
-			pc.definitions = make(map[refl.TypeString]CoreSchemaMetaSchema, 1)
+			pc.definitions = make(map[refl.TypeString]Schema, 1)
 			pc.definitionRefs = make(map[refl.TypeString]Ref, 1)
 		}
-
-		//defName := string(typeString)
-		defName := toCamel(path.Base(pkgPath)) + strings.Title(t.Name())
 
 		pc.definitions[typeString] = schema
 		ref := Ref{Path: pc.DefinitionsPrefix, Name: defName}
 		pc.definitionRefs[typeString] = ref
 
 		schema = ref.Schema()
-
-		//println(typeString, t.PkgPath())
 	}()
 
 	if t == nil || t == typeOfEmptyInterface {
@@ -146,6 +145,10 @@ func (g *Generator) parse(i interface{}, pc *ParseContext) (schema CoreSchemaMet
 
 	t = refl.DeepIndirect(t)
 	typeString = refl.GoType(t)
+	pkgPath := t.PkgPath()
+	if pkgPath != "" && pkgPath != "time" && pkgPath != "encoding/json" {
+		defName = toCamel(path.Base(t.PkgPath())) + strings.Title(t.Name())
+	}
 
 	if t == nil || t == typeOfEmptyInterface {
 		return schema, nil
@@ -153,8 +156,6 @@ func (g *Generator) parse(i interface{}, pc *ParseContext) (schema CoreSchemaMet
 
 	if mappedTo, found := g.typesMap[typeString]; found {
 		t = refl.DeepIndirect(reflect.TypeOf(mappedTo))
-		typeString = refl.GoType(t)
-
 		v = reflect.ValueOf(mappedTo)
 	}
 
@@ -176,7 +177,7 @@ func (g *Generator) parse(i interface{}, pc *ParseContext) (schema CoreSchemaMet
 
 	if pc.HijackType != nil {
 		var ret bool
-		ret, err = pc.HijackType(t, &schema)
+		ret, err = pc.HijackType(v, &schema)
 		if err != nil || ret {
 			return schema, err
 		}
@@ -271,7 +272,7 @@ func (g *Generator) parse(i interface{}, pc *ParseContext) (schema CoreSchemaMet
 	return schema, nil
 }
 
-func (g *Generator) walkProperties(v reflect.Value, parent *CoreSchemaMetaSchema, pc *ParseContext) error {
+func (g *Generator) walkProperties(v reflect.Value, parent *Schema, pc *ParseContext) error {
 	t := v.Type()
 	if t.Kind() == reflect.Ptr {
 		t = t.Elem()
@@ -323,7 +324,10 @@ func (g *Generator) walkProperties(v reflect.Value, parent *CoreSchemaMetaSchema
 		ft := t.Field(i).Type
 
 		if fieldVal == nil && ft != typeOfEmptyInterface {
-			fieldVal = reflect.New(t.Field(i).Type).Interface()
+			fieldVal = reflect.Zero(ft).Interface()
+			if fieldVal == nil {
+				fieldVal = reflect.New(ft).Interface()
+			}
 		}
 
 		pc.Path = append(pc.Path, propName)
@@ -375,9 +379,9 @@ func (g *Generator) walkProperties(v reflect.Value, parent *CoreSchemaMetaSchema
 		}
 
 		if parent.Properties == nil {
-			parent.Properties = make(map[string]Schema, 1)
+			parent.Properties = make(map[string]SchemaOrBool, 1)
 		}
-		parent.Properties[propName] = Schema{
+		parent.Properties[propName] = SchemaOrBool{
 			TypeObject: &propertySchema,
 		}
 	}
