@@ -316,7 +316,8 @@
      "whatever": {}
     },
     "description": "This is a sample response.",
-    "nullable": true
+    "nullable": true,
+    "x-foo": "bar"
    },
    "Openapi3TestUUID": {
     "type": "string",
@@ -390,7 +391,8 @@
      "whatever": {}
     },
     "description": "This is a sample response.",
-    "nullable": true
+    "nullable": true,
+    "x-foo": "bar"
    }
   }
  }

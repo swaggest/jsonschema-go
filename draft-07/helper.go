@@ -27,9 +27,9 @@ type Exporter interface {
 	JSONSchema() (map[string]interface{}, error)
 }
 
-// Setup alters reflected JSON Schema.
-type Setup interface {
-	SetUpJSONSchema(schema *Schema) error
+// Preparer alters reflected JSON Schema.
+type Preparer interface {
+	PrepareJSONSchema(schema *Schema) error
 }
 
 func (i *Schema) ToSchema() SchemaOrBool {

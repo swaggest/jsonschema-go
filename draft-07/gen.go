@@ -52,10 +52,12 @@ func (g *Generator) AddTypeMapping(src, dst interface{}) {
 	g.typesMap[refl.GoType(refl.DeepIndirect(reflect.TypeOf(src)))] = dst
 }
 
-func (g *Generator) getMappedType(t reflect.Type) (dst interface{}, found bool) {
-	goTypeName := refl.GoType(refl.DeepIndirect(t))
-	dst, found = g.typesMap[goTypeName]
-	return
+func checkSchemaSetup(v reflect.Value, s *Schema) (bool, error) {
+	if preparer, ok := v.Interface().(Preparer); ok {
+		err := preparer.PrepareJSONSchema(s)
+		return false, err
+	}
+	return false, nil
 }
 
 func (g *Generator) Parse(i interface{}, options ...func(*ParseContext)) (Schema, error) {
@@ -64,6 +66,8 @@ func (g *Generator) Parse(i interface{}, options ...func(*ParseContext)) (Schema
 	pc.PropertyNameTag = "json"
 	pc.Path = []string{"#"}
 	pc.typeCycles = make(map[refl.TypeString]bool)
+
+	HijackType(checkSchemaSetup)(&pc)
 
 	for _, option := range g.DefaultOptions {
 		option(&pc)
@@ -100,15 +104,12 @@ func (g *Generator) parse(i interface{}, pc *ParseContext) (schema Schema, err e
 			return
 		}
 
-		if schema.Ref != nil {
-			return
-		}
-
 		if err != nil {
 			return
 		}
-		if customizer, ok := i.(Setup); ok { // TODO remove in favor of hijacker?
-			err = customizer.SetUpJSONSchema(&schema)
+
+		if schema.Ref != nil {
+			return
 		}
 
 		if pc.InlineRefs {

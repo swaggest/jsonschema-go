@@ -61,6 +61,11 @@ func (r *Resp) Title() string {
 	return "Sample Response"
 }
 
+func (r *Resp) PrepareJSONSchema(s *jsonschema.Schema) error {
+	s.WithExtraPropertiesItem("x-foo", "bar")
+	return nil
+}
+
 type Req struct {
 	InQuery1 int                   `query:"in_query1" required:"true" description:"Query parameter."`
 	InQuery2 int                   `query:"in_query2" required:"true" description:"Query parameter."`
