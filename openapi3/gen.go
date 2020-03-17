@@ -1,7 +1,7 @@
 package openapi3
 
 import (
-	jsonschema "github.com/swaggest/jsonschema-go/draft-07"
+	"github.com/swaggest/jsonschema-go"
 	"github.com/swaggest/jsonschema-go/refl"
 	"mime/multipart"
 	"net/http"

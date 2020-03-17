@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"github.com/stretchr/testify/require"
 	"github.com/swaggest/assertjson"
-	jsonschema "github.com/swaggest/jsonschema-go/draft-07"
+	"github.com/swaggest/jsonschema-go"
 	"testing"
 	"time"
 )

@@ -4,5 +4,5 @@
 * [x] Rename simple type names
 * [x] Get rid of Customizer explicit check in favor of ParseContext hijacker option
 * [x] Generate relevant code for entities (with currently local modifications)
-* [ ] Get rid of draft-07 package
+* [x] Get rid of draft-07 package
 * [x] Option to inline only root level

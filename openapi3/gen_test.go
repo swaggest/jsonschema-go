@@ -3,7 +3,7 @@ package openapi3_test
 import (
 	"encoding/json"
 	"github.com/stretchr/testify/assert"
-	jsonschema "github.com/swaggest/jsonschema-go/draft-07"
+	"github.com/swaggest/jsonschema-go"
 	"github.com/swaggest/jsonschema-go/openapi3"
 	"github.com/swaggest/swgen"
 	"io/ioutil"

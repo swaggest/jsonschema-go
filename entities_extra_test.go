@@ -2,6 +2,7 @@ package jsonschema_test
 
 import (
 	"encoding/json"
+	"github.com/swaggest/jsonschema-go"
 	"io/ioutil"
 	"testing"
 
@@ -9,14 +10,13 @@ import (
 	sejson "github.com/segmentio/encoding/json"
 	"github.com/stretchr/testify/require"
 	"github.com/swaggest/assertjson"
-	jsonschema "github.com/swaggest/jsonschema-go/draft-07"
 	"github.com/yudai/gojsondiff/formatter"
 )
 
 var jsoni = jsoniter.ConfigCompatibleWithStandardLibrary
 
 func TestSchema_MarshalJSON_roundtrip_draft7(t *testing.T) {
-	data, err := ioutil.ReadFile("../resources/schema/draft-07.json")
+	data, err := ioutil.ReadFile("./resources/schema/draft-07.json")
 	require.NoError(t, err)
 
 	s := jsonschema.SchemaOrBool{}
