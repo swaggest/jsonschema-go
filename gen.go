@@ -337,32 +337,8 @@ func (g *Generator) walkProperties(v reflect.Value, parent *Schema, pc *ParseCon
 			return err
 		}
 
-		// Read tags.
-		// TODO get rid of these handcrafted readers in favor of reflection walker.
-		err = refl.JoinErrors(
-			refl.ReadStringPtrTag(field.Tag, "title", &propertySchema.Title),
-			refl.ReadStringPtrTag(field.Tag, "description", &propertySchema.Description),
-			refl.ReadStringPtrTag(field.Tag, "format", &propertySchema.Format),
-			refl.ReadStringPtrTag(field.Tag, "pattern", &propertySchema.Pattern),
-			refl.ReadStringPtrTag(field.Tag, "contentMediaType", &propertySchema.ContentMediaType),
-			refl.ReadStringPtrTag(field.Tag, "contentEncoding", &propertySchema.ContentEncoding),
+		err = refl.PopulateFieldsFromTags(&propertySchema, field.Tag)
 
-			refl.ReadIntPtrTag(field.Tag, "maxLength", &propertySchema.MaxLength),
-			refl.ReadIntTag(field.Tag, "minLength", &propertySchema.MinLength),
-			refl.ReadIntPtrTag(field.Tag, "maxItems", &propertySchema.MaxItems),
-			refl.ReadIntTag(field.Tag, "minItems", &propertySchema.MinItems),
-			refl.ReadIntPtrTag(field.Tag, "maxProperties", &propertySchema.MaxProperties),
-			refl.ReadIntTag(field.Tag, "minProperties", &propertySchema.MinProperties),
-
-			refl.ReadFloatPtrTag(field.Tag, "multipleOf", &propertySchema.MultipleOf),
-			refl.ReadFloatPtrTag(field.Tag, "maximum", &propertySchema.Maximum),
-			refl.ReadFloatPtrTag(field.Tag, "minimum", &propertySchema.Minimum),
-
-			refl.ReadFloatPtrTag(field.Tag, "exclusiveMaximum", &propertySchema.ExclusiveMaximum),
-			refl.ReadFloatPtrTag(field.Tag, "exclusiveMinimum", &propertySchema.ExclusiveMinimum),
-			refl.ReadBoolPtrTag(field.Tag, "uniqueItems", &propertySchema.UniqueItems),
-			refl.ReadBoolPtrTag(field.Tag, "readOnly", &propertySchema.ReadOnly),
-		)
 		if err != nil {
 			return err
 		}

@@ -1,4 +1,4 @@
-* [ ] Generate tags reading code/or read tags with reflection iterator
+* [x] Generate tags reading code/or read tags with reflection iterator
 * [x] Populate definitions with named symbols
 * [x] Rename CoreMetaSchema
 * [x] Rename simple type names

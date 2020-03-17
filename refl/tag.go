@@ -4,6 +4,7 @@ import (
 	"errors"
 	"reflect"
 	"strconv"
+	"strings"
 )
 
 // HasTaggedFields checks if the structure has fields with tag name
@@ -130,4 +131,41 @@ func JoinErrors(errs ...error) error {
 		return errors.New(join[2:])
 	}
 	return nil
+}
+
+// PopulateFieldsFromTags extracts values from field tag and puts them in according property of structPtr.
+func PopulateFieldsFromTags(structPtr interface{}, fieldTag reflect.StructTag) error {
+	pv := reflect.ValueOf(structPtr).Elem()
+	pt := pv.Type()
+
+	var errs []error
+	for i := 0; i < pv.NumField(); i++ {
+		ptf := pt.Field(i)
+		tagName := strings.ToLower(ptf.Name[0:1]) + ptf.Name[1:]
+		pvf := pv.Field(i).Addr().Interface()
+
+		var err error
+		switch v := pvf.(type) {
+		case **string:
+			err = ReadStringPtrTag(fieldTag, tagName, v)
+		case **int64:
+			err = ReadIntPtrTag(fieldTag, tagName, v)
+		case *int64:
+			err = ReadIntTag(fieldTag, tagName, v)
+		case **float64:
+			err = ReadFloatPtrTag(fieldTag, tagName, v)
+		case *float64:
+			err = ReadFloatTag(fieldTag, tagName, v)
+		case **bool:
+			err = ReadBoolPtrTag(fieldTag, tagName, v)
+		case *bool:
+			err = ReadBoolTag(fieldTag, tagName, v)
+		}
+
+		if err != nil {
+			errs = append(errs, err)
+		}
+	}
+
+	return JoinErrors(errs...)
 }
