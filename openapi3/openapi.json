@@ -152,7 +152,7 @@
      "content": {
       "application/json": {
        "schema": {
-        "$ref": "#/components/schemas/JsonOpenapi3TestReq"
+        "$ref": "#/components/schemas/Openapi3TestReq"
        }
       },
       "multipart/form-data": {
@@ -231,7 +231,13 @@
     },
     "nullable": true
    },
-   "JsonOpenapi3TestReq": {
+   "Openapi3TestISOWeek": {
+    "pattern": "^[0-9]{4}-W(0[1-9]|[1-4][0-9]|5[0-2])$",
+    "type": "string",
+    "description": "ISO Week",
+    "example": "2006-W43"
+   },
+   "Openapi3TestReq": {
     "type": "object",
     "properties": {
      "in_body1": {
@@ -242,12 +248,6 @@
      }
     },
     "nullable": true
-   },
-   "Openapi3TestISOWeek": {
-    "pattern": "^[0-9]{4}-W(0[1-9]|[1-4][0-9]|5[0-2])$",
-    "type": "string",
-    "description": "ISO Week",
-    "example": "2006-W43"
    },
    "Openapi3TestResp": {
     "title": "Sample Response",

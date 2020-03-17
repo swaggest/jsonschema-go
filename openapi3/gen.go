@@ -45,9 +45,12 @@ func (g *Generator) parseRequestBody(o *Operation, input interface{}, tag, mime 
 	}
 
 	hasFileUpload := false
-
+	definitionPefix := ""
+	if tag != "json" {
+		definitionPefix += strings.Title(tag)
+	}
 	schema, err := g.Parse(input,
-		jsonschema.DefinitionsPrefix("#/components/schemas/"+strings.Title(tag)),
+		jsonschema.DefinitionsPrefix("#/components/schemas/"+definitionPefix),
 		jsonschema.PropertyNameTag(tag),
 		jsonschema.HijackType(func(v reflect.Value, s *jsonschema.Schema) (bool, error) {
 			vv := v.Interface()
@@ -96,7 +99,7 @@ func (g *Generator) parseRequestBody(o *Operation, input interface{}, tag, mime 
 		s := SchemaOrRef{}
 		s.FromJSONSchema(def)
 
-		g.Spec.Components.Schemas.WithMapOfSchemaOrRefValuesItem(strings.Title(tag)+name, s)
+		g.Spec.Components.Schemas.WithMapOfSchemaOrRefValuesItem(definitionPefix+name, s)
 	}
 
 	if o.RequestBody == nil {
