@@ -51,8 +51,8 @@ func (s *SchemaOrRef) FromJSONSchema(schema jsonschema.SchemaOrBool) {
 			} else {
 				os.WithType(SchemaType(*js.Type.SimpleTypes))
 			}
-		} else if len(js.Type.SliceOfSimpleTypesValues) > 0 {
-			for _, t := range js.Type.SliceOfSimpleTypesValues {
+		} else if len(js.Type.SliceOfSimpleTypeValues) > 0 {
+			for _, t := range js.Type.SliceOfSimpleTypeValues {
 				if t == jsonschema.Null {
 					os.WithNullable(true)
 				} else {
@@ -73,9 +73,9 @@ func (s *SchemaOrRef) FromJSONSchema(schema jsonschema.SchemaOrBool) {
 		}
 	}
 
-	if js.Items != nil && js.Items.Schema != nil {
+	if js.Items != nil && js.Items.SchemaOrBool != nil {
 		os.Items = &SchemaOrRef{}
-		os.Items.FromJSONSchema(*js.Items.Schema)
+		os.Items.FromJSONSchema(*js.Items.SchemaOrBool)
 	}
 
 	if js.ExclusiveMaximum != nil {

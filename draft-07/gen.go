@@ -83,7 +83,7 @@ func (g *Generator) Parse(i interface{}, options ...func(*ParseContext)) (Schema
 		for typeString, def := range pc.definitions {
 			def := def
 			ref := pc.definitionRefs[typeString]
-			schema.Definitions[ref.Name] = def.ToSchema()
+			schema.Definitions[ref.Name] = def.ToSchemaOrBool()
 		}
 	}
 	return schema, err
@@ -235,7 +235,7 @@ func (g *Generator) parse(i interface{}, pc *ParseContext) (schema Schema, err e
 		}
 
 		schema.AddType(Array)
-		schema.WithItems(*(&Items{}).WithSchema(itemsSchema.ToSchema()))
+		schema.WithItems(*(&Items{}).WithSchemaOrBool(itemsSchema.ToSchemaOrBool()))
 
 	case reflect.Map:
 		elemType := refl.DeepIndirect(t.Elem())
@@ -251,7 +251,7 @@ func (g *Generator) parse(i interface{}, pc *ParseContext) (schema Schema, err e
 		}
 
 		schema.AddType(Object)
-		schema.WithAdditionalProperties(additionalPropertiesSchema.ToSchema())
+		schema.WithAdditionalProperties(additionalPropertiesSchema.ToSchemaOrBool())
 
 	case reflect.Bool:
 		schema.AddType(Boolean)

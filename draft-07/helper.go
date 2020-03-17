@@ -32,7 +32,7 @@ type Preparer interface {
 	PrepareJSONSchema(schema *Schema) error
 }
 
-func (i *Schema) ToSchema() SchemaOrBool {
+func (i *Schema) ToSchemaOrBool() SchemaOrBool {
 	return SchemaOrBool{
 		TypeObject: i,
 	}
@@ -73,19 +73,19 @@ func (i *Schema) AddType(t SimpleType) {
 		if *i.Type.SimpleTypes == t {
 			return
 		} else {
-			i.Type.SliceOfSimpleTypesValues = []SimpleType{*i.Type.SimpleTypes, t}
+			i.Type.SliceOfSimpleTypeValues = []SimpleType{*i.Type.SimpleTypes, t}
 			i.Type.SimpleTypes = nil
 			return
 		}
 	}
 
-	if len(i.Type.SliceOfSimpleTypesValues) > 0 {
-		for _, st := range i.Type.SliceOfSimpleTypesValues {
+	if len(i.Type.SliceOfSimpleTypeValues) > 0 {
+		for _, st := range i.Type.SliceOfSimpleTypeValues {
 			if st == t {
 				return
 			}
 		}
 
-		i.Type.SliceOfSimpleTypesValues = append(i.Type.SliceOfSimpleTypesValues, t)
+		i.Type.SliceOfSimpleTypeValues = append(i.Type.SliceOfSimpleTypeValues, t)
 	}
 }

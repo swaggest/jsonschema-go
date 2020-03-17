@@ -248,7 +248,7 @@ func (g *Generator) SetJSONResponse(o *Operation, output interface{}, httpStatus
 	}
 
 	oaiSchema := SchemaOrRef{}
-	oaiSchema.FromJSONSchema(schema.ToSchema())
+	oaiSchema.FromJSONSchema(schema.ToSchemaOrBool())
 
 	resp := Response{
 		Content: map[string]MediaType{
