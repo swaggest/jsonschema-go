@@ -1,13 +1,14 @@
 package openapi3
 
 import (
-	"github.com/swaggest/jsonschema-go"
-	"github.com/swaggest/jsonschema-go/refl"
 	"mime/multipart"
 	"net/http"
 	"reflect"
 	"strconv"
 	"strings"
+
+	"github.com/swaggest/jsonschema-go"
+	"github.com/swaggest/jsonschema-go/refl"
 )
 
 type Generator struct {

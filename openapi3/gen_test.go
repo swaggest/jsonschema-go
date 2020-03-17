@@ -2,14 +2,15 @@ package openapi3_test
 
 import (
 	"encoding/json"
-	"github.com/stretchr/testify/assert"
-	"github.com/swaggest/jsonschema-go"
-	"github.com/swaggest/jsonschema-go/openapi3"
-	"github.com/swaggest/swgen"
 	"io/ioutil"
 	"mime/multipart"
 	"net/http"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/swaggest/jsonschema-go"
+	"github.com/swaggest/jsonschema-go/openapi3"
+	"github.com/swaggest/swgen"
 )
 
 // ISOWeek is a week identifier.

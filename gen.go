@@ -34,6 +34,7 @@ type Ref struct {
 
 func (r Ref) Schema() Schema {
 	s := r.Path + r.Name
+
 	return Schema{
 		Ref: &s,
 	}
@@ -42,13 +43,13 @@ func (r Ref) Schema() Schema {
 type Generator struct {
 	DefaultOptions []func(*ParseContext)
 	typesMap       map[refl.TypeString]interface{}
-	reflectGoTypes bool
 }
 
 func (g *Generator) AddTypeMapping(src, dst interface{}) {
 	if g.typesMap == nil {
 		g.typesMap = map[refl.TypeString]interface{}{}
 	}
+
 	g.typesMap[refl.GoType(refl.DeepIndirect(reflect.TypeOf(src)))] = dst
 }
 
@@ -57,6 +58,7 @@ func checkSchemaSetup(v reflect.Value, s *Schema) (bool, error) {
 		err := preparer.PrepareJSONSchema(s)
 		return false, err
 	}
+
 	return false, nil
 }
 
@@ -80,12 +82,14 @@ func (g *Generator) Parse(i interface{}, options ...func(*ParseContext)) (Schema
 	schema, err := g.parse(i, &pc)
 	if err == nil && len(pc.definitions) > 0 {
 		schema.Definitions = make(map[string]SchemaOrBool, len(pc.definitions))
+
 		for typeString, def := range pc.definitions {
 			def := def
 			ref := pc.definitionRefs[typeString]
 			schema.Definitions[ref.Name] = def.ToSchemaOrBool()
 		}
 	}
+
 	return schema, err
 }
 
@@ -147,6 +151,7 @@ func (g *Generator) parse(i interface{}, pc *ParseContext) (schema Schema, err e
 	t = refl.DeepIndirect(t)
 	typeString = refl.GoType(t)
 	pkgPath := t.PkgPath()
+
 	if pkgPath != "" && pkgPath != "time" && pkgPath != "encoding/json" {
 		defName = toCamel(path.Base(t.PkgPath())) + strings.Title(t.Name())
 	}
@@ -168,6 +173,7 @@ func (g *Generator) parse(i interface{}, pc *ParseContext) (schema Schema, err e
 	if t == typeOfTime {
 		schema.AddType(String)
 		schema.WithFormat("date-time")
+
 		return
 	}
 
@@ -178,6 +184,7 @@ func (g *Generator) parse(i interface{}, pc *ParseContext) (schema Schema, err e
 
 	if pc.HijackType != nil {
 		var ret bool
+
 		ret, err = pc.HijackType(v, &schema)
 		if err != nil || ret {
 			return schema, err
@@ -204,16 +211,23 @@ func (g *Generator) parse(i interface{}, pc *ParseContext) (schema Schema, err e
 		schema.WithTitle(vt.Title())
 	}
 
+	err = g.kindSwitch(t, v, &schema, pc)
+
+	return schema, err
+}
+
+func (g *Generator) kindSwitch(t reflect.Type, v reflect.Value, schema *Schema, pc *ParseContext) error {
 	switch t.Kind() {
 	case reflect.Struct:
-		switch true {
+		switch {
 		case reflect.PtrTo(t).Implements(typeOfTextUnmarshaler):
 			schema.AddType(String)
 		default:
 			schema.AddType(Object)
-			err = g.walkProperties(v, &schema, pc)
+
+			err := g.walkProperties(v, schema, pc)
 			if err != nil {
-				return schema, err
+				return err
 			}
 		}
 
@@ -226,12 +240,14 @@ func (g *Generator) parse(i interface{}, pc *ParseContext) (schema Schema, err e
 
 		pc.Path = append(pc.Path, "[]")
 		itemValue := reflect.Zero(elemType).Interface()
+
 		if itemValue == nil && elemType != typeOfEmptyInterface {
 			itemValue = reflect.New(elemType).Interface()
 		}
+
 		itemsSchema, err := g.parse(itemValue, pc)
 		if err != nil {
-			return schema, err
+			return err
 		}
 
 		schema.AddType(Array)
@@ -242,12 +258,14 @@ func (g *Generator) parse(i interface{}, pc *ParseContext) (schema Schema, err e
 
 		pc.Path = append(pc.Path, "{}")
 		itemValue := reflect.Zero(elemType).Interface()
+
 		if itemValue == nil && elemType != typeOfEmptyInterface {
 			itemValue = reflect.New(elemType).Interface()
 		}
+
 		additionalPropertiesSchema, err := g.parse(itemValue, pc)
 		if err != nil {
-			return schema, err
+			return err
 		}
 
 		schema.AddType(Object)
@@ -265,18 +283,19 @@ func (g *Generator) parse(i interface{}, pc *ParseContext) (schema Schema, err e
 	case reflect.String:
 		schema.AddType(String)
 	case reflect.Interface:
-		return schema, fmt.Errorf("non-empty interface is not supported: %s", typeString)
+		return fmt.Errorf("non-empty interface is not supported: %s", t.String())
 	default:
-		return schema, fmt.Errorf("type is not supported: %s", typeString)
+		return fmt.Errorf("type is not supported: %s", t.String())
 	}
 
-	return schema, nil
+	return nil
 }
 
 func (g *Generator) walkProperties(v reflect.Value, parent *Schema, pc *ParseContext) error {
 	t := v.Type()
 	if t.Kind() == reflect.Ptr {
 		t = t.Elem()
+
 		if v.IsZero() {
 			v = reflect.Zero(t)
 		} else {
@@ -299,6 +318,7 @@ func (g *Generator) walkProperties(v reflect.Value, parent *Schema, pc *ParseCon
 			if err != nil {
 				return err
 			}
+
 			continue
 		}
 
@@ -312,10 +332,12 @@ func (g *Generator) walkProperties(v reflect.Value, parent *Schema, pc *ParseCon
 		pc.WalkedProperties = append(pc.WalkedProperties, propName)
 
 		required := false
+
 		err := refl.ReadBoolTag(field.Tag, "required", &required)
 		if err != nil {
 			return err
 		}
+
 		if required {
 			parent.Required = append(parent.Required, propName)
 		}
@@ -333,6 +355,7 @@ func (g *Generator) walkProperties(v reflect.Value, parent *Schema, pc *ParseCon
 
 		pc.Path = append(pc.Path, propName)
 		propertySchema, err := g.parse(fieldVal, pc)
+
 		if err != nil {
 			return err
 		}
@@ -345,12 +368,14 @@ func (g *Generator) walkProperties(v reflect.Value, parent *Schema, pc *ParseCon
 
 		enum := enum{}
 		enum.loadFromField(field, fieldVal)
+
 		if len(enum.items) > 0 {
 			propertySchema.Enum = enum.items
 			if len(enum.names) > 0 {
 				if propertySchema.ExtraProperties == nil {
 					propertySchema.ExtraProperties = make(map[string]interface{}, 1)
 				}
+
 				propertySchema.ExtraProperties[XEnumNames] = enum.names
 			}
 		}
@@ -358,6 +383,7 @@ func (g *Generator) walkProperties(v reflect.Value, parent *Schema, pc *ParseCon
 		if parent.Properties == nil {
 			parent.Properties = make(map[string]SchemaOrBool, 1)
 		}
+
 		parent.Properties[propName] = SchemaOrBool{
 			TypeObject: &propertySchema,
 		}
@@ -385,13 +411,16 @@ func (enum *enum) loadFromField(field reflect.StructField, fieldVal interface{})
 	if enumTag := field.Tag.Get("enum"); enumTag != "" {
 		var e []interface{}
 		err := json.Unmarshal([]byte(enumTag), &e)
+
 		if err != nil {
 			es := strings.Split(enumTag, ",")
 			e = make([]interface{}, len(es))
+
 			for i, s := range es {
 				e[i] = s
 			}
 		}
+
 		enum.items = e
 	}
 }

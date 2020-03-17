@@ -1,8 +1,9 @@
 package openapi3
 
 import (
-	"github.com/swaggest/jsonschema-go"
 	"strings"
+
+	"github.com/swaggest/jsonschema-go"
 )
 
 func (s *SchemaOrRef) FromJSONSchema(schema jsonschema.SchemaOrBool) {

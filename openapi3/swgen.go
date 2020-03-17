@@ -3,9 +3,10 @@
 package openapi3
 
 import (
+	"reflect"
+
 	"github.com/swaggest/jsonschema-go"
 	"github.com/swaggest/swgen"
-	"reflect"
 )
 
 func SwgenHijacker(v reflect.Value, s *jsonschema.Schema) (bool, error) {

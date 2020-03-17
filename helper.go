@@ -1,10 +1,5 @@
 package jsonschema
 
-import (
-	"encoding/json"
-	"errors"
-)
-
 const (
 	// XEnumNames is the name of JSON property to store names of enumerated values.
 	XEnumNames = "x-enum-names"
@@ -20,42 +15,15 @@ type Enum interface {
 	Enum() []interface{}
 }
 
-// Exporter returns JSON Schema in library agnostic way.
-//
-// TODO remove?
-type Exporter interface {
-	JSONSchema() (map[string]interface{}, error)
-}
-
 // Preparer alters reflected JSON Schema.
 type Preparer interface {
 	PrepareJSONSchema(schema *Schema) error
 }
 
-func (i *Schema) ToSchemaOrBool() SchemaOrBool {
+func (s *Schema) ToSchemaOrBool() SchemaOrBool {
 	return SchemaOrBool{
-		TypeObject: i,
+		TypeObject: s,
 	}
-}
-
-// JSONSchema exports JSON Schema as a map.
-func (i Schema) JSONSchema() (map[string]interface{}, error) {
-	jsonBytes, err := json.Marshal(i)
-	if err != nil {
-		return nil, err
-	}
-
-	var decoded interface{}
-	err = json.Unmarshal(jsonBytes, &decoded)
-	if err != nil {
-		return nil, err
-	}
-
-	if m, ok := decoded.(map[string]interface{}); ok {
-		return m, nil
-	}
-
-	return nil, errors.New("invalid json, map expected")
 }
 
 // Type references simple type.
@@ -63,29 +31,30 @@ func (i SimpleType) Type() Type {
 	return Type{SimpleTypes: &i}
 }
 
-func (i *Schema) AddType(t SimpleType) {
-	if i.Type == nil {
-		i.WithType(t.Type())
+func (s *Schema) AddType(t SimpleType) {
+	if s.Type == nil {
+		s.WithType(t.Type())
 		return
 	}
 
-	if i.Type.SimpleTypes != nil {
-		if *i.Type.SimpleTypes == t {
-			return
-		} else {
-			i.Type.SliceOfSimpleTypeValues = []SimpleType{*i.Type.SimpleTypes, t}
-			i.Type.SimpleTypes = nil
+	if s.Type.SimpleTypes != nil {
+		if *s.Type.SimpleTypes == t {
 			return
 		}
+
+		s.Type.SliceOfSimpleTypeValues = []SimpleType{*s.Type.SimpleTypes, t}
+		s.Type.SimpleTypes = nil
+
+		return
 	}
 
-	if len(i.Type.SliceOfSimpleTypeValues) > 0 {
-		for _, st := range i.Type.SliceOfSimpleTypeValues {
+	if len(s.Type.SliceOfSimpleTypeValues) > 0 {
+		for _, st := range s.Type.SliceOfSimpleTypeValues {
 			if st == t {
 				return
 			}
 		}
 
-		i.Type.SliceOfSimpleTypeValues = append(i.Type.SliceOfSimpleTypeValues, t)
+		s.Type.SliceOfSimpleTypeValues = append(s.Type.SliceOfSimpleTypeValues, t)
 	}
 }

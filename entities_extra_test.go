@@ -2,18 +2,15 @@ package jsonschema_test
 
 import (
 	"encoding/json"
-	"github.com/swaggest/jsonschema-go"
 	"io/ioutil"
 	"testing"
 
-	jsoniter "github.com/json-iterator/go"
-	sejson "github.com/segmentio/encoding/json"
+	"github.com/swaggest/jsonschema-go"
+
 	"github.com/stretchr/testify/require"
 	"github.com/swaggest/assertjson"
 	"github.com/yudai/gojsondiff/formatter"
 )
-
-var jsoni = jsoniter.ConfigCompatibleWithStandardLibrary
 
 func TestSchema_MarshalJSON_roundtrip_draft7(t *testing.T) {
 	data, err := ioutil.ReadFile("./resources/schema/draft-07.json")
@@ -67,6 +64,7 @@ func BenchmarkSchema_UnmarshalJSON_raw(b *testing.B) {
 	b.ResetTimer()
 
 	var s interface{}
+
 	for i := 0; i < b.N; i++ {
 		_ = json.Unmarshal(data, &s)
 	}
@@ -79,39 +77,18 @@ func BenchmarkSchema_UnmarshalJSON(b *testing.B) {
 	b.ResetTimer()
 
 	s := jsonschema.SchemaOrBool{}
+
 	for i := 0; i < b.N; i++ {
 		_ = json.Unmarshal(data, &s)
-	}
-}
-
-func BenchmarkSchema_UnmarshalJSON_segment(b *testing.B) {
-	data, err := ioutil.ReadFile("../resources/schema/draft-07.json")
-	require.NoError(b, err)
-	b.ReportAllocs()
-	b.ResetTimer()
-
-	s := jsonschema.SchemaOrBool{}
-	for i := 0; i < b.N; i++ {
-		_ = sejson.Unmarshal(data, &s)
-	}
-}
-
-func BenchmarkSchema_UnmarshalJSON_jsoniter(b *testing.B) {
-	data, err := ioutil.ReadFile("../resources/schema/draft-07.json")
-	require.NoError(b, err)
-	b.ReportAllocs()
-	b.ResetTimer()
-
-	s := jsonschema.SchemaOrBool{}
-	for i := 0; i < b.N; i++ {
-		_ = jsoni.Unmarshal(data, &s)
 	}
 }
 
 func BenchmarkSchema_MarshalJSON_raw(b *testing.B) {
 	data, err := ioutil.ReadFile("../resources/schema/draft-07.json")
 	require.NoError(b, err)
+
 	var s interface{}
+
 	require.NoError(b, json.Unmarshal(data, &s))
 
 	b.ReportAllocs()
@@ -125,6 +102,7 @@ func BenchmarkSchema_MarshalJSON_raw(b *testing.B) {
 func BenchmarkSchema_MarshalJSON(b *testing.B) {
 	data, err := ioutil.ReadFile("../resources/schema/draft-07.json")
 	require.NoError(b, err)
+
 	s := jsonschema.SchemaOrBool{}
 	require.NoError(b, json.Unmarshal(data, &s))
 
@@ -133,33 +111,5 @@ func BenchmarkSchema_MarshalJSON(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		_, _ = json.Marshal(&s)
-	}
-}
-
-func BenchmarkSchema_MarshalJSON_segment(b *testing.B) {
-	data, err := ioutil.ReadFile("../resources/schema/draft-07.json")
-	require.NoError(b, err)
-	s := jsonschema.SchemaOrBool{}
-	require.NoError(b, sejson.Unmarshal(data, &s))
-
-	b.ReportAllocs()
-	b.ResetTimer()
-
-	for i := 0; i < b.N; i++ {
-		_, _ = sejson.Marshal(&s)
-	}
-}
-
-func BenchmarkSchema_MarshalJSON_jsoniter(b *testing.B) {
-	data, err := ioutil.ReadFile("../resources/schema/draft-07.json")
-	require.NoError(b, err)
-	s := jsonschema.SchemaOrBool{}
-	require.NoError(b, jsoni.Unmarshal(data, &s))
-
-	b.ReportAllocs()
-	b.ResetTimer()
-
-	for i := 0; i < b.N; i++ {
-		_, _ = jsoni.Marshal(&s)
 	}
 }

@@ -28,7 +28,9 @@ func FindEmbeddedSliceOrMap(i interface{}) reflect.Type {
 	if i == nil {
 		return nil
 	}
+
 	t := DeepIndirect(reflect.TypeOf(i))
+
 	if t.Kind() != reflect.Struct {
 		return nil
 	}
@@ -45,5 +47,6 @@ func FindEmbeddedSliceOrMap(i interface{}) reflect.Type {
 			}
 		}
 	}
+
 	return nil
 }

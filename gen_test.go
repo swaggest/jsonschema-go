@@ -2,11 +2,12 @@ package jsonschema_test
 
 import (
 	"encoding/json"
+	"testing"
+	"time"
+
 	"github.com/stretchr/testify/require"
 	"github.com/swaggest/assertjson"
 	"github.com/swaggest/jsonschema-go"
-	"testing"
-	"time"
 )
 
 type Role struct {
@@ -21,6 +22,7 @@ func (r Role) MarshalText() ([]byte, error) {
 func (r *Role) UnmarshalText([]byte) error {
 	r.Level = "l"
 	r.Title = "t"
+
 	return nil
 }
 

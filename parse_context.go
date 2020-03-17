@@ -1,8 +1,9 @@
 package jsonschema
 
 import (
-	"github.com/swaggest/jsonschema-go/refl"
 	"reflect"
+
+	"github.com/swaggest/jsonschema-go/refl"
 )
 
 func DefinitionsPrefix(prefix string) func(*ParseContext) {
@@ -26,6 +27,7 @@ func HijackType(f func(v reflect.Value, s *Schema) (bool, error)) func(*ParseCon
 				if err != nil || ret {
 					return ret, err
 				}
+
 				return f(v, s)
 			}
 		} else {
@@ -53,6 +55,5 @@ type ParseContext struct {
 	WalkedProperties []string
 	definitions      map[refl.TypeString]Schema // list of all definition objects
 	definitionRefs   map[refl.TypeString]Ref
-	definitionAlloc  map[string]refl.TypeString // index of allocated TypeNames
 	typeCycles       map[refl.TypeString]bool
 }

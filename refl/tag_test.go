@@ -2,8 +2,9 @@ package refl_test
 
 import (
 	"encoding/json"
-	"github.com/swaggest/jsonschema-go/refl"
 	"testing"
+
+	"github.com/swaggest/jsonschema-go/refl"
 
 	"github.com/stretchr/testify/assert"
 )

@@ -1,9 +1,10 @@
 package main
 
 import (
-	v3 "github.com/swaggest/swgui/v3"
 	"io/ioutil"
 	"net/http"
+
+	v3 "github.com/swaggest/swgui/v3"
 )
 
 func main() {
