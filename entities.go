@@ -561,7 +561,13 @@ func (s *SchemaOrBool) UnmarshalJSON(data []byte) error {
 
 // MarshalJSON encodes JSON.
 func (s SchemaOrBool) MarshalJSON() ([]byte, error) {
-	return marshalUnion(s.TypeObject, s.TypeBoolean)
+	switch {
+	case s.TypeObject != nil:
+		return json.Marshal(s.TypeObject)
+	case s.TypeBoolean != nil:
+		return json.Marshal(s.TypeBoolean)
+	}
+	return nil, errors.New("missing typed value")
 }
 
 // Items structure is generated from "#[object]->items".
