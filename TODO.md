@@ -1,8 +1,0 @@
-* [x] Generate tags reading code/or read tags with reflection iterator
-* [x] Populate definitions with named symbols
-* [x] Rename CoreMetaSchema
-* [x] Rename simple type names
-* [x] Get rid of Customizer explicit check in favor of ParseContext hijacker option
-* [x] Generate relevant code for entities (with currently local modifications)
-* [x] Get rid of draft-07 package
-* [x] Option to inline only root level

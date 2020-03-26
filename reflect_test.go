@@ -1,6 +1,7 @@
 package jsonschema_test
 
 import (
+	"encoding"
 	"encoding/json"
 	"testing"
 	"time"
@@ -41,6 +42,13 @@ type Person struct {
 	Role      Role   `json:"role" description:"The role of person."`
 }
 
+var (
+	_ encoding.TextUnmarshaler = &Role{}
+	_ encoding.TextMarshaler   = &Role{}
+	_ jsonschema.Preparer      = Org{}
+	_ jsonschema.Preparer      = &Person{}
+)
+
 func (p *Person) PrepareJSONSchema(schema *jsonschema.Schema) error {
 	schema.WithTitle("Person")
 	return nil
@@ -57,73 +65,74 @@ func (o Org) PrepareJSONSchema(schema *jsonschema.Schema) error {
 }
 
 func TestGenerator_Parse(t *testing.T) {
-	g := jsonschema.Generator{}
-	schema, err := g.Parse(Org{})
+	g := jsonschema.Reflector{}
+	schema, err := g.Reflect(Org{})
 	require.NoError(t, err)
 
 	j, err := json.MarshalIndent(schema, "", " ")
 	require.NoError(t, err)
+
 	assertjson.Equal(t, []byte(`
 {
- "$ref": "#/definitions/github.com/swaggest/jsonschema-go/draft-07_test.Org::jsonschema_test.Org",
+ "$ref": "#/definitions/JsonschemaGoTestOrg",
  "definitions": {
-  "github.com/swaggest/jsonschema-go/draft-07_test.Org::jsonschema_test.Org": {
+  "JsonschemaGoTestOrg": {
    "title": "Organization",
    "properties": {
-	"chiefOfMorale": {
-	 "$ref": "#/definitions/github.com/swaggest/jsonschema-go/draft-07_test.Person::jsonschema_test.Person"
-	},
-	"employees": {
-	 "items": {
-	  "$ref": "#/definitions/github.com/swaggest/jsonschema-go/draft-07_test.Person::jsonschema_test.Person"
-	 },
-	 "type": "array"
-	}
+    "chiefOfMorale": {
+     "$ref": "#/definitions/JsonschemaGoTestPerson"
+    },
+    "employees": {
+     "items": {
+      "$ref": "#/definitions/JsonschemaGoTestPerson"
+     },
+     "type": "array"
+    }
    },
    "type": "object"
   },
-  "github.com/swaggest/jsonschema-go/draft-07_test.Person::jsonschema_test.Person": {
+  "JsonschemaGoTestPerson": {
    "title": "Person",
    "required": [
-	"lastName"
+    "lastName"
    ],
    "properties": {
-	"createdAt": {
-	 "type": "string",
-	 "format": "date-time"
-	},
-	"date": {
-	 "type": "string",
-	 "format": "date"
-	},
-	"deletedAt": {
-	 "type": [
-	  "null",
-	  "string"
-	 ],
-	 "format": "date-time"
-	},
-	"firstName": {
-	 "type": "string"
-	},
-	"height": {
-	 "type": "integer"
-	},
-	"lastName": {
-	 "type": "string"
-	},
-	"meta": {},
-	"role": {
-	 "$ref": "#/definitions/github.com/swaggest/jsonschema-go/draft-07_test.Role::jsonschema_test.Role",
-	 "description": "The role of person."
-	}
+    "createdAt": {
+     "type": "string",
+     "format": "date-time"
+    },
+    "date": {
+     "type": "string",
+     "format": "date"
+    },
+    "deletedAt": {
+     "type": [
+      "null",
+      "string"
+     ],
+     "format": "date-time"
+    },
+    "firstName": {
+     "type": "string"
+    },
+    "height": {
+     "type": "integer"
+    },
+    "lastName": {
+     "type": "string"
+    },
+    "meta": {},
+    "role": {
+     "$ref": "#/definitions/JsonschemaGoTestRole",
+     "description": "The role of person."
+    }
    },
    "type": [
-	"null",
-	"object"
+    "null",
+    "object"
    ]
   },
-  "github.com/swaggest/jsonschema-go/draft-07_test.Role::jsonschema_test.Role": {
+  "JsonschemaGoTestRole": {
    "type": "string"
   }
  }

@@ -6,5 +6,5 @@
 ![Code lines](https://sloc.xyz/github/swaggest/jsonschema-go/?category=code)
 ![Comments](https://sloc.xyz/github/swaggest/jsonschema-go/?category=comments)
 
-This library provides Go structures to marshal and unmarshal [JSON Schema](https://json-schema.org/) documents.
+This library provides Go structures to marshal/unmarshal and reflect [JSON Schema](https://json-schema.org/) documents.
 

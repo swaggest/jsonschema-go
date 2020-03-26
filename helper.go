@@ -20,6 +20,17 @@ type Preparer interface {
 	PrepareJSONSchema(schema *Schema) error
 }
 
+// Exposer exposes JSON Schema.
+type Exposer interface {
+	JSONSchema() (Schema, error)
+}
+
+// JSONSchema implements Exposer.
+func (s Schema) JSONSchema() (Schema, error) {
+	return s, nil
+}
+
+// ToSchemaOrBool creates SchemaOrBool instance from Schema.
 func (s *Schema) ToSchemaOrBool() SchemaOrBool {
 	return SchemaOrBool{
 		TypeObject: s,
@@ -31,6 +42,9 @@ func (i SimpleType) Type() Type {
 	return Type{SimpleTypes: &i}
 }
 
+// AddType adds simple type to Schema.
+//
+// If type is already there it is ignored.
 func (s *Schema) AddType(t SimpleType) {
 	if s.Type == nil {
 		s.WithType(t.Type())

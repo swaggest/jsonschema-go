@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-// HasTaggedFields checks if the structure has fields with tag name
+// HasTaggedFields checks if the structure has fields with tag name.
 func HasTaggedFields(i interface{}, tagname string) bool {
 	if i == nil {
 		return false
@@ -37,9 +37,11 @@ func HasTaggedFields(i interface{}, tagname string) bool {
 			}
 		}
 	}
+
 	return false
 }
 
+// ReadBoolTag reads bool value from field tag into a value.
 func ReadBoolTag(tag reflect.StructTag, name string, holder *bool) error {
 	value, ok := tag.Lookup(name)
 	if ok {
@@ -47,11 +49,14 @@ func ReadBoolTag(tag reflect.StructTag, name string, holder *bool) error {
 		if err != nil {
 			return errors.New("failed to parse bool value " + value + " in tag " + name + ": " + err.Error())
 		}
+
 		*holder = v
 	}
+
 	return nil
 }
 
+// ReadBoolPtrTag reads bool value from field tag into a pointer.
 func ReadBoolPtrTag(tag reflect.StructTag, name string, holder **bool) error {
 	value, ok := tag.Lookup(name)
 	if ok {
@@ -59,23 +64,45 @@ func ReadBoolPtrTag(tag reflect.StructTag, name string, holder **bool) error {
 		if err != nil {
 			return errors.New("failed to parse bool value " + value + " in tag " + name + ": " + err.Error())
 		}
+
 		*holder = &v
 	}
+
 	return nil
 }
 
-func ReadStringPtrTag(tag reflect.StructTag, name string, holder **string) error {
+// ReadStringTag reads string value from field tag into a value.
+func ReadStringTag(tag reflect.StructTag, name string, holder *string) {
+	if holder == nil {
+		return
+	}
+
+	value, ok := tag.Lookup(name)
+	if ok {
+		if *holder != "" && value == "-" {
+			*holder = ""
+
+			return
+		}
+
+		*holder = value
+	}
+}
+
+// ReadStringPtrTag reads string value from field tag into a pointer.
+func ReadStringPtrTag(tag reflect.StructTag, name string, holder **string) {
 	value, ok := tag.Lookup(name)
 	if ok {
 		if *holder != nil && **holder != "" && value == "-" {
 			*holder = nil
-			return nil
+			return
 		}
+
 		*holder = &value
 	}
-	return nil
 }
 
+// ReadIntTag reads int64 value from field tag into a value.
 func ReadIntTag(tag reflect.StructTag, name string, holder *int64) error {
 	value, ok := tag.Lookup(name)
 	if ok {
@@ -83,11 +110,14 @@ func ReadIntTag(tag reflect.StructTag, name string, holder *int64) error {
 		if err != nil {
 			return errors.New("failed to parse float value " + value + " in tag " + name + ": " + err.Error())
 		}
+
 		*holder = v
 	}
+
 	return nil
 }
 
+// ReadIntPtrTag reads int64 value from field tag into a pointer.
 func ReadIntPtrTag(tag reflect.StructTag, name string, holder **int64) error {
 	value, ok := tag.Lookup(name)
 	if ok {
@@ -95,11 +125,14 @@ func ReadIntPtrTag(tag reflect.StructTag, name string, holder **int64) error {
 		if err != nil {
 			return errors.New("failed to parse int value " + value + " in tag " + name + ": " + err.Error())
 		}
+
 		*holder = &v
 	}
+
 	return nil
 }
 
+// ReadFloatTag reads float64 value from field tag into a value.
 func ReadFloatTag(tag reflect.StructTag, name string, holder *float64) error {
 	value, ok := tag.Lookup(name)
 	if ok {
@@ -107,11 +140,14 @@ func ReadFloatTag(tag reflect.StructTag, name string, holder *float64) error {
 		if err != nil {
 			return errors.New("failed to parse float value " + value + " in tag " + name + ": " + err.Error())
 		}
+
 		*holder = v
 	}
+
 	return nil
 }
 
+// ReadFloatPtrTag reads float64 value from field tag into a pointer.
 func ReadFloatPtrTag(tag reflect.StructTag, name string, holder **float64) error {
 	value, ok := tag.Lookup(name)
 	if ok {
@@ -119,8 +155,10 @@ func ReadFloatPtrTag(tag reflect.StructTag, name string, holder **float64) error
 		if err != nil {
 			return errors.New("failed to parse float value " + value + " in tag " + name + ": " + err.Error())
 		}
+
 		*holder = &v
 	}
+
 	return nil
 }
 
@@ -154,9 +192,12 @@ func PopulateFieldsFromTags(structPtr interface{}, fieldTag reflect.StructTag) e
 		pvf := pv.Field(i).Addr().Interface()
 
 		var err error
+
 		switch v := pvf.(type) {
 		case **string:
-			err = ReadStringPtrTag(fieldTag, tagName, v)
+			ReadStringPtrTag(fieldTag, tagName, v)
+		case *string:
+			ReadStringTag(fieldTag, tagName, v)
 		case **int64:
 			err = ReadIntPtrTag(fieldTag, tagName, v)
 		case *int64:

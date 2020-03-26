@@ -3,6 +3,5 @@ gen:
 		--renames CoreSchemaMetaSchema:Schema SimpleTypes:SimpleType SimpleTypeArray:Array SimpleTypeBoolean:Boolean SimpleTypeInteger:Integer SimpleTypeNull:Null SimpleTypeNumber:Number SimpleTypeObject:Object SimpleTypeString:String
 	gofmt -w ./entities.go ./entities_test.go
 
-gen-oas3:
-	cd resources/schema/ && json-cli gen-go openapi3.json --output ../../openapi3/entities.go --package-name openapi3 --with-zero-values --fluent-setters --root-name Spec
-	gofmt -w ./openapi3/entities.go
+lint:
+	golangci-lint run --enable-all --disable gochecknoglobals,funlen,gomnd,gocognit ./...

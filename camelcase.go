@@ -5,8 +5,10 @@ import (
 	"strings"
 )
 
-var numberSequence = regexp.MustCompile(`([a-zA-Z])(\d+)([a-zA-Z]?)`)
-var numberReplacement = []byte(`$1 $2 $3`)
+var (
+	numberSequence    = regexp.MustCompile(`([a-zA-Z])(\d+)([a-zA-Z]?)`)
+	numberReplacement = []byte(`$1 $2 $3`)
+)
 
 // toCamel converts a string to CamelCase.
 func toCamel(s string) string {

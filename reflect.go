@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/swaggest/jsonschema-go/refl"
+	"github.com/swaggest/jsonschema-go/internal/refl"
 )
 
 var (
@@ -19,19 +19,23 @@ var (
 	typeOfEmptyInterface  = reflect.TypeOf((*interface{})(nil)).Elem()
 )
 
+// Described exposes description.
 type Described interface {
-	Describe() string
+	Description() string
 }
 
+// Titled exposes title.
 type Titled interface {
 	Title() string
 }
 
+// Ref is a definition reference.
 type Ref struct {
 	Path string
 	Name string
 }
 
+// Schema creates schema instance from reference.
 func (r Ref) Schema() Schema {
 	s := r.Path + r.Name
 
@@ -40,12 +44,14 @@ func (r Ref) Schema() Schema {
 	}
 }
 
-type Generator struct {
-	DefaultOptions []func(*ParseContext)
+// Reflector creates JSON Schemas from Go values.
+type Reflector struct {
+	DefaultOptions []func(*ReflectContext)
 	typesMap       map[refl.TypeString]interface{}
 }
 
-func (g *Generator) AddTypeMapping(src, dst interface{}) {
+// AddTypeMapping creates substitution link between types of src and dst when reflecting JSON Schema.
+func (g *Reflector) AddTypeMapping(src, dst interface{}) {
 	if g.typesMap == nil {
 		g.typesMap = map[refl.TypeString]interface{}{}
 	}
@@ -59,11 +65,23 @@ func checkSchemaSetup(v reflect.Value, s *Schema) (bool, error) {
 		return false, err
 	}
 
+	if exposer, ok := v.Interface().(Exposer); ok {
+		schema, err := exposer.JSONSchema()
+		if err != nil {
+			return true, err
+		}
+
+		*s = schema
+
+		return true, nil
+	}
+
 	return false, nil
 }
 
-func (g *Generator) Parse(i interface{}, options ...func(*ParseContext)) (Schema, error) {
-	pc := ParseContext{}
+// Reflect walks Go value and builds its JSON Schema based on types and field tags.
+func (g *Reflector) Reflect(i interface{}, options ...func(*ReflectContext)) (Schema, error) {
+	pc := ReflectContext{}
 	pc.DefinitionsPrefix = "#/definitions/"
 	pc.PropertyNameTag = "json"
 	pc.Path = []string{"#"}
@@ -79,7 +97,7 @@ func (g *Generator) Parse(i interface{}, options ...func(*ParseContext)) (Schema
 		option(&pc)
 	}
 
-	schema, err := g.parse(i, &pc)
+	schema, err := g.reflect(i, &pc)
 	if err == nil && len(pc.definitions) > 0 {
 		schema.Definitions = make(map[string]SchemaOrBool, len(pc.definitions))
 
@@ -93,7 +111,7 @@ func (g *Generator) Parse(i interface{}, options ...func(*ParseContext)) (Schema
 	return schema, err
 }
 
-func (g *Generator) parse(i interface{}, pc *ParseContext) (schema Schema, err error) {
+func (g *Reflector) reflect(i interface{}, pc *ReflectContext) (schema Schema, err error) {
 	var (
 		typeString refl.TypeString
 		defName    string
@@ -144,7 +162,7 @@ func (g *Generator) parse(i interface{}, pc *ParseContext) (schema Schema, err e
 		return schema, nil
 	}
 
-	if t.Kind() == reflect.Ptr {
+	if t.Kind() == reflect.Ptr && t.Elem() != typeOfJSONRawMsg {
 		schema.AddType(Null)
 	}
 
@@ -204,7 +222,7 @@ func (g *Generator) parse(i interface{}, pc *ParseContext) (schema Schema, err e
 	}
 
 	if vd, ok := v.Interface().(Described); ok {
-		schema.WithDescription(vd.Describe())
+		schema.WithDescription(vd.Description())
 	}
 
 	if vt, ok := v.Interface().(Titled); ok {
@@ -216,7 +234,7 @@ func (g *Generator) parse(i interface{}, pc *ParseContext) (schema Schema, err e
 	return schema, err
 }
 
-func (g *Generator) kindSwitch(t reflect.Type, v reflect.Value, schema *Schema, pc *ParseContext) error {
+func (g *Reflector) kindSwitch(t reflect.Type, v reflect.Value, schema *Schema, pc *ReflectContext) error {
 	switch t.Kind() {
 	case reflect.Struct:
 		switch {
@@ -245,7 +263,7 @@ func (g *Generator) kindSwitch(t reflect.Type, v reflect.Value, schema *Schema, 
 			itemValue = reflect.New(elemType).Interface()
 		}
 
-		itemsSchema, err := g.parse(itemValue, pc)
+		itemsSchema, err := g.reflect(itemValue, pc)
 		if err != nil {
 			return err
 		}
@@ -263,7 +281,7 @@ func (g *Generator) kindSwitch(t reflect.Type, v reflect.Value, schema *Schema, 
 			itemValue = reflect.New(elemType).Interface()
 		}
 
-		additionalPropertiesSchema, err := g.parse(itemValue, pc)
+		additionalPropertiesSchema, err := g.reflect(itemValue, pc)
 		if err != nil {
 			return err
 		}
@@ -291,7 +309,7 @@ func (g *Generator) kindSwitch(t reflect.Type, v reflect.Value, schema *Schema, 
 	return nil
 }
 
-func (g *Generator) walkProperties(v reflect.Value, parent *Schema, pc *ParseContext) error {
+func (g *Reflector) walkProperties(v reflect.Value, parent *Schema, pc *ReflectContext) error {
 	t := v.Type()
 	if t.Kind() == reflect.Ptr {
 		t = t.Elem()
@@ -306,7 +324,7 @@ func (g *Generator) walkProperties(v reflect.Value, parent *Schema, pc *ParseCon
 	for i := 0; i < t.NumField(); i++ {
 		field := t.Field(i)
 
-		var tag = field.Tag.Get(pc.PropertyNameTag)
+		tag := field.Tag.Get(pc.PropertyNameTag)
 
 		// Skip explicitly discarded field.
 		if tag == "-" {
@@ -354,8 +372,8 @@ func (g *Generator) walkProperties(v reflect.Value, parent *Schema, pc *ParseCon
 		}
 
 		pc.Path = append(pc.Path, propName)
-		propertySchema, err := g.parse(fieldVal, pc)
 
+		propertySchema, err := g.reflect(fieldVal, pc)
 		if err != nil {
 			return err
 		}
@@ -410,8 +428,8 @@ func (enum *enum) loadFromField(field reflect.StructField, fieldVal interface{})
 
 	if enumTag := field.Tag.Get("enum"); enumTag != "" {
 		var e []interface{}
-		err := json.Unmarshal([]byte(enumTag), &e)
 
+		err := json.Unmarshal([]byte(enumTag), &e)
 		if err != nil {
 			es := strings.Split(enumTag, ",")
 			e = make([]interface{}, len(es))

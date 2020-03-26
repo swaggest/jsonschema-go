@@ -7,7 +7,9 @@ func IsSliceOrMap(i interface{}) bool {
 	if i == nil {
 		return false
 	}
+
 	t := DeepIndirect(reflect.TypeOf(i))
+
 	return t.Kind() == reflect.Slice || t.Kind() == reflect.Map || t.Kind() == reflect.Array
 }
 
@@ -16,10 +18,12 @@ func IsStruct(i interface{}) bool {
 	if i == nil {
 		return false
 	}
+
 	t := reflect.TypeOf(i)
 	for t.Kind() == reflect.Ptr {
 		t = t.Elem()
 	}
+
 	return t.Kind() == reflect.Struct
 }
 
@@ -42,6 +46,7 @@ func FindEmbeddedSliceOrMap(i interface{}) reflect.Type {
 			if IsSliceOrMap(v) {
 				return f.Type
 			}
+
 			if t := FindEmbeddedSliceOrMap(v); t != nil {
 				return t
 			}
