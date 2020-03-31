@@ -64,7 +64,7 @@ func (o Org) PrepareJSONSchema(schema *jsonschema.Schema) error {
 	return nil
 }
 
-func TestGenerator_Parse(t *testing.T) {
+func TestReflector_Reflect(t *testing.T) {
 	g := jsonschema.Reflector{}
 	schema, err := g.Reflect(Org{})
 	require.NoError(t, err)
@@ -138,4 +138,45 @@ func TestGenerator_Parse(t *testing.T) {
  }
 }
 `), j, string(j))
+}
+
+func TestReflector_Reflect_inlineStruct(t *testing.T) {
+	type structWithInline struct {
+		Data struct {
+			Deeper struct {
+				A string `json:"a"`
+			} `json:"deeper"`
+		} `json:"data"`
+	}
+
+	g := jsonschema.Reflector{}
+	schema, err := g.Reflect(structWithInline{})
+	require.NoError(t, err)
+
+	j, err := json.MarshalIndent(schema, "", " ")
+	require.NoError(t, err)
+
+	assertjson.Equal(t, []byte(`{
+ "$ref": "#/definitions/JsonschemaGoTestStructWithInline",
+ "definitions": {
+  "JsonschemaGoTestStructWithInline": {
+   "properties": {
+    "data": {
+     "properties": {
+      "deeper": {
+       "properties": {
+        "a": {
+         "type": "string"
+        }
+       },
+       "type": "object"
+      }
+     },
+     "type": "object"
+    }
+   },
+   "type": "object"
+  }
+ }
+}`), j)
 }
