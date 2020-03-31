@@ -3,7 +3,7 @@ package jsonschema
 import (
 	"reflect"
 
-	"github.com/swaggest/jsonschema-go/internal/refl"
+	"github.com/swaggest/refl"
 )
 
 // DefinitionsPrefix sets up location for newly created references, default "#/definitions/".

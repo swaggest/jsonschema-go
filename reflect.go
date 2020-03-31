@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/swaggest/jsonschema-go/internal/refl"
+	"github.com/swaggest/refl"
 )
 
 var (
