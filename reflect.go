@@ -87,7 +87,7 @@ func (g *Reflector) Reflect(i interface{}, options ...func(*ReflectContext)) (Sc
 	pc.Path = []string{"#"}
 	pc.typeCycles = make(map[refl.TypeString]bool)
 
-	HijackType(checkSchemaSetup)(&pc)
+	InterceptType(checkSchemaSetup)(&pc)
 
 	for _, option := range g.DefaultOptions {
 		option(&pc)
@@ -200,10 +200,10 @@ func (g *Reflector) reflect(i interface{}, pc *ReflectContext) (schema Schema, e
 		return
 	}
 
-	if pc.HijackType != nil {
+	if pc.InterceptType != nil {
 		var ret bool
 
-		ret, err = pc.HijackType(v, &schema)
+		ret, err = pc.InterceptType(v, &schema)
 		if err != nil || ret {
 			return schema, err
 		}
@@ -404,6 +404,13 @@ func (g *Reflector) walkProperties(v reflect.Value, parent *Schema, pc *ReflectC
 
 		parent.Properties[propName] = SchemaOrBool{
 			TypeObject: &propertySchema,
+		}
+
+		if pc.InterceptProperty != nil {
+			err = pc.InterceptProperty(propName, field, &propertySchema)
+			if err != nil {
+				return err
+			}
 		}
 	}
 
