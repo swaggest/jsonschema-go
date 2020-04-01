@@ -346,9 +346,6 @@ func (g *Reflector) walkProperties(v reflect.Value, parent *Schema, pc *ReflectC
 		}
 
 		propName := strings.Split(tag, ",")[0]
-
-		pc.WalkedProperties = append(pc.WalkedProperties, propName)
-
 		required := false
 
 		err := refl.ReadBoolTag(field.Tag, "required", &required)
