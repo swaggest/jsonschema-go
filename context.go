@@ -47,6 +47,25 @@ func InterceptType(f InterceptTypeFunc) func(*ReflectContext) {
 	}
 }
 
+// InterceptProperty adds hook to customize property schema.
+func InterceptProperty(f InterceptPropertyFunc) func(*ReflectContext) {
+	return func(pc *ReflectContext) {
+		if pc.InterceptProperty != nil {
+			prev := pc.InterceptProperty
+			pc.InterceptProperty = func(name string, field reflect.StructField, propertySchema *Schema) error {
+				err := prev(name, field, propertySchema)
+				if err != nil {
+					return err
+				}
+
+				return f(name, field, propertySchema)
+			}
+		} else {
+			pc.InterceptProperty = f
+		}
+	}
+}
+
 // InlineRefs prevents references.
 func InlineRefs(pc *ReflectContext) {
 	pc.InlineRefs = true

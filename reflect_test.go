@@ -65,8 +65,8 @@ func (o Org) PrepareJSONSchema(schema *jsonschema.Schema) error {
 }
 
 func TestReflector_Reflect(t *testing.T) {
-	g := jsonschema.Reflector{}
-	schema, err := g.Reflect(Org{})
+	reflector := jsonschema.Reflector{}
+	schema, err := reflector.Reflect(Org{})
 	require.NoError(t, err)
 
 	j, err := json.MarshalIndent(schema, "", " ")
@@ -149,8 +149,8 @@ func TestReflector_Reflect_inlineStruct(t *testing.T) {
 		} `json:"data"`
 	}
 
-	g := jsonschema.Reflector{}
-	schema, err := g.Reflect(structWithInline{})
+	reflector := jsonschema.Reflector{}
+	schema, err := reflector.Reflect(structWithInline{})
 	require.NoError(t, err)
 
 	j, err := json.MarshalIndent(schema, "", " ")

@@ -51,12 +51,12 @@ type Reflector struct {
 }
 
 // AddTypeMapping creates substitution link between types of src and dst when reflecting JSON Schema.
-func (g *Reflector) AddTypeMapping(src, dst interface{}) {
-	if g.typesMap == nil {
-		g.typesMap = map[refl.TypeString]interface{}{}
+func (r *Reflector) AddTypeMapping(src, dst interface{}) {
+	if r.typesMap == nil {
+		r.typesMap = map[refl.TypeString]interface{}{}
 	}
 
-	g.typesMap[refl.GoType(refl.DeepIndirect(reflect.TypeOf(src)))] = dst
+	r.typesMap[refl.GoType(refl.DeepIndirect(reflect.TypeOf(src)))] = dst
 }
 
 func checkSchemaSetup(v reflect.Value, s *Schema) (bool, error) {
@@ -80,7 +80,7 @@ func checkSchemaSetup(v reflect.Value, s *Schema) (bool, error) {
 }
 
 // Reflect walks Go value and builds its JSON Schema based on types and field tags.
-func (g *Reflector) Reflect(i interface{}, options ...func(*ReflectContext)) (Schema, error) {
+func (r *Reflector) Reflect(i interface{}, options ...func(*ReflectContext)) (Schema, error) {
 	pc := ReflectContext{}
 	pc.DefinitionsPrefix = "#/definitions/"
 	pc.PropertyNameTag = "json"
@@ -89,7 +89,7 @@ func (g *Reflector) Reflect(i interface{}, options ...func(*ReflectContext)) (Sc
 
 	InterceptType(checkSchemaSetup)(&pc)
 
-	for _, option := range g.DefaultOptions {
+	for _, option := range r.DefaultOptions {
 		option(&pc)
 	}
 
@@ -97,7 +97,7 @@ func (g *Reflector) Reflect(i interface{}, options ...func(*ReflectContext)) (Sc
 		option(&pc)
 	}
 
-	schema, err := g.reflect(i, &pc)
+	schema, err := r.reflect(i, &pc)
 	if err == nil && len(pc.definitions) > 0 {
 		schema.Definitions = make(map[string]SchemaOrBool, len(pc.definitions))
 
@@ -111,7 +111,7 @@ func (g *Reflector) Reflect(i interface{}, options ...func(*ReflectContext)) (Sc
 	return schema, err
 }
 
-func (g *Reflector) reflect(i interface{}, pc *ReflectContext) (schema Schema, err error) {
+func (r *Reflector) reflect(i interface{}, pc *ReflectContext) (schema Schema, err error) {
 	var (
 		typeString refl.TypeString
 		defName    string
@@ -178,7 +178,7 @@ func (g *Reflector) reflect(i interface{}, pc *ReflectContext) (schema Schema, e
 		return schema, nil
 	}
 
-	if mappedTo, found := g.typesMap[typeString]; found {
+	if mappedTo, found := r.typesMap[typeString]; found {
 		t = refl.DeepIndirect(reflect.TypeOf(mappedTo))
 		v = reflect.ValueOf(mappedTo)
 	}
@@ -229,12 +229,12 @@ func (g *Reflector) reflect(i interface{}, pc *ReflectContext) (schema Schema, e
 		schema.WithTitle(vt.Title())
 	}
 
-	err = g.kindSwitch(t, v, &schema, pc)
+	err = r.kindSwitch(t, v, &schema, pc)
 
 	return schema, err
 }
 
-func (g *Reflector) kindSwitch(t reflect.Type, v reflect.Value, schema *Schema, pc *ReflectContext) error {
+func (r *Reflector) kindSwitch(t reflect.Type, v reflect.Value, schema *Schema, pc *ReflectContext) error {
 	switch t.Kind() {
 	case reflect.Struct:
 		switch {
@@ -243,7 +243,7 @@ func (g *Reflector) kindSwitch(t reflect.Type, v reflect.Value, schema *Schema, 
 		default:
 			schema.AddType(Object)
 
-			err := g.walkProperties(v, schema, pc)
+			err := r.walkProperties(v, schema, pc)
 			if err != nil {
 				return err
 			}
@@ -263,7 +263,7 @@ func (g *Reflector) kindSwitch(t reflect.Type, v reflect.Value, schema *Schema, 
 			itemValue = reflect.New(elemType).Interface()
 		}
 
-		itemsSchema, err := g.reflect(itemValue, pc)
+		itemsSchema, err := r.reflect(itemValue, pc)
 		if err != nil {
 			return err
 		}
@@ -281,7 +281,7 @@ func (g *Reflector) kindSwitch(t reflect.Type, v reflect.Value, schema *Schema, 
 			itemValue = reflect.New(elemType).Interface()
 		}
 
-		additionalPropertiesSchema, err := g.reflect(itemValue, pc)
+		additionalPropertiesSchema, err := r.reflect(itemValue, pc)
 		if err != nil {
 			return err
 		}
@@ -309,7 +309,7 @@ func (g *Reflector) kindSwitch(t reflect.Type, v reflect.Value, schema *Schema, 
 	return nil
 }
 
-func (g *Reflector) walkProperties(v reflect.Value, parent *Schema, pc *ReflectContext) error {
+func (r *Reflector) walkProperties(v reflect.Value, parent *Schema, pc *ReflectContext) error {
 	t := v.Type()
 	if t.Kind() == reflect.Ptr {
 		t = t.Elem()
@@ -332,7 +332,7 @@ func (g *Reflector) walkProperties(v reflect.Value, parent *Schema, pc *ReflectC
 		}
 
 		if tag == "" && field.Anonymous {
-			err := g.walkProperties(v.Field(i), parent, pc)
+			err := r.walkProperties(v.Field(i), parent, pc)
 			if err != nil {
 				return err
 			}
@@ -370,7 +370,7 @@ func (g *Reflector) walkProperties(v reflect.Value, parent *Schema, pc *ReflectC
 
 		pc.Path = append(pc.Path, propName)
 
-		propertySchema, err := g.reflect(fieldVal, pc)
+		propertySchema, err := r.reflect(fieldVal, pc)
 		if err != nil {
 			return err
 		}
