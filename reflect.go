@@ -314,7 +314,7 @@ func (r *Reflector) walkProperties(v reflect.Value, parent *Schema, pc *ReflectC
 	if t.Kind() == reflect.Ptr {
 		t = t.Elem()
 
-		if v.IsZero() {
+		if refl.IsZero(v) {
 			v = reflect.Zero(t)
 		} else {
 			v = v.Elem()
