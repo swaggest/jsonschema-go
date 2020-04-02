@@ -19,6 +19,7 @@
             ]
         },
         "simpleTypes": {
+            "title": "Simple Type",
             "enum": [
                 "array",
                 "boolean",
