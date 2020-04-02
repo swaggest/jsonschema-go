@@ -74,68 +74,65 @@ func TestReflector_Reflect(t *testing.T) {
 
 	assertjson.Equal(t, []byte(`
 {
- "$ref": "#/definitions/JsonschemaGoTestOrg",
+ "title": "Organization",
  "definitions": {
-  "JsonschemaGoTestOrg": {
-   "title": "Organization",
-   "properties": {
-    "chiefOfMorale": {
-     "$ref": "#/definitions/JsonschemaGoTestPerson"
-    },
-    "employees": {
-     "items": {
-      "$ref": "#/definitions/JsonschemaGoTestPerson"
-     },
-     "type": "array"
-    }
-   },
-   "type": "object"
-  },
   "JsonschemaGoTestPerson": {
    "title": "Person",
    "required": [
-    "lastName"
+	"lastName"
    ],
    "properties": {
-    "createdAt": {
-     "type": "string",
-     "format": "date-time"
-    },
-    "date": {
-     "type": "string",
-     "format": "date"
-    },
-    "deletedAt": {
-     "type": [
-      "null",
-      "string"
-     ],
-     "format": "date-time"
-    },
-    "firstName": {
-     "type": "string"
-    },
-    "height": {
-     "type": "integer"
-    },
-    "lastName": {
-     "type": "string"
-    },
-    "meta": {},
-    "role": {
-     "$ref": "#/definitions/JsonschemaGoTestRole",
-     "description": "The role of person."
-    }
+	"createdAt": {
+	 "type": "string",
+	 "format": "date-time"
+	},
+	"date": {
+	 "type": "string",
+	 "format": "date"
+	},
+	"deletedAt": {
+	 "type": [
+	  "null",
+	  "string"
+	 ],
+	 "format": "date-time"
+	},
+	"firstName": {
+	 "type": "string"
+	},
+	"height": {
+	 "type": "integer"
+	},
+	"lastName": {
+	 "type": "string"
+	},
+	"meta": {},
+	"role": {
+	 "$ref": "#/definitions/JsonschemaGoTestRole",
+	 "description": "The role of person."
+	}
    },
    "type": [
-    "null",
-    "object"
+	"null",
+	"object"
    ]
   },
   "JsonschemaGoTestRole": {
    "type": "string"
   }
- }
+ },
+ "properties": {
+  "chiefOfMorale": {
+   "$ref": "#/definitions/JsonschemaGoTestPerson"
+  },
+  "employees": {
+   "items": {
+	"$ref": "#/definitions/JsonschemaGoTestPerson"
+   },
+   "type": "array"
+  }
+ },
+ "type": "object"
 }
 `), j, string(j))
 }
@@ -156,27 +153,23 @@ func TestReflector_Reflect_inlineStruct(t *testing.T) {
 	j, err := json.MarshalIndent(schema, "", " ")
 	require.NoError(t, err)
 
-	assertjson.Equal(t, []byte(`{
- "$ref": "#/definitions/JsonschemaGoTestStructWithInline",
- "definitions": {
-  "JsonschemaGoTestStructWithInline": {
+	assertjson.Equal(t, []byte(`
+{
+ "properties": {
+  "data": {
    "properties": {
-    "data": {
-     "properties": {
-      "deeper": {
-       "properties": {
-        "a": {
-         "type": "string"
-        }
-       },
-       "type": "object"
-      }
-     },
-     "type": "object"
-    }
+	"deeper": {
+	 "properties": {
+	  "a": {
+	   "type": "string"
+	  }
+	 },
+	 "type": "object"
+	}
    },
    "type": "object"
   }
- }
-}`), j)
+ },
+ "type": "object"
+}`), j, string(j))
 }

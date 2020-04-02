@@ -138,7 +138,7 @@ func (r *Reflector) reflect(i interface{}, pc *ReflectContext) (schema Schema, e
 			return
 		}
 
-		if pc.InlineRoot && len(pc.Path) == 0 {
+		if !pc.RootRef && len(pc.Path) == 0 {
 			return
 		}
 

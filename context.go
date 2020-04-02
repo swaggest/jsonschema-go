@@ -71,9 +71,9 @@ func InlineRefs(pc *ReflectContext) {
 	pc.InlineRefs = true
 }
 
-// InlineRoot prevents referencing root schema.
-func InlineRoot(pc *ReflectContext) {
-	pc.InlineRoot = true
+// RootRef enables referencing root schema.
+func RootRef(pc *ReflectContext) {
+	pc.RootRef = true
 }
 
 // ReflectContext accompanies single reflect operation.
@@ -81,7 +81,7 @@ type ReflectContext struct {
 	DefinitionsPrefix string
 	PropertyNameTag   string
 	InlineRefs        bool
-	InlineRoot        bool
+	RootRef           bool
 	InterceptType     InterceptTypeFunc
 	InterceptProperty InterceptPropertyFunc
 

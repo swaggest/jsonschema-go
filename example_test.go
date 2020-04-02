@@ -83,75 +83,11 @@ func ExampleReflector_Reflect() {
 
 	// Output:
 	// {
-	//  "$ref": "#/definitions/JsonschemaGoTestResp",
+	//  "title": "Sample Response",
+	//  "description": "This is a sample response.",
 	//  "definitions": {
 	//   "JsonschemaGoTestResp": {
-	//    "title": "Sample Response",
-	//    "description": "This is a sample response.",
-	//    "properties": {
-	//     "arrayOfAnything": {
-	//      "items": {},
-	//      "type": "array"
-	//     },
-	//     "field1": {
-	//      "type": "integer"
-	//     },
-	//     "field2": {
-	//      "type": "string"
-	//     },
-	//     "info": {
-	//      "required": [
-	//       "foo"
-	//      ],
-	//      "properties": {
-	//       "bar": {
-	//        "description": "This is Bar.",
-	//        "type": "number"
-	//       },
-	//       "foo": {
-	//        "pattern": "\\d+",
-	//        "type": "string"
-	//       }
-	//      },
-	//      "type": "object"
-	//     },
-	//     "map": {
-	//      "additionalProperties": {
-	//       "type": "integer"
-	//      },
-	//      "type": "object"
-	//     },
-	//     "mapOfAnything": {
-	//      "additionalProperties": {},
-	//      "type": "object"
-	//     },
-	//     "nullableWhatever": {
-	//      "type": "null"
-	//     },
-	//     "parent": {
-	//      "$ref": "#/definitions/JsonschemaGoTestResp"
-	//     },
-	//     "recursiveArray": {
-	//      "items": {
-	//       "$ref": "#/definitions/JsonschemaGoTestWeirdResp"
-	//      },
-	//      "type": "array"
-	//     },
-	//     "recursiveStructArray": {
-	//      "items": {
-	//       "$ref": "#/definitions/JsonschemaGoTestResp"
-	//      },
-	//      "type": "array"
-	//     },
-	//     "uuid": {
-	//      "$ref": "#/definitions/JsonschemaGoTestUUID"
-	//     },
-	//     "whatever": {}
-	//    },
-	//    "type": [
-	//     "null",
-	//     "object"
-	//    ],
+	//    "type": "null",
 	//    "x-foo": "bar"
 	//   },
 	//   "JsonschemaGoTestUUID": {
@@ -230,6 +166,110 @@ func ExampleReflector_Reflect() {
 	//    ],
 	//    "x-foo": "bar"
 	//   }
-	//  }
+	//  },
+	//  "properties": {
+	//   "arrayOfAnything": {
+	//    "items": {},
+	//    "type": "array"
+	//   },
+	//   "field1": {
+	//    "type": "integer"
+	//   },
+	//   "field2": {
+	//    "type": "string"
+	//   },
+	//   "info": {
+	//    "required": [
+	//     "foo"
+	//    ],
+	//    "properties": {
+	//     "bar": {
+	//      "description": "This is Bar.",
+	//      "type": "number"
+	//     },
+	//     "foo": {
+	//      "pattern": "\\d+",
+	//      "type": "string"
+	//     }
+	//    },
+	//    "type": "object"
+	//   },
+	//   "map": {
+	//    "additionalProperties": {
+	//     "type": "integer"
+	//    },
+	//    "type": "object"
+	//   },
+	//   "mapOfAnything": {
+	//    "additionalProperties": {},
+	//    "type": "object"
+	//   },
+	//   "nullableWhatever": {
+	//    "type": "null"
+	//   },
+	//   "parent": {
+	//    "$ref": "#/definitions/JsonschemaGoTestResp"
+	//   },
+	//   "recursiveArray": {
+	//    "items": {
+	//     "$ref": "#/definitions/JsonschemaGoTestWeirdResp"
+	//    },
+	//    "type": "array"
+	//   },
+	//   "recursiveStructArray": {
+	//    "items": {
+	//     "$ref": "#/definitions/JsonschemaGoTestResp"
+	//    },
+	//    "type": "array"
+	//   },
+	//   "uuid": {
+	//    "$ref": "#/definitions/JsonschemaGoTestUUID"
+	//   },
+	//   "whatever": {}
+	//  },
+	//  "type": [
+	//   "null",
+	//   "object"
+	//  ],
+	//  "x-foo": "bar"
 	// }
+}
+
+func ExampleReflector_Reflect_Simple() {
+	type MyStruct struct {
+		Amount float64 `json:"amount" minimum:"10.5" example:"20.6" required:"true"`
+		Abc    string  `json:"abc" pattern:"[abc]"`
+	}
+
+	reflector := jsonschema.Reflector{}
+	schema, err := reflector.Reflect(MyStruct{})
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	j, err := json.MarshalIndent(schema, "", " ")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Println(string(j))
+
+	// Output:
+	// {
+	//  "required": [
+	//   "amount"
+	//  ],
+	//  "properties": {
+	//   "abc": {
+	//    "pattern": "[abc]",
+	//    "type": "string"
+	//   },
+	//   "amount": {
+	//    "minimum": 10.5,
+	//    "type": "number"
+	//   }
+	//  },
+	//  "type": "object"
+	// }
+
 }
