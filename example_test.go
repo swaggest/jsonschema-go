@@ -235,13 +235,14 @@ func ExampleReflector_Reflect() {
 	// }
 }
 
-func ExampleReflector_Reflect_Simple() {
+func ExampleReflector_Reflect_simple() {
 	type MyStruct struct {
 		Amount float64 `json:"amount" minimum:"10.5" example:"20.6" required:"true"`
 		Abc    string  `json:"abc" pattern:"[abc]"`
 	}
 
 	reflector := jsonschema.Reflector{}
+
 	schema, err := reflector.Reflect(MyStruct{})
 	if err != nil {
 		log.Fatal(err)
@@ -265,11 +266,13 @@ func ExampleReflector_Reflect_Simple() {
 	//    "type": "string"
 	//   },
 	//   "amount": {
+	//    "examples": [
+	//     20.6
+	//    ],
 	//    "minimum": 10.5,
 	//    "type": "number"
 	//   }
 	//  },
 	//  "type": "object"
 	// }
-
 }

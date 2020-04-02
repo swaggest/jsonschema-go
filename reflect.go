@@ -381,19 +381,12 @@ func (r *Reflector) walkProperties(v reflect.Value, parent *Schema, pc *ReflectC
 			return err
 		}
 
-		enum := enum{}
-		enum.loadFromField(field, fieldVal)
-
-		if len(enum.items) > 0 {
-			propertySchema.Enum = enum.items
-			if len(enum.names) > 0 {
-				if propertySchema.ExtraProperties == nil {
-					propertySchema.ExtraProperties = make(map[string]interface{}, 1)
-				}
-
-				propertySchema.ExtraProperties[XEnumNames] = enum.names
-			}
+		err = reflectExample(&propertySchema, field)
+		if err != nil {
+			return err
 		}
+
+		reflectEnum(&propertySchema, field, fieldVal)
 
 		if parent.Properties == nil {
 			parent.Properties = make(map[string]SchemaOrBool, 1)
@@ -412,6 +405,75 @@ func (r *Reflector) walkProperties(v reflect.Value, parent *Schema, pc *ReflectC
 	}
 
 	return nil
+}
+
+func reflectExample(propertySchema *Schema, field reflect.StructField) error {
+	var err error
+
+	if propertySchema.Type != nil && propertySchema.Type.SimpleTypes != nil {
+		t := *propertySchema.Type.SimpleTypes
+		switch t {
+		case String:
+			var example *string
+
+			refl.ReadStringPtrTag(field.Tag, "example", &example)
+
+			if example != nil {
+				propertySchema.WithExamples(*example)
+			}
+		case Integer:
+			var example *int64
+
+			err = refl.ReadIntPtrTag(field.Tag, "example", &example)
+			if err != nil {
+				return err
+			}
+
+			if example != nil {
+				propertySchema.WithExamples(*example)
+			}
+		case Number:
+			var example *float64
+
+			err = refl.ReadFloatPtrTag(field.Tag, "example", &example)
+			if err != nil {
+				return err
+			}
+
+			if example != nil {
+				propertySchema.WithExamples(*example)
+			}
+		case Boolean:
+			var example *bool
+
+			err = refl.ReadBoolPtrTag(field.Tag, "example", &example)
+			if err != nil {
+				return err
+			}
+
+			if example != nil {
+				propertySchema.WithExamples(*example)
+			}
+		}
+	}
+
+	return nil
+}
+
+func reflectEnum(propertySchema *Schema, field reflect.StructField, fieldVal interface{}) {
+	enum := enum{}
+	enum.loadFromField(field, fieldVal)
+
+	if len(enum.items) > 0 {
+		propertySchema.Enum = enum.items
+		if len(enum.names) > 0 {
+			if propertySchema.ExtraProperties == nil {
+				propertySchema.ExtraProperties = make(map[string]interface{}, 1)
+			}
+
+			propertySchema.ExtraProperties[XEnumNames] = enum.names
+		}
+	}
 }
 
 // enum can be use for sending enum data that need validate.
