@@ -908,7 +908,8 @@ func (i *SimpleType) UnmarshalJSON(data []byte) error {
 }
 
 func marshalUnion(maps ...interface{}) ([]byte, error) {
-	var result = []byte("{")
+	result := make([]byte, 1, 100)
+	result[0] = '{'
 	isObject := true
 
 	for _, m := range maps {

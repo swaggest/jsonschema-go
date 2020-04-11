@@ -1,5 +1,7 @@
 package jsonschema
 
+import "encoding/json"
+
 const (
 	// XEnumNames is the name of JSON property to store names of enumerated values.
 	XEnumNames = "x-enum-names"
@@ -23,6 +25,11 @@ type Preparer interface {
 // Exposer exposes JSON Schema.
 type Exposer interface {
 	JSONSchema() (Schema, error)
+}
+
+// RawExposer exposes JSON Schema as JSON bytes.
+type RawExposer interface {
+	JSONSchemaBytes() ([]byte, error)
 }
 
 // JSONSchema implements Exposer.
@@ -71,4 +78,41 @@ func (s *Schema) AddType(t SimpleType) {
 
 		s.Type.SliceOfSimpleTypeValues = append(s.Type.SliceOfSimpleTypeValues, t)
 	}
+}
+
+// JSONSchemaBytes exposes JSON Schema as raw JSON bytes.
+func (s SchemaOrBool) JSONSchemaBytes() ([]byte, error) {
+	return json.Marshal(s)
+}
+
+// JSONSchemaBytes exposes JSON Schema as raw JSON bytes.
+func (s Schema) JSONSchemaBytes() ([]byte, error) {
+	return json.Marshal(s)
+}
+
+// ToSimpleMap encodes JSON Schema as generic map.
+func (s SchemaOrBool) ToSimpleMap() (map[string]interface{}, error) {
+	var m map[string]interface{}
+
+	if s.TypeBoolean != nil {
+		if *s.TypeBoolean {
+			return map[string]interface{}{}, nil
+		}
+
+		return map[string]interface{}{
+			"not": map[string]interface{}{},
+		}, nil
+	}
+
+	b, err := json.Marshal(s.TypeObject)
+	if err != nil {
+		return nil, err
+	}
+
+	err = json.Unmarshal(b, &m)
+	if err != nil {
+		return nil, err
+	}
+
+	return m, nil
 }
