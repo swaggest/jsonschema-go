@@ -173,3 +173,84 @@ func TestReflector_Reflect_inlineStruct(t *testing.T) {
  "type": "object"
 }`), j, string(j))
 }
+
+func TestReflector_Reflect_collectDefinitions(t *testing.T) {
+	reflector := jsonschema.Reflector{}
+
+	schemas := map[string]jsonschema.Schema{}
+
+	schema, err := reflector.Reflect(Org{}, jsonschema.CollectDefinitions(schemas))
+	require.NoError(t, err)
+
+	j, err := json.MarshalIndent(schema, "", " ")
+	require.NoError(t, err)
+
+	assertjson.Equal(t, []byte(`
+{
+ "title": "Organization",
+ "properties": {
+  "chiefOfMorale": {
+   "$ref": "#/definitions/JsonschemaGoTestPerson"
+  },
+  "employees": {
+   "items": {
+	"$ref": "#/definitions/JsonschemaGoTestPerson"
+   },
+   "type": "array"
+  }
+ },
+ "type": "object"
+}
+`), j, string(j))
+
+	j, err = json.MarshalIndent(schemas, "", " ")
+	require.NoError(t, err)
+
+	assertjson.Equal(t, []byte(`
+{  
+  "JsonschemaGoTestPerson": {
+   "title": "Person",
+   "required": [
+	"lastName"
+   ],
+   "properties": {
+	"createdAt": {
+	 "type": "string",
+	 "format": "date-time"
+	},
+	"date": {
+	 "type": "string",
+	 "format": "date"
+	},
+	"deletedAt": {
+	 "type": [
+	  "null",
+	  "string"
+	 ],
+	 "format": "date-time"
+	},
+	"firstName": {
+	 "type": "string"
+	},
+	"height": {
+	 "type": "integer"
+	},
+	"lastName": {
+	 "type": "string"
+	},
+	"meta": {},
+	"role": {
+	 "$ref": "#/definitions/JsonschemaGoTestRole",
+	 "description": "The role of person."
+	}
+   },
+   "type": [
+	"null",
+	"object"
+   ]
+  },
+  "JsonschemaGoTestRole": {
+   "type": "string"
+  }
+}`), j)
+}

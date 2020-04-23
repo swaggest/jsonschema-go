@@ -81,37 +81,42 @@ func checkSchemaSetup(v reflect.Value, s *Schema) (bool, error) {
 
 // Reflect walks Go value and builds its JSON Schema based on types and field tags.
 func (r *Reflector) Reflect(i interface{}, options ...func(*ReflectContext)) (Schema, error) {
-	pc := ReflectContext{}
-	pc.DefinitionsPrefix = "#/definitions/"
-	pc.PropertyNameTag = "json"
-	pc.Path = []string{"#"}
-	pc.typeCycles = make(map[refl.TypeString]bool)
+	rc := ReflectContext{}
+	rc.DefinitionsPrefix = "#/definitions/"
+	rc.PropertyNameTag = "json"
+	rc.Path = []string{"#"}
+	rc.typeCycles = make(map[refl.TypeString]bool)
 
-	InterceptType(checkSchemaSetup)(&pc)
+	InterceptType(checkSchemaSetup)(&rc)
 
 	for _, option := range r.DefaultOptions {
-		option(&pc)
+		option(&rc)
 	}
 
 	for _, option := range options {
-		option(&pc)
+		option(&rc)
 	}
 
-	schema, err := r.reflect(i, &pc)
-	if err == nil && len(pc.definitions) > 0 {
-		schema.Definitions = make(map[string]SchemaOrBool, len(pc.definitions))
+	schema, err := r.reflect(i, &rc)
+	if err == nil && len(rc.definitions) > 0 {
+		schema.Definitions = make(map[string]SchemaOrBool, len(rc.definitions))
 
-		for typeString, def := range pc.definitions {
+		for typeString, def := range rc.definitions {
 			def := def
-			ref := pc.definitionRefs[typeString]
-			schema.Definitions[ref.Name] = def.ToSchemaOrBool()
+			ref := rc.definitionRefs[typeString]
+
+			if rc.CollectDefinitions != nil {
+				rc.CollectDefinitions[ref.Name] = def
+			} else {
+				schema.Definitions[ref.Name] = def.ToSchemaOrBool()
+			}
 		}
 	}
 
 	return schema, err
 }
 
-func (r *Reflector) reflect(i interface{}, pc *ReflectContext) (schema Schema, err error) {
+func (r *Reflector) reflect(i interface{}, rc *ReflectContext) (schema Schema, err error) {
 	var (
 		typeString refl.TypeString
 		defName    string
@@ -120,7 +125,7 @@ func (r *Reflector) reflect(i interface{}, pc *ReflectContext) (schema Schema, e
 	)
 
 	defer func() {
-		pc.Path = pc.Path[:len(pc.Path)-1]
+		rc.Path = rc.Path[:len(rc.Path)-1]
 
 		if t == nil {
 			return
@@ -134,11 +139,11 @@ func (r *Reflector) reflect(i interface{}, pc *ReflectContext) (schema Schema, e
 			return
 		}
 
-		if pc.InlineRefs {
+		if rc.InlineRefs {
 			return
 		}
 
-		if !pc.RootRef && len(pc.Path) == 0 {
+		if !rc.RootRef && len(rc.Path) == 0 {
 			return
 		}
 
@@ -146,14 +151,14 @@ func (r *Reflector) reflect(i interface{}, pc *ReflectContext) (schema Schema, e
 			return
 		}
 
-		if pc.definitions == nil {
-			pc.definitions = make(map[refl.TypeString]Schema, 1)
-			pc.definitionRefs = make(map[refl.TypeString]Ref, 1)
+		if rc.definitions == nil {
+			rc.definitions = make(map[refl.TypeString]Schema, 1)
+			rc.definitionRefs = make(map[refl.TypeString]Ref, 1)
 		}
 
-		pc.definitions[typeString] = schema
-		ref := Ref{Path: pc.DefinitionsPrefix, Name: defName}
-		pc.definitionRefs[typeString] = ref
+		rc.definitions[typeString] = schema
+		ref := Ref{Path: rc.DefinitionsPrefix, Name: defName}
+		rc.definitionRefs[typeString] = ref
 
 		schema = ref.Schema()
 	}()
@@ -200,25 +205,25 @@ func (r *Reflector) reflect(i interface{}, pc *ReflectContext) (schema Schema, e
 		return
 	}
 
-	if pc.InterceptType != nil {
+	if rc.InterceptType != nil {
 		var ret bool
 
-		ret, err = pc.InterceptType(v, &schema)
+		ret, err = rc.InterceptType(v, &schema)
 		if err != nil || ret {
 			return schema, err
 		}
 	}
 
-	if ref, ok := pc.definitionRefs[typeString]; ok {
+	if ref, ok := rc.definitionRefs[typeString]; ok {
 		return ref.Schema(), nil
 	}
 
-	if pc.typeCycles[typeString] {
+	if rc.typeCycles[typeString] {
 		return
 	}
 
 	if t.PkgPath() != "" {
-		pc.typeCycles[typeString] = true
+		rc.typeCycles[typeString] = true
 	}
 
 	if vd, ok := v.Interface().(Described); ok {
@@ -229,12 +234,12 @@ func (r *Reflector) reflect(i interface{}, pc *ReflectContext) (schema Schema, e
 		schema.WithTitle(vt.Title())
 	}
 
-	err = r.kindSwitch(t, v, &schema, pc)
+	err = r.kindSwitch(t, v, &schema, rc)
 
 	return schema, err
 }
 
-func (r *Reflector) kindSwitch(t reflect.Type, v reflect.Value, schema *Schema, pc *ReflectContext) error {
+func (r *Reflector) kindSwitch(t reflect.Type, v reflect.Value, schema *Schema, rc *ReflectContext) error {
 	switch t.Kind() {
 	case reflect.Struct:
 		switch {
@@ -243,7 +248,7 @@ func (r *Reflector) kindSwitch(t reflect.Type, v reflect.Value, schema *Schema, 
 		default:
 			schema.AddType(Object)
 
-			err := r.walkProperties(v, schema, pc)
+			err := r.walkProperties(v, schema, rc)
 			if err != nil {
 				return err
 			}
@@ -256,14 +261,14 @@ func (r *Reflector) kindSwitch(t reflect.Type, v reflect.Value, schema *Schema, 
 
 		elemType := refl.DeepIndirect(t.Elem())
 
-		pc.Path = append(pc.Path, "[]")
+		rc.Path = append(rc.Path, "[]")
 		itemValue := reflect.Zero(elemType).Interface()
 
 		if itemValue == nil && elemType != typeOfEmptyInterface {
 			itemValue = reflect.New(elemType).Interface()
 		}
 
-		itemsSchema, err := r.reflect(itemValue, pc)
+		itemsSchema, err := r.reflect(itemValue, rc)
 		if err != nil {
 			return err
 		}
@@ -274,14 +279,14 @@ func (r *Reflector) kindSwitch(t reflect.Type, v reflect.Value, schema *Schema, 
 	case reflect.Map:
 		elemType := refl.DeepIndirect(t.Elem())
 
-		pc.Path = append(pc.Path, "{}")
+		rc.Path = append(rc.Path, "{}")
 		itemValue := reflect.Zero(elemType).Interface()
 
 		if itemValue == nil && elemType != typeOfEmptyInterface {
 			itemValue = reflect.New(elemType).Interface()
 		}
 
-		additionalPropertiesSchema, err := r.reflect(itemValue, pc)
+		additionalPropertiesSchema, err := r.reflect(itemValue, rc)
 		if err != nil {
 			return err
 		}
@@ -309,7 +314,7 @@ func (r *Reflector) kindSwitch(t reflect.Type, v reflect.Value, schema *Schema, 
 	return nil
 }
 
-func (r *Reflector) walkProperties(v reflect.Value, parent *Schema, pc *ReflectContext) error {
+func (r *Reflector) walkProperties(v reflect.Value, parent *Schema, rc *ReflectContext) error {
 	t := v.Type()
 	if t.Kind() == reflect.Ptr {
 		t = t.Elem()
@@ -324,7 +329,7 @@ func (r *Reflector) walkProperties(v reflect.Value, parent *Schema, pc *ReflectC
 	for i := 0; i < t.NumField(); i++ {
 		field := t.Field(i)
 
-		tag := field.Tag.Get(pc.PropertyNameTag)
+		tag := field.Tag.Get(rc.PropertyNameTag)
 
 		// Skip explicitly discarded field.
 		if tag == "-" {
@@ -332,7 +337,7 @@ func (r *Reflector) walkProperties(v reflect.Value, parent *Schema, pc *ReflectC
 		}
 
 		if tag == "" && field.Anonymous {
-			err := r.walkProperties(v.Field(i), parent, pc)
+			err := r.walkProperties(v.Field(i), parent, rc)
 			if err != nil {
 				return err
 			}
@@ -368,9 +373,9 @@ func (r *Reflector) walkProperties(v reflect.Value, parent *Schema, pc *ReflectC
 			}
 		}
 
-		pc.Path = append(pc.Path, propName)
+		rc.Path = append(rc.Path, propName)
 
-		propertySchema, err := r.reflect(fieldVal, pc)
+		propertySchema, err := r.reflect(fieldVal, rc)
 		if err != nil {
 			return err
 		}
@@ -396,8 +401,8 @@ func (r *Reflector) walkProperties(v reflect.Value, parent *Schema, pc *ReflectC
 			TypeObject: &propertySchema,
 		}
 
-		if pc.InterceptProperty != nil {
-			err = pc.InterceptProperty(propName, field, &propertySchema)
+		if rc.InterceptProperty != nil {
+			err = rc.InterceptProperty(propName, field, &propertySchema)
 			if err != nil {
 				return err
 			}
