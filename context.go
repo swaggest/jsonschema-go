@@ -6,10 +6,10 @@ import (
 	"github.com/swaggest/refl"
 )
 
-// CollectDefinitions enables collecting definitions into provided map instead of result schema.
-func CollectDefinitions(schemas map[string]Schema) func(*ReflectContext) {
+// CollectDefinitions enables collecting definitions with provided func instead of result schema.
+func CollectDefinitions(f func(name string, schema Schema)) func(*ReflectContext) {
 	return func(rc *ReflectContext) {
-		rc.CollectDefinitions = schemas
+		rc.CollectDefinitions = f
 	}
 }
 
@@ -78,6 +78,11 @@ func InlineRefs(rc *ReflectContext) {
 	rc.InlineRefs = true
 }
 
+// RootNullable enables nullability (by pointer) for root schema, disabled by default.
+func RootNullable(rc *ReflectContext) {
+	rc.RootNullable = true
+}
+
 // RootRef enables referencing root schema.
 func RootRef(rc *ReflectContext) {
 	rc.RootRef = true
@@ -85,11 +90,12 @@ func RootRef(rc *ReflectContext) {
 
 // ReflectContext accompanies single reflect operation.
 type ReflectContext struct {
-	CollectDefinitions map[string]Schema
+	CollectDefinitions func(name string, schema Schema)
 	DefinitionsPrefix  string
 	PropertyNameTag    string
 	InlineRefs         bool
 	RootRef            bool
+	RootNullable       bool
 	InterceptType      InterceptTypeFunc
 	InterceptProperty  InterceptPropertyFunc
 

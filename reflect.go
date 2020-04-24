@@ -106,7 +106,7 @@ func (r *Reflector) Reflect(i interface{}, options ...func(*ReflectContext)) (Sc
 			ref := rc.definitionRefs[typeString]
 
 			if rc.CollectDefinitions != nil {
-				rc.CollectDefinitions[ref.Name] = def
+				rc.CollectDefinitions(ref.Name, def)
 			} else {
 				schema.Definitions[ref.Name] = def.ToSchemaOrBool()
 			}
@@ -114,6 +114,58 @@ func (r *Reflector) Reflect(i interface{}, options ...func(*ReflectContext)) (Sc
 	}
 
 	return schema, err
+}
+
+func removeNull(t *Type) {
+	if t.SimpleTypes != nil && *t.SimpleTypes == Null {
+		t.SimpleTypes = nil
+	} else if len(t.SliceOfSimpleTypeValues) > 0 {
+		for i, ti := range t.SliceOfSimpleTypeValues {
+			if ti == Null {
+				// Remove Null from slice.
+				t.SliceOfSimpleTypeValues = append(t.SliceOfSimpleTypeValues[:i],
+					t.SliceOfSimpleTypeValues[i+1:]...)
+			}
+		}
+
+		if len(t.SliceOfSimpleTypeValues) == 1 {
+			t.SimpleTypes = &t.SliceOfSimpleTypeValues[0]
+			t.SliceOfSimpleTypeValues = nil
+		}
+	}
+}
+
+func (r *Reflector) reflectDefer(defName string, typeString refl.TypeString, rc *ReflectContext, schema Schema) Schema {
+	if !rc.RootNullable && len(rc.Path) == 0 {
+		removeNull(schema.Type)
+	}
+
+	if schema.Ref != nil {
+		return schema
+	}
+
+	if rc.InlineRefs {
+		return schema
+	}
+
+	if !rc.RootRef && len(rc.Path) == 0 {
+		return schema
+	}
+
+	if defName == "" {
+		return schema
+	}
+
+	if rc.definitions == nil {
+		rc.definitions = make(map[refl.TypeString]Schema, 1)
+		rc.definitionRefs = make(map[refl.TypeString]Ref, 1)
+	}
+
+	rc.definitions[typeString] = schema
+	ref := Ref{Path: rc.DefinitionsPrefix, Name: defName}
+	rc.definitionRefs[typeString] = ref
+
+	return ref.Schema()
 }
 
 func (r *Reflector) reflect(i interface{}, rc *ReflectContext) (schema Schema, err error) {
@@ -135,32 +187,7 @@ func (r *Reflector) reflect(i interface{}, rc *ReflectContext) (schema Schema, e
 			return
 		}
 
-		if schema.Ref != nil {
-			return
-		}
-
-		if rc.InlineRefs {
-			return
-		}
-
-		if !rc.RootRef && len(rc.Path) == 0 {
-			return
-		}
-
-		if defName == "" {
-			return
-		}
-
-		if rc.definitions == nil {
-			rc.definitions = make(map[refl.TypeString]Schema, 1)
-			rc.definitionRefs = make(map[refl.TypeString]Ref, 1)
-		}
-
-		rc.definitions[typeString] = schema
-		ref := Ref{Path: rc.DefinitionsPrefix, Name: defName}
-		rc.definitionRefs[typeString] = ref
-
-		schema = ref.Schema()
+		schema = r.reflectDefer(defName, typeString, rc, schema)
 	}()
 
 	if t == nil || t == typeOfEmptyInterface {

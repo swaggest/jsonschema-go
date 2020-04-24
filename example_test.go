@@ -227,10 +227,7 @@ func ExampleReflector_Reflect() {
 	//   },
 	//   "whatever": {}
 	//  },
-	//  "type": [
-	//   "null",
-	//   "object"
-	//  ],
+	//  "type": "object",
 	//  "x-foo": "bar"
 	// }
 }

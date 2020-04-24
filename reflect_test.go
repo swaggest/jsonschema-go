@@ -147,7 +147,7 @@ func TestReflector_Reflect_inlineStruct(t *testing.T) {
 	}
 
 	reflector := jsonschema.Reflector{}
-	schema, err := reflector.Reflect(structWithInline{})
+	schema, err := reflector.Reflect(new(structWithInline))
 	require.NoError(t, err)
 
 	j, err := json.MarshalIndent(schema, "", " ")
@@ -174,12 +174,51 @@ func TestReflector_Reflect_inlineStruct(t *testing.T) {
 }`), j, string(j))
 }
 
+func TestReflector_Reflect_rootNullable(t *testing.T) {
+	type structWithInline struct {
+		Data struct {
+			Deeper struct {
+				A string `json:"a"`
+			} `json:"deeper"`
+		} `json:"data"`
+	}
+
+	reflector := jsonschema.Reflector{}
+	schema, err := reflector.Reflect(new(structWithInline), jsonschema.RootNullable)
+	require.NoError(t, err)
+
+	j, err := json.MarshalIndent(schema, "", " ")
+	require.NoError(t, err)
+
+	assertjson.Equal(t, []byte(`
+{
+ "properties": {
+  "data": {
+   "properties": {
+	"deeper": {
+	 "properties": {
+	  "a": {
+	   "type": "string"
+	  }
+	 },
+	 "type": "object"
+	}
+   },
+   "type": "object"
+  }
+ },
+ "type": ["null", "object"]
+}`), j, string(j))
+}
+
 func TestReflector_Reflect_collectDefinitions(t *testing.T) {
 	reflector := jsonschema.Reflector{}
 
 	schemas := map[string]jsonschema.Schema{}
 
-	schema, err := reflector.Reflect(Org{}, jsonschema.CollectDefinitions(schemas))
+	schema, err := reflector.Reflect(Org{}, jsonschema.CollectDefinitions(func(name string, schema jsonschema.Schema) {
+		schemas[name] = schema
+	}))
 	require.NoError(t, err)
 
 	j, err := json.MarshalIndent(schema, "", " ")
