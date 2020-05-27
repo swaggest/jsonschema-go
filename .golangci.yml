@@ -1,7 +1,7 @@
 # See https://github.com/golangci/golangci-lint/blob/master/.golangci.example.yml
 run:
   tests: true
-  deadline: 20m
+  deadline: 5m
 
 linters-settings:
   errcheck:
@@ -21,9 +21,15 @@ linters-settings:
 linters:
   enable-all: true
   disable:
+    - goerr113
+    - gochecknoglobals
     - funlen
     - gocognit
-    - gochecknoglobals
 
 issues:
   exclude-use-default: false
+  exclude-rules:
+    - linters:
+        - gomnd
+        - goconst
+      path: "_test.go"

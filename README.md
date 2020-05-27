@@ -1,6 +1,8 @@
 # JSON Schema structures for Go
 
-[![Build Status](https://travis-ci.org/swaggest/jsonschema-go.svg?branch=master)](https://travis-ci.org/swaggest/jsonschema-go)
+<img align="right" width="100px" src="https://avatars0.githubusercontent.com/u/13019229?s=200&v=4">
+
+[![Build Status](https://github.com/swaggest/jsonschema-go/workflows/test/badge.svg)](https://github.com/swaggest/jsonschema-go/actions?query=branch%3Amaster+workflow%3Atest)
 [![Coverage Status](https://codecov.io/gh/swaggest/jsonschema-go/branch/master/graph/badge.svg)](https://codecov.io/gh/swaggest/jsonschema-go)
 [![GoDevDoc](https://img.shields.io/badge/dev-doc-00ADD8?logo=go)](https://pkg.go.dev/github.com/swaggest/jsonschema-go)
 ![Code lines](https://sloc.xyz/github/swaggest/jsonschema-go/?category=code)

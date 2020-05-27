@@ -11,7 +11,7 @@ require (
 	github.com/onsi/gomega v1.8.1 // indirect
 	github.com/stretchr/testify v1.5.1
 	github.com/swaggest/assertjson v1.0.0
-	github.com/swaggest/refl v0.1.2
+	github.com/swaggest/refl v0.1.3
 	github.com/yudai/gojsondiff v1.0.0
 	golang.org/x/net v0.0.0-20200320220750-118fecf932d8 // indirect
 	golang.org/x/sys v0.0.0-20200409092240-59c9f1ba88fa // indirect
