@@ -293,3 +293,20 @@ func TestReflector_Reflect_collectDefinitions(t *testing.T) {
   }
 }`), j)
 }
+
+func TestReflector_Reflect_recursiveStruct(t *testing.T) {
+	type Rec struct {
+		Val      string `json:"val"`
+		Parent   *Rec   `json:"parent"`
+		Siblings []Rec  `json:"siblings"`
+	}
+
+	s, err := (&jsonschema.Reflector{}).Reflect(Rec{})
+	require.NoError(t, err)
+
+	j, err := json.Marshal(s)
+	require.NoError(t, err)
+
+	assertjson.Equal(t, []byte(`{"properties":{"parent":{"$ref":"#"},"siblings":{"items":{"$ref":"#"},"type":"array"},
+		"val":{"type":"string"}},"type":"object"}`), j, string(j))
+}

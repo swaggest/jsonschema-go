@@ -13,6 +13,9 @@ type WeirdResp interface {
 	Boo()
 }
 
+// NamedAnything is an empty interface.
+type NamedAnything interface{}
+
 // UUID represents type owned by 3rd party library.
 type UUID [16]byte
 
@@ -28,6 +31,7 @@ type Resp struct {
 	Map                  map[string]int64       `json:"map"`
 	MapOfAnything        map[string]interface{} `json:"mapOfAnything"`
 	ArrayOfAnything      []interface{}          `json:"arrayOfAnything"`
+	ArrayOfNamedAnything []NamedAnything        `json:"arrayOfNamedAnything"`
 	Whatever             interface{}            `json:"whatever"`
 	NullableWhatever     *interface{}           `json:"nullableWhatever,omitempty"`
 	RecursiveArray       []WeirdResp            `json:"recursiveArray"`
@@ -87,10 +91,7 @@ func ExampleReflector_Reflect() {
 	//  "title": "Sample Response",
 	//  "description": "This is a sample response.",
 	//  "definitions": {
-	//   "JsonschemaGoTestResp": {
-	//    "type": "null",
-	//    "x-foo": "bar"
-	//   },
+	//   "JsonschemaGoTestNamedAnything": {},
 	//   "JsonschemaGoTestUUID": {
 	//    "examples": [
 	//     "248df4b7-aa70-47b8-a036-33ac447e668d"
@@ -102,6 +103,12 @@ func ExampleReflector_Reflect() {
 	//  "properties": {
 	//   "arrayOfAnything": {
 	//    "items": {},
+	//    "type": "array"
+	//   },
+	//   "arrayOfNamedAnything": {
+	//    "items": {
+	//     "$ref": "#/definitions/JsonschemaGoTestNamedAnything"
+	//    },
 	//    "type": "array"
 	//   },
 	//   "field1": {
@@ -136,21 +143,19 @@ func ExampleReflector_Reflect() {
 	//    "additionalProperties": {},
 	//    "type": "object"
 	//   },
-	//   "nullableWhatever": {
-	//    "type": "null"
-	//   },
+	//   "nullableWhatever": {},
 	//   "parent": {
-	//    "$ref": "#/definitions/JsonschemaGoTestResp"
+	//    "$ref": "#"
 	//   },
 	//   "recursiveArray": {
 	//    "items": {
-	//     "$ref": "#/definitions/JsonschemaGoTestResp"
+	//     "$ref": "#"
 	//    },
 	//    "type": "array"
 	//   },
 	//   "recursiveStructArray": {
 	//    "items": {
-	//     "$ref": "#/definitions/JsonschemaGoTestResp"
+	//     "$ref": "#"
 	//    },
 	//    "type": "array"
 	//   },

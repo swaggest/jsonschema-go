@@ -103,4 +103,5 @@ type ReflectContext struct {
 	definitions    map[refl.TypeString]Schema // list of all definition objects
 	definitionRefs map[refl.TypeString]Ref
 	typeCycles     map[refl.TypeString]bool
+	rootDefName    string
 }

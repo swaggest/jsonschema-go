@@ -164,6 +164,11 @@ func (r *Reflector) reflectDefer(defName string, typeString refl.TypeString, rc 
 		return schema
 	}
 
+	if !rc.RootRef && defName == rc.rootDefName {
+		ref := Ref{Path: "#"}
+		return ref.Schema()
+	}
+
 	if rc.definitions == nil {
 		rc.definitions = make(map[refl.TypeString]Schema, 1)
 		rc.definitionRefs = make(map[refl.TypeString]Ref, 1)
@@ -209,6 +214,8 @@ func (r *Reflector) reflect(i interface{}, rc *ReflectContext) (schema Schema, e
 	t = refl.DeepIndirect(t)
 
 	if t == nil || t == typeOfEmptyInterface {
+		schema.Type = nil
+
 		return schema, nil
 	}
 
@@ -237,6 +244,10 @@ func (r *Reflector) reflect(i interface{}, rc *ReflectContext) (schema Schema, e
 		if pkgPath != "" && pkgPath != "time" && pkgPath != "encoding/json" {
 			defName = toCamel(path.Base(t.PkgPath())) + strings.Title(t.Name())
 		}
+	}
+
+	if len(rc.Path) == 1 {
+		rc.rootDefName = defName
 	}
 
 	// Shortcut on embedded map or slice.
@@ -273,7 +284,7 @@ func (r *Reflector) reflect(i interface{}, rc *ReflectContext) (schema Schema, e
 		return
 	}
 
-	if t.PkgPath() != "" {
+	if t.PkgPath() != "" && len(rc.Path) > 1 {
 		rc.typeCycles[typeString] = true
 	}
 
@@ -357,7 +368,11 @@ func (r *Reflector) kindSwitch(t reflect.Type, v reflect.Value, schema *Schema, 
 	case reflect.String:
 		schema.AddType(String)
 	case reflect.Interface:
-		return fmt.Errorf("non-empty interface is not supported: %s", t.String())
+		if t.NumMethod() > 0 {
+			return fmt.Errorf("non-empty interface is not supported: %s", t.String())
+		}
+
+		schema.Type = nil
 	default:
 		return fmt.Errorf("type is not supported: %s", t.String())
 	}
