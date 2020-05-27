@@ -19,6 +19,14 @@ var (
 	typeOfEmptyInterface  = reflect.TypeOf((*interface{})(nil)).Elem()
 )
 
+// IgnoreTypeName is a marker interface to ignore type name of mapped value and use original.
+type IgnoreTypeName interface {
+	IgnoreTypeName()
+}
+
+// IgnoreTypeName instructs reflector to keep original type name during mapping.
+func (s Schema) IgnoreTypeName() {}
+
 // Described exposes description.
 type Described interface {
 	Description() string
@@ -199,6 +207,11 @@ func (r *Reflector) reflect(i interface{}, rc *ReflectContext) (schema Schema, e
 	}
 
 	t = refl.DeepIndirect(t)
+
+	if t == nil || t == typeOfEmptyInterface {
+		return schema, nil
+	}
+
 	typeString = refl.GoType(t)
 	pkgPath := t.PkgPath()
 
@@ -206,13 +219,24 @@ func (r *Reflector) reflect(i interface{}, rc *ReflectContext) (schema Schema, e
 		defName = toCamel(path.Base(t.PkgPath())) + strings.Title(t.Name())
 	}
 
-	if t == nil || t == typeOfEmptyInterface {
-		return schema, nil
-	}
-
-	if mappedTo, found := r.typesMap[typeString]; found {
+	rebuildDefName := false
+	if mappedTo, found := r.typesMap[refl.GoType(t)]; found {
+		rebuildDefName = true
 		t = refl.DeepIndirect(reflect.TypeOf(mappedTo))
 		v = reflect.ValueOf(mappedTo)
+
+		if _, ok := mappedTo.(IgnoreTypeName); ok {
+			rebuildDefName = false
+		}
+	}
+
+	if rebuildDefName {
+		typeString = refl.GoType(t)
+		pkgPath = t.PkgPath()
+
+		if pkgPath != "" && pkgPath != "time" && pkgPath != "encoding/json" {
+			defName = toCamel(path.Base(t.PkgPath())) + strings.Title(t.Name())
+		}
 	}
 
 	// Shortcut on embedded map or slice.
@@ -442,50 +466,52 @@ func (r *Reflector) walkProperties(v reflect.Value, parent *Schema, rc *ReflectC
 func reflectExample(propertySchema *Schema, field reflect.StructField) error {
 	var err error
 
-	if propertySchema.Type != nil && propertySchema.Type.SimpleTypes != nil {
-		t := *propertySchema.Type.SimpleTypes
-		switch t {
-		case String:
-			var example *string
+	if propertySchema.Type == nil || propertySchema.Type.SimpleTypes == nil {
+		return nil
+	}
 
-			refl.ReadStringPtrTag(field.Tag, "example", &example)
+	t := *propertySchema.Type.SimpleTypes
+	switch t {
+	case String:
+		var example *string
 
-			if example != nil {
-				propertySchema.WithExamples(*example)
-			}
-		case Integer:
-			var example *int64
+		refl.ReadStringPtrTag(field.Tag, "example", &example)
 
-			err = refl.ReadIntPtrTag(field.Tag, "example", &example)
-			if err != nil {
-				return err
-			}
+		if example != nil {
+			propertySchema.WithExamples(*example)
+		}
+	case Integer:
+		var example *int64
 
-			if example != nil {
-				propertySchema.WithExamples(*example)
-			}
-		case Number:
-			var example *float64
+		err = refl.ReadIntPtrTag(field.Tag, "example", &example)
+		if err != nil {
+			return err
+		}
 
-			err = refl.ReadFloatPtrTag(field.Tag, "example", &example)
-			if err != nil {
-				return err
-			}
+		if example != nil {
+			propertySchema.WithExamples(*example)
+		}
+	case Number:
+		var example *float64
 
-			if example != nil {
-				propertySchema.WithExamples(*example)
-			}
-		case Boolean:
-			var example *bool
+		err = refl.ReadFloatPtrTag(field.Tag, "example", &example)
+		if err != nil {
+			return err
+		}
 
-			err = refl.ReadBoolPtrTag(field.Tag, "example", &example)
-			if err != nil {
-				return err
-			}
+		if example != nil {
+			propertySchema.WithExamples(*example)
+		}
+	case Boolean:
+		var example *bool
 
-			if example != nil {
-				propertySchema.WithExamples(*example)
-			}
+		err = refl.ReadBoolPtrTag(field.Tag, "example", &example)
+		if err != nil {
+			return err
+		}
+
+		if example != nil {
+			propertySchema.WithExamples(*example)
 		}
 	}
 

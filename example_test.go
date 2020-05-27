@@ -35,11 +35,12 @@ type Resp struct {
 	UUID                 UUID                   `json:"uuid"`
 }
 
-// Description is
+// Description implements jsonschema.Described.
 func (r *Resp) Description() string {
 	return "This is a sample response."
 }
 
+// Title implements jsonschema.Titled.
 func (r *Resp) Title() string {
 	return "Sample Response"
 }
@@ -96,75 +97,6 @@ func ExampleReflector_Reflect() {
 	//    ],
 	//    "type": "string",
 	//    "format": "uuid"
-	//   },
-	//   "JsonschemaGoTestWeirdResp": {
-	//    "title": "Sample Response",
-	//    "description": "This is a sample response.",
-	//    "properties": {
-	//     "arrayOfAnything": {
-	//      "items": {},
-	//      "type": "array"
-	//     },
-	//     "field1": {
-	//      "type": "integer"
-	//     },
-	//     "field2": {
-	//      "type": "string"
-	//     },
-	//     "info": {
-	//      "required": [
-	//       "foo"
-	//      ],
-	//      "properties": {
-	//       "bar": {
-	//        "description": "This is Bar.",
-	//        "type": "number"
-	//       },
-	//       "foo": {
-	//        "pattern": "\\d+",
-	//        "type": "string"
-	//       }
-	//      },
-	//      "type": "object"
-	//     },
-	//     "map": {
-	//      "additionalProperties": {
-	//       "type": "integer"
-	//      },
-	//      "type": "object"
-	//     },
-	//     "mapOfAnything": {
-	//      "additionalProperties": {},
-	//      "type": "object"
-	//     },
-	//     "nullableWhatever": {
-	//      "type": "null"
-	//     },
-	//     "parent": {
-	//      "$ref": "#/definitions/JsonschemaGoTestResp"
-	//     },
-	//     "recursiveArray": {
-	//      "items": {
-	//       "$ref": "#/definitions/JsonschemaGoTestWeirdResp"
-	//      },
-	//      "type": "array"
-	//     },
-	//     "recursiveStructArray": {
-	//      "items": {
-	//       "$ref": "#/definitions/JsonschemaGoTestResp"
-	//      },
-	//      "type": "array"
-	//     },
-	//     "uuid": {
-	//      "$ref": "#/definitions/JsonschemaGoTestUUID"
-	//     },
-	//     "whatever": {}
-	//    },
-	//    "type": [
-	//     "null",
-	//     "object"
-	//    ],
-	//    "x-foo": "bar"
 	//   }
 	//  },
 	//  "properties": {
@@ -212,7 +144,7 @@ func ExampleReflector_Reflect() {
 	//   },
 	//   "recursiveArray": {
 	//    "items": {
-	//     "$ref": "#/definitions/JsonschemaGoTestWeirdResp"
+	//     "$ref": "#/definitions/JsonschemaGoTestResp"
 	//    },
 	//    "type": "array"
 	//   },
