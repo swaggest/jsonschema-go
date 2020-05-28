@@ -310,3 +310,96 @@ func TestReflector_Reflect_recursiveStruct(t *testing.T) {
 	assertjson.Equal(t, []byte(`{"properties":{"parent":{"$ref":"#"},"siblings":{"items":{"$ref":"#"},"type":"array"},
 		"val":{"type":"string"}},"type":"object"}`), j, string(j))
 }
+
+func TestReflector_Reflect_mapping(t *testing.T) {
+	type simpleTestReplacement struct {
+		ID  uint64 `json:"id"`
+		Cat string `json:"category"`
+	}
+
+	type deepReplacementTag struct {
+		TestField1 string `json:"test_field_1" type:"number" format:"double"`
+	}
+
+	type testWrapParams struct {
+		SimpleTestReplacement simpleTestReplacement `json:"simple_test_replacement"`
+		DeepReplacementTag    deepReplacementTag    `json:"deep_replacement"`
+	}
+
+	rf := jsonschema.Reflector{}
+	rf.AddTypeMapping(simpleTestReplacement{}, "")
+
+	s, err := rf.Reflect(testWrapParams{}, jsonschema.RootRef)
+	require.NoError(t, err)
+
+	j, err := json.MarshalIndent(s, "", " ")
+	require.NoError(t, err)
+
+	assertjson.Equal(t, []byte(`{
+        	            	 "$ref": "#/definitions/JsonschemaGoTestTestWrapParams",
+        	            	 "definitions": {
+        	            	  "JsonschemaGoTestDeepReplacementTag": {
+        	            	   "properties": {
+        	            	    "test_field_1": {
+        	            	     "type": "string",
+        	            	     "format": "double"
+        	            	    }
+        	            	   },
+        	            	   "type": "object"
+        	            	  },
+        	            	  "JsonschemaGoTestTestWrapParams": {
+        	            	   "properties": {
+        	            	    "deep_replacement": {
+        	            	     "$ref": "#/definitions/JsonschemaGoTestDeepReplacementTag"
+        	            	    },
+        	            	    "simple_test_replacement": {
+        	            	     "type": "string"
+        	            	    }
+        	            	   },
+        	            	   "type": "object"
+        	            	  }
+        	            	 }
+        	            	}`), j, string(j))
+}
+
+func TestReflector_Reflect_map(t *testing.T) {
+	type simpleDateTime struct {
+		Time time.Time `json:"time"`
+	}
+
+	type mapDateTime struct {
+		Items map[string]simpleDateTime `json:"items"`
+	}
+
+	s, err := (&jsonschema.Reflector{}).Reflect(mapDateTime{}, jsonschema.RootRef)
+	require.NoError(t, err)
+
+	j, err := json.MarshalIndent(s, "", " ")
+	require.NoError(t, err)
+
+	assertjson.Equal(t, []byte(`{
+        	            	 "$ref": "#/definitions/JsonschemaGoTestMapDateTime",
+        	            	 "definitions": {
+        	            	  "JsonschemaGoTestMapDateTime": {
+        	            	   "properties": {
+        	            	    "items": {
+        	            	     "additionalProperties": {
+        	            	      "$ref": "#/definitions/JsonschemaGoTestSimpleDateTime"
+        	            	     },
+        	            	     "type": "object"
+        	            	    }
+        	            	   },
+        	            	   "type": "object"
+        	            	  },
+        	            	  "JsonschemaGoTestSimpleDateTime": {
+        	            	   "properties": {
+        	            	    "time": {
+        	            	     "type": "string",
+        	            	     "format": "date-time"
+        	            	    }
+        	            	   },
+        	            	   "type": "object"
+        	            	  }
+        	            	 }
+        	            	}`), j, string(j))
+}

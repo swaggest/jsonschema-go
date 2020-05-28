@@ -240,6 +240,7 @@ func (r *Reflector) reflect(i interface{}, rc *ReflectContext) (schema Schema, e
 	if rebuildDefName {
 		typeString = refl.GoType(t)
 		pkgPath = t.PkgPath()
+		defName = ""
 
 		if pkgPath != "" && pkgPath != "time" && pkgPath != "encoding/json" {
 			defName = toCamel(path.Base(t.PkgPath())) + strings.Title(t.Name())
