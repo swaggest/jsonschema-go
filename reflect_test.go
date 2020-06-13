@@ -403,14 +403,18 @@ func TestReflector_Reflect_pointer(t *testing.T) {
 		A int `json:"a"`
 	}
 
+	type NamedMap map[string]St
+
 	type Cont struct {
-		PtrOmitempty   *St           `json:"ptrOmitempty,omitempty"`
-		Ptr            *St           `json:"ptr"`
-		Val            St            `json:"val"`
-		SliceOmitempty []St          `json:"sliceOmitempty,omitempty"`
-		Slice          []St          `json:"slice"`
-		MapOmitempty   map[string]St `json:"mapOmitempty,omitempty"`
-		Map            map[string]St `json:"map"`
+		PtrOmitempty      *St           `json:"ptrOmitempty,omitempty"`
+		Ptr               *St           `json:"ptr"`
+		Val               St            `json:"val"`
+		SliceOmitempty    []St          `json:"sliceOmitempty,omitempty" minItems:"3"`
+		Slice             []St          `json:"slice" minItems:"2"`
+		MapOmitempty      map[string]St `json:"mapOmitempty,omitempty" minProperties:"3"`
+		Map               map[string]St `json:"map" minProperties:"2"`
+		NamedMapOmitempty NamedMap      `json:"namedMapOmitempty,omitempty" minProperties:"1"`
+		NamedMap          NamedMap      `json:"namedMap" minProperties:"5"`
 	}
 
 	s, err := (&jsonschema.Reflector{}).Reflect(Cont{})
@@ -421,6 +425,12 @@ func TestReflector_Reflect_pointer(t *testing.T) {
 
 	assertjson.Equal(t, []byte(`{
         	            	 "definitions": {
+        	            	  "JsonschemaGoTestNamedMap": {
+        	            	   "additionalProperties": {
+        	            	    "$ref": "#/definitions/JsonschemaGoTestSt"
+        	            	   },
+        	            	   "type": "object"
+        	            	  },
         	            	  "JsonschemaGoTestSt": {
         	            	   "properties": {
         	            	    "a": {
@@ -432,6 +442,7 @@ func TestReflector_Reflect_pointer(t *testing.T) {
         	            	 },
         	            	 "properties": {
         	            	  "map": {
+        	            	   "minProperties": 2,
         	            	   "additionalProperties": {
         	            	    "$ref": "#/definitions/JsonschemaGoTestSt"
         	            	   },
@@ -441,10 +452,26 @@ func TestReflector_Reflect_pointer(t *testing.T) {
         	            	   ]
         	            	  },
         	            	  "mapOmitempty": {
+        	            	   "minProperties": 3,
         	            	   "additionalProperties": {
         	            	    "$ref": "#/definitions/JsonschemaGoTestSt"
         	            	   },
         	            	   "type": "object"
+        	            	  },
+        	            	  "namedMap": {
+        	            	   "minProperties": 5,
+        	            	   "anyOf": [
+        	            	    {
+        	            	     "type": "null"
+        	            	    },
+        	            	    {
+        	            	     "$ref": "#/definitions/JsonschemaGoTestNamedMap"
+        	            	    }
+        	            	   ]
+        	            	  },
+        	            	  "namedMapOmitempty": {
+        	            	   "$ref": "#/definitions/JsonschemaGoTestNamedMap",
+        	            	   "minProperties": 1
         	            	  },
         	            	  "ptr": {
         	            	   "anyOf": [
@@ -463,6 +490,7 @@ func TestReflector_Reflect_pointer(t *testing.T) {
         	            	   "items": {
         	            	    "$ref": "#/definitions/JsonschemaGoTestSt"
         	            	   },
+        	            	   "minItems": 2,
         	            	   "type": [
         	            	    "array",
         	            	    "null"
@@ -472,10 +500,11 @@ func TestReflector_Reflect_pointer(t *testing.T) {
         	            	   "items": {
         	            	    "$ref": "#/definitions/JsonschemaGoTestSt"
         	            	   },
+        	            	   "minItems": 3,
         	            	   "type": "array"
         	            	  },
         	            	  "val": {
-								"$ref": "#/definitions/JsonschemaGoTestSt"
+        	            	   "$ref": "#/definitions/JsonschemaGoTestSt"
         	            	  }
         	            	 },
         	            	 "type": "object"
