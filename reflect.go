@@ -144,8 +144,8 @@ func removeNull(t *Type) {
 }
 
 func (r *Reflector) reflectDefer(defName string, typeString refl.TypeString, rc *ReflectContext, schema Schema) Schema {
-	if !rc.RootNullable && len(rc.Path) == 0 {
-		removeNull(schema.Type)
+	if rc.RootNullable && len(rc.Path) == 0 {
+		schema.AddType(Null)
 	}
 
 	if schema.Ref != nil {
@@ -310,6 +310,7 @@ func (r *Reflector) kindSwitch(t reflect.Type, v reflect.Value, schema *Schema, 
 			schema.AddType(String)
 		default:
 			schema.AddType(Object)
+			removeNull(schema.Type)
 
 			err := r.walkProperties(v, schema, rc)
 			if err != nil {
@@ -418,6 +419,7 @@ func (r *Reflector) walkProperties(v reflect.Value, parent *Schema, rc *ReflectC
 		}
 
 		propName := strings.Split(tag, ",")[0]
+		omitEmpty := strings.Contains(tag, ",omitempty")
 		required := false
 
 		err := refl.ReadBoolTag(field.Tag, "required", &required)
@@ -445,6 +447,25 @@ func (r *Reflector) walkProperties(v reflect.Value, parent *Schema, rc *ReflectC
 		propertySchema, err := r.reflect(fieldVal, rc)
 		if err != nil {
 			return err
+		}
+
+		if !omitEmpty {
+			if propertySchema.HasType(Array) || (propertySchema.HasType(Object) && len(propertySchema.Properties) == 0) {
+				propertySchema.AddType(Null)
+			}
+
+			if propertySchema.Ref != nil && ft.Kind() != reflect.Struct {
+				def := rc.getDefinition(*propertySchema.Ref)
+
+				if (def.HasType(Array) || def.HasType(Object)) && !def.HasType(Null) {
+					refSchema := propertySchema
+					propertySchema.Ref = nil
+					propertySchema.AnyOf = []SchemaOrBool{
+						Null.ToSchemaOrBool(),
+						refSchema.ToSchemaOrBool(),
+					}
+				}
+			}
 		}
 
 		err = refl.PopulateFieldsFromTags(&propertySchema, field.Tag)
