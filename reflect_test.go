@@ -55,8 +55,8 @@ func (p *Person) PrepareJSONSchema(schema *jsonschema.Schema) error {
 }
 
 type Org struct {
-	ChiefOfMoral *Person  `json:"chiefOfMorale"`
-	Employees    []Person `json:"employees"`
+	ChiefOfMoral *Person  `json:"chiefOfMorale,omitempty"`
+	Employees    []Person `json:"employees,omitempty"`
 }
 
 func (o Org) PrepareJSONSchema(schema *jsonschema.Schema) error {
@@ -112,10 +112,7 @@ func TestReflector_Reflect(t *testing.T) {
 	 "description": "The role of person."
 	}
    },
-   "type": [
-	"null",
-	"object"
-   ]
+   "type": "object"
   },
   "JsonschemaGoTestRole": {
    "type": "string"
@@ -207,7 +204,7 @@ func TestReflector_Reflect_rootNullable(t *testing.T) {
    "type": "object"
   }
  },
- "type": ["null", "object"]
+ "type": ["object", "null"]
 }`), j, string(j))
 }
 
@@ -283,10 +280,7 @@ func TestReflector_Reflect_collectDefinitions(t *testing.T) {
 	 "description": "The role of person."
 	}
    },
-   "type": [
-	"null",
-	"object"
-   ]
+   "type": "object"
   },
   "JsonschemaGoTestRole": {
    "type": "string"
@@ -297,8 +291,8 @@ func TestReflector_Reflect_collectDefinitions(t *testing.T) {
 func TestReflector_Reflect_recursiveStruct(t *testing.T) {
 	type Rec struct {
 		Val      string `json:"val"`
-		Parent   *Rec   `json:"parent"`
-		Siblings []Rec  `json:"siblings"`
+		Parent   *Rec   `json:"parent,omitempty"`
+		Siblings []Rec  `json:"siblings,omitempty"`
 	}
 
 	s, err := (&jsonschema.Reflector{}).Reflect(Rec{})
@@ -368,7 +362,7 @@ func TestReflector_Reflect_map(t *testing.T) {
 	}
 
 	type mapDateTime struct {
-		Items map[string]simpleDateTime `json:"items"`
+		Items map[string]simpleDateTime `json:"items,omitempty"`
 	}
 
 	s, err := (&jsonschema.Reflector{}).Reflect(mapDateTime{}, jsonschema.RootRef)
@@ -401,5 +395,89 @@ func TestReflector_Reflect_map(t *testing.T) {
         	            	   "type": "object"
         	            	  }
         	            	 }
+        	            	}`), j, string(j))
+}
+
+func TestReflector_Reflect_pointer(t *testing.T) {
+	type St struct {
+		A int `json:"a"`
+	}
+
+	type Cont struct {
+		PtrOmitempty   *St           `json:"ptrOmitempty,omitempty"`
+		Ptr            *St           `json:"ptr"`
+		Val            St            `json:"val"`
+		SliceOmitempty []St          `json:"sliceOmitempty,omitempty"`
+		Slice          []St          `json:"slice"`
+		MapOmitempty   map[string]St `json:"mapOmitempty,omitempty"`
+		Map            map[string]St `json:"map"`
+	}
+
+	s, err := (&jsonschema.Reflector{}).Reflect(Cont{})
+	require.NoError(t, err)
+
+	j, err := json.MarshalIndent(s, "", " ")
+	require.NoError(t, err)
+
+	assertjson.Equal(t, []byte(`{
+        	            	 "definitions": {
+        	            	  "JsonschemaGoTestSt": {
+        	            	   "properties": {
+        	            	    "a": {
+        	            	     "type": "integer"
+        	            	    }
+        	            	   },
+        	            	   "type": "object"
+        	            	  }
+        	            	 },
+        	            	 "properties": {
+        	            	  "map": {
+        	            	   "additionalProperties": {
+        	            	    "$ref": "#/definitions/JsonschemaGoTestSt"
+        	            	   },
+        	            	   "type": [
+        	            	    "object",
+        	            	    "null"
+        	            	   ]
+        	            	  },
+        	            	  "mapOmitempty": {
+        	            	   "additionalProperties": {
+        	            	    "$ref": "#/definitions/JsonschemaGoTestSt"
+        	            	   },
+        	            	   "type": "object"
+        	            	  },
+        	            	  "ptr": {
+        	            	   "anyOf": [
+        	            	    {
+        	            	     "type": "null"
+        	            	    },
+        	            	    {
+        	            	     "$ref": "#/definitions/JsonschemaGoTestSt"
+        	            	    }
+        	            	   ]
+        	            	  },
+        	            	  "ptrOmitempty": {
+        	            	   "$ref": "#/definitions/JsonschemaGoTestSt"
+        	            	  },
+        	            	  "slice": {
+        	            	   "items": {
+        	            	    "$ref": "#/definitions/JsonschemaGoTestSt"
+        	            	   },
+        	            	   "type": [
+        	            	    "array",
+        	            	    "null"
+        	            	   ]
+        	            	  },
+        	            	  "sliceOmitempty": {
+        	            	   "items": {
+        	            	    "$ref": "#/definitions/JsonschemaGoTestSt"
+        	            	   },
+        	            	   "type": "array"
+        	            	  },
+        	            	  "val": {
+								"$ref": "#/definitions/JsonschemaGoTestSt"
+        	            	  }
+        	            	 },
+        	            	 "type": "object"
         	            	}`), j, string(j))
 }

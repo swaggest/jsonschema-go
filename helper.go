@@ -49,6 +49,13 @@ func (i SimpleType) Type() Type {
 	return Type{SimpleTypes: &i}
 }
 
+// ToSchemaOrBool creates SchemaOrBool instance from SimpleType.
+func (i SimpleType) ToSchemaOrBool() SchemaOrBool {
+	return SchemaOrBool{
+		TypeObject: (&Schema{}).WithType(i.Type()),
+	}
+}
+
 // AddType adds simple type to Schema.
 //
 // If type is already there it is ignored.
@@ -78,6 +85,27 @@ func (s *Schema) AddType(t SimpleType) {
 
 		s.Type.SliceOfSimpleTypeValues = append(s.Type.SliceOfSimpleTypeValues, t)
 	}
+}
+
+// HasType checks if Schema has a simple type.
+func (s *Schema) HasType(t SimpleType) bool {
+	if s.Type == nil {
+		return false
+	}
+
+	if s.Type.SimpleTypes != nil {
+		return *s.Type.SimpleTypes == t
+	}
+
+	if len(s.Type.SliceOfSimpleTypeValues) > 0 {
+		for _, st := range s.Type.SliceOfSimpleTypeValues {
+			if st == t {
+				return true
+			}
+		}
+	}
+
+	return false
 }
 
 // JSONSchemaBytes exposes JSON Schema as raw JSON bytes.
