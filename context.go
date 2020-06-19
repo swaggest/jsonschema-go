@@ -93,11 +93,15 @@ type ReflectContext struct {
 	CollectDefinitions func(name string, schema Schema)
 	DefinitionsPrefix  string
 	PropertyNameTag    string
-	InlineRefs         bool
-	RootRef            bool
-	RootNullable       bool
-	InterceptType      InterceptTypeFunc
-	InterceptProperty  InterceptPropertyFunc
+
+	// EnvelopNullability enables `anyOf` enveloping ot "type":"null" instead of injecting into definition.
+	EnvelopNullability bool
+
+	InlineRefs        bool
+	RootRef           bool
+	RootNullable      bool
+	InterceptType     InterceptTypeFunc
+	InterceptProperty InterceptPropertyFunc
 
 	Path           []string
 	definitions    map[refl.TypeString]Schema // list of all definition objects

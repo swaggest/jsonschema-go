@@ -450,22 +450,7 @@ func (r *Reflector) walkProperties(v reflect.Value, parent *Schema, rc *ReflectC
 		}
 
 		if !omitEmpty {
-			if propertySchema.HasType(Array) || (propertySchema.HasType(Object) && len(propertySchema.Properties) == 0) {
-				propertySchema.AddType(Null)
-			}
-
-			if propertySchema.Ref != nil && ft.Kind() != reflect.Struct {
-				def := rc.getDefinition(*propertySchema.Ref)
-
-				if (def.HasType(Array) || def.HasType(Object)) && !def.HasType(Null) {
-					refSchema := propertySchema
-					propertySchema.Ref = nil
-					propertySchema.AnyOf = []SchemaOrBool{
-						Null.ToSchemaOrBool(),
-						refSchema.ToSchemaOrBool(),
-					}
-				}
-			}
+			checkNullability(&propertySchema, rc, ft)
 		}
 
 		err = refl.PopulateFieldsFromTags(&propertySchema, field.Tag)
@@ -498,6 +483,29 @@ func (r *Reflector) walkProperties(v reflect.Value, parent *Schema, rc *ReflectC
 	}
 
 	return nil
+}
+
+func checkNullability(propertySchema *Schema, rc *ReflectContext, ft reflect.Type) {
+	if propertySchema.HasType(Array) || (propertySchema.HasType(Object) && len(propertySchema.Properties) == 0) {
+		propertySchema.AddType(Null)
+	}
+
+	if propertySchema.Ref != nil && ft.Kind() != reflect.Struct {
+		def := rc.getDefinition(*propertySchema.Ref)
+
+		if (def.HasType(Array) || def.HasType(Object)) && !def.HasType(Null) {
+			if rc.EnvelopNullability {
+				refSchema := *propertySchema
+				propertySchema.Ref = nil
+				propertySchema.AnyOf = []SchemaOrBool{
+					Null.ToSchemaOrBool(),
+					refSchema.ToSchemaOrBool(),
+				}
+			} else {
+				def.AddType(Null)
+			}
+		}
+	}
 }
 
 func reflectExample(propertySchema *Schema, field reflect.StructField) error {
