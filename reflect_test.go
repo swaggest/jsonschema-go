@@ -398,7 +398,7 @@ func TestReflector_Reflect_map(t *testing.T) {
         	            	}`), j, string(j))
 }
 
-func TestReflector_Reflect_pointer(t *testing.T) {
+func TestReflector_Reflect_pointer_envelop(t *testing.T) {
 	type St struct {
 		A int `json:"a"`
 	}
@@ -417,7 +417,9 @@ func TestReflector_Reflect_pointer(t *testing.T) {
 		NamedMap          NamedMap      `json:"namedMap" minProperties:"5"`
 	}
 
-	s, err := (&jsonschema.Reflector{}).Reflect(Cont{})
+	s, err := (&jsonschema.Reflector{}).Reflect(Cont{}, func(rc *jsonschema.ReflectContext) {
+		rc.EnvelopNullability = true
+	})
 	require.NoError(t, err)
 
 	j, err := json.MarshalIndent(s, "", " ")
@@ -482,6 +484,111 @@ func TestReflector_Reflect_pointer(t *testing.T) {
         	            	     "$ref": "#/definitions/JsonschemaGoTestSt"
         	            	    }
         	            	   ]
+        	            	  },
+        	            	  "ptrOmitempty": {
+        	            	   "$ref": "#/definitions/JsonschemaGoTestSt"
+        	            	  },
+        	            	  "slice": {
+        	            	   "items": {
+        	            	    "$ref": "#/definitions/JsonschemaGoTestSt"
+        	            	   },
+        	            	   "minItems": 2,
+        	            	   "type": [
+        	            	    "array",
+        	            	    "null"
+        	            	   ]
+        	            	  },
+        	            	  "sliceOmitempty": {
+        	            	   "items": {
+        	            	    "$ref": "#/definitions/JsonschemaGoTestSt"
+        	            	   },
+        	            	   "minItems": 3,
+        	            	   "type": "array"
+        	            	  },
+        	            	  "val": {
+        	            	   "$ref": "#/definitions/JsonschemaGoTestSt"
+        	            	  }
+        	            	 },
+        	            	 "type": "object"
+        	            	}`), j, string(j))
+}
+
+func TestReflector_Reflect_pointer(t *testing.T) {
+	type St struct {
+		A int `json:"a"`
+	}
+
+	type NamedMap map[string]St
+
+	type Cont struct {
+		PtrOmitempty      *St           `json:"ptrOmitempty,omitempty"`
+		Ptr               *St           `json:"ptr"`
+		Val               St            `json:"val"`
+		SliceOmitempty    []St          `json:"sliceOmitempty,omitempty" minItems:"3"`
+		Slice             []St          `json:"slice" minItems:"2"`
+		MapOmitempty      map[string]St `json:"mapOmitempty,omitempty" minProperties:"3"`
+		Map               map[string]St `json:"map" minProperties:"2"`
+		NamedMapOmitempty NamedMap      `json:"namedMapOmitempty,omitempty" minProperties:"1"`
+		NamedMap          NamedMap      `json:"namedMap" minProperties:"5"`
+	}
+
+	s, err := (&jsonschema.Reflector{}).Reflect(Cont{})
+	require.NoError(t, err)
+
+	j, err := json.MarshalIndent(s, "", " ")
+	require.NoError(t, err)
+
+	assertjson.Equal(t, []byte(`{
+        	            	 "definitions": {
+        	            	  "JsonschemaGoTestNamedMap": {
+        	            	   "additionalProperties": {
+        	            	    "$ref": "#/definitions/JsonschemaGoTestSt"
+        	            	   },
+        	            	   "type": [
+        	            	    "object",
+        	            	    "null"
+        	            	   ]
+        	            	  },
+        	            	  "JsonschemaGoTestSt": {
+        	            	   "properties": {
+        	            	    "a": {
+        	            	     "type": "integer"
+        	            	    }
+        	            	   },
+        	            	   "type": [
+        	            	    "object",
+        	            	    "null"
+        	            	   ]
+        	            	  }
+        	            	 },
+        	            	 "properties": {
+        	            	  "map": {
+        	            	   "minProperties": 2,
+        	            	   "additionalProperties": {
+        	            	    "$ref": "#/definitions/JsonschemaGoTestSt"
+        	            	   },
+        	            	   "type": [
+        	            	    "object",
+        	            	    "null"
+        	            	   ]
+        	            	  },
+        	            	  "mapOmitempty": {
+        	            	   "minProperties": 3,
+        	            	   "additionalProperties": {
+        	            	    "$ref": "#/definitions/JsonschemaGoTestSt"
+        	            	   },
+        	            	   "type": "object"
+        	            	  },
+        	            	  "namedMap": {
+        	            	   "$ref": "#/definitions/JsonschemaGoTestNamedMap",
+        	            	   "minProperties": 5
+        	            	  },
+        	            	  "namedMapOmitempty": {
+        	            	   "$ref": "#/definitions/JsonschemaGoTestNamedMap",
+        	            	   "minProperties": 1
+        	            	  },
+        	            	  "ptr": {
+        	            	   "$ref": "#/definitions/JsonschemaGoTestSt"
         	            	  },
         	            	  "ptrOmitempty": {
         	            	   "$ref": "#/definitions/JsonschemaGoTestSt"
