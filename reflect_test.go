@@ -618,6 +618,11 @@ func TestReflector_Reflect_pointer(t *testing.T) {
         	            	}`), j, string(j))
 }
 
+var (
+	_ jsonschema.RawExposer = ISOWeek("")
+	_ jsonschema.Exposer    = ISOCountry("")
+)
+
 // ISOWeek is an ISO week.
 type ISOWeek string
 
