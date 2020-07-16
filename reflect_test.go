@@ -617,3 +617,82 @@ func TestReflector_Reflect_pointer(t *testing.T) {
         	            	 "type": "object"
         	            	}`), j, string(j))
 }
+
+var (
+	_ jsonschema.RawExposer = ISOWeek("")
+	_ jsonschema.Exposer    = ISOCountry("")
+)
+
+// ISOWeek is an ISO week.
+type ISOWeek string
+
+// JSONSchemaBytes returns JSON Schema definition.
+func (ISOWeek) JSONSchemaBytes() ([]byte, error) {
+	return []byte(`{
+		"type": "string",
+		"examples": ["2018-W43"],
+		"description": "ISO Week",
+		"pattern": "^[0-9]{4}-W(0[1-9]|[1-4][0-9]|5[0-3])$"
+	}`), nil
+}
+
+type ISOCountry string
+
+// JSONSchemaBytes returns JSON Schema definition.
+func (ISOCountry) JSONSchema() (jsonschema.Schema, error) {
+	s := jsonschema.Schema{}
+
+	s.AddType(jsonschema.String)
+	s.WithExamples("US")
+	s.WithDescription("ISO Country")
+	s.WithPattern("^[a-zA-Z]{2}$")
+	s.WithMinLength(2)
+	s.WithMaxLength(2)
+
+	return s, nil
+}
+
+func TestExposer(t *testing.T) {
+	type Some struct {
+		Week    ISOWeek    `json:"week"`
+		Country ISOCountry `json:"country"`
+	}
+
+	s, err := (&jsonschema.Reflector{}).Reflect(Some{})
+	require.NoError(t, err)
+
+	j, err := json.MarshalIndent(s, "", " ")
+	require.NoError(t, err)
+
+	assertjson.Equal(t, []byte(`{
+        	            	 "definitions": {
+        	            	  "JsonschemaGoTestISOCountry": {
+        	            	   "description": "ISO Country",
+        	            	   "examples": [
+        	            	    "US"
+        	            	   ],
+        	            	   "maxLength": 2,
+        	            	   "minLength": 2,
+        	            	   "pattern": "^[a-zA-Z]{2}$",
+        	            	   "type": "string"
+        	            	  },
+        	            	  "JsonschemaGoTestISOWeek": {
+        	            	   "description": "ISO Week",
+        	            	   "examples": [
+        	            	    "2018-W43"
+        	            	   ],
+        	            	   "pattern": "^[0-9]{4}-W(0[1-9]|[1-4][0-9]|5[0-3])$",
+        	            	   "type": "string"
+        	            	  }
+        	            	 },
+        	            	 "properties": {
+        	            	  "country": {
+        	            	   "$ref": "#/definitions/JsonschemaGoTestISOCountry"
+        	            	  },
+        	            	  "week": {
+        	            	   "$ref": "#/definitions/JsonschemaGoTestISOWeek"
+        	            	  }
+        	            	 },
+        	            	 "type": "object"
+        	            	}`), j, string(j))
+}

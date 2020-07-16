@@ -84,6 +84,20 @@ func checkSchemaSetup(v reflect.Value, s *Schema) (bool, error) {
 		return true, nil
 	}
 
+	if exposer, ok := v.Interface().(RawExposer); ok {
+		schemaBytes, err := exposer.JSONSchemaBytes()
+		if err != nil {
+			return true, err
+		}
+
+		err = json.Unmarshal(schemaBytes, s)
+		if err != nil {
+			return true, err
+		}
+
+		return true, nil
+	}
+
 	return false, nil
 }
 
