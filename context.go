@@ -88,6 +88,11 @@ func RootRef(rc *ReflectContext) {
 	rc.RootRef = true
 }
 
+// SkipEmbeddedMapsSlices disables shortcutting into embedded maps and slices.
+func SkipEmbeddedMapsSlices(rc *ReflectContext) {
+	rc.SkipEmbeddedMapsSlices = true
+}
+
 // ReflectContext accompanies single reflect operation.
 type ReflectContext struct {
 	CollectDefinitions func(name string, schema Schema)
@@ -97,9 +102,13 @@ type ReflectContext struct {
 	// EnvelopNullability enables `anyOf` enveloping ot "type":"null" instead of injecting into definition.
 	EnvelopNullability bool
 
-	InlineRefs        bool
-	RootRef           bool
-	RootNullable      bool
+	InlineRefs   bool
+	RootRef      bool
+	RootNullable bool
+
+	// SkipEmbeddedMapsSlices disables shortcutting into embedded maps and slices.
+	SkipEmbeddedMapsSlices bool
+
 	InterceptType     InterceptTypeFunc
 	InterceptProperty InterceptPropertyFunc
 
