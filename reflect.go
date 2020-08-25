@@ -70,6 +70,7 @@ func (r *Reflector) AddTypeMapping(src, dst interface{}) {
 func checkSchemaSetup(v reflect.Value, s *Schema) (bool, error) {
 	if preparer, ok := v.Interface().(Preparer); ok {
 		err := preparer.PrepareJSONSchema(s)
+
 		return false, err
 	}
 
@@ -180,6 +181,7 @@ func (r *Reflector) reflectDefer(defName string, typeString refl.TypeString, rc 
 
 	if !rc.RootRef && defName == rc.rootDefName {
 		ref := Ref{Path: "#"}
+
 		return ref.Schema()
 	}
 
@@ -266,8 +268,10 @@ func (r *Reflector) reflect(i interface{}, rc *ReflectContext) (schema Schema, e
 	}
 
 	// Shortcut on embedded map or slice.
-	if et := refl.FindEmbeddedSliceOrMap(i); et != nil {
-		t = et
+	if !rc.SkipEmbeddedMapsSlices {
+		if et := refl.FindEmbeddedSliceOrMap(i); et != nil {
+			t = et
+		}
 	}
 
 	if t == typeOfTime {
@@ -279,6 +283,7 @@ func (r *Reflector) reflect(i interface{}, rc *ReflectContext) (schema Schema, e
 
 	if t.Implements(typeOfTextUnmarshaler) {
 		schema.AddType(String)
+
 		return
 	}
 
@@ -317,6 +322,7 @@ func (r *Reflector) reflect(i interface{}, rc *ReflectContext) (schema Schema, e
 }
 
 func (r *Reflector) kindSwitch(t reflect.Type, v reflect.Value, schema *Schema, rc *ReflectContext) error {
+	// nolint: exhaustive // Covered with default case.
 	switch t.Kind() {
 	case reflect.Struct:
 		switch {
@@ -418,7 +424,7 @@ func (r *Reflector) walkProperties(v reflect.Value, parent *Schema, rc *ReflectC
 			continue
 		}
 
-		if tag == "" && field.Anonymous {
+		if tag == "" && field.Anonymous && field.Type.Kind() == reflect.Struct {
 			err := r.walkProperties(v.Field(i), parent, rc)
 			if err != nil {
 				return err
@@ -572,6 +578,8 @@ func reflectExample(propertySchema *Schema, field reflect.StructField) error {
 		if example != nil {
 			propertySchema.WithExamples(*example)
 		}
+	case Array, Null, Object:
+		return nil
 	}
 
 	return nil

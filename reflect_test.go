@@ -51,6 +51,7 @@ var (
 
 func (p *Person) PrepareJSONSchema(schema *jsonschema.Schema) error {
 	schema.WithTitle("Person")
+
 	return nil
 }
 
@@ -61,6 +62,7 @@ type Org struct {
 
 func (o Org) PrepareJSONSchema(schema *jsonschema.Schema) error {
 	schema.WithTitle("Organization")
+
 	return nil
 }
 
@@ -695,4 +697,40 @@ func TestExposer(t *testing.T) {
         	            	 },
         	            	 "type": "object"
         	            	}`), j, string(j))
+}
+
+type Identity struct {
+	ID string `path:"id"`
+}
+
+type Data []string
+
+type PathParamAndBody struct {
+	Identity
+	Data
+}
+
+func TestSkipEmbeddedMapsSlices(t *testing.T) {
+	reflector := jsonschema.Reflector{}
+
+	s, err := reflector.Reflect(new(PathParamAndBody),
+		jsonschema.PropertyNameTag("path"), jsonschema.SkipEmbeddedMapsSlices)
+
+	require.NoError(t, err)
+
+	j, err := json.Marshal(s)
+	require.NoError(t, err)
+
+	expected := []byte(`{"properties":{"id":{"type":"string"}},"type":"object"}`)
+	assertjson.Equal(t, expected, j, string(j))
+
+	s, err = reflector.Reflect(new(PathParamAndBody))
+
+	require.NoError(t, err)
+
+	j, err = json.Marshal(s)
+	require.NoError(t, err)
+
+	expected = []byte(`{"items":{"type":"string"},"type":["null","array"]}`)
+	assertjson.Equal(t, expected, j, string(j))
 }

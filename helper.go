@@ -62,6 +62,7 @@ func (i SimpleType) ToSchemaOrBool() SchemaOrBool {
 func (s *Schema) AddType(t SimpleType) {
 	if s.Type == nil {
 		s.WithType(t.Type())
+
 		return
 	}
 
