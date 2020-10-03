@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/swaggest/assertjson"
 	"github.com/swaggest/jsonschema-go"
 )
 
@@ -126,6 +127,7 @@ func ExampleReflector_Reflect() {
 	//      "type": "number"
 	//     },
 	//     "foo": {
+	//      "default": "baz",
 	//      "pattern": "\\d+",
 	//      "type": "string"
 	//     }
@@ -207,5 +209,39 @@ func ExampleReflector_Reflect_simple() {
 	//   }
 	//  },
 	//  "type": "object"
+	// }
+}
+
+func ExamplePropertyNameMapping() {
+	reflector := jsonschema.Reflector{}
+
+	type Test struct {
+		ID   int    `minimum:"123" default:"200"`
+		Name string `minLength:"10"`
+	}
+
+	s, err := reflector.Reflect(new(Test),
+		// PropertyNameMapping allows configuring property names without field tag.
+		jsonschema.PropertyNameMapping(map[string]string{
+			"ID":   "ident",
+			"Name": "last_name",
+		}))
+	if err != nil {
+		panic(err)
+	}
+
+	j, err := assertjson.MarshalIndentCompact(s, "", "  ", 80)
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println(string(j))
+	// Output:
+	// {
+	//   "properties":{
+	//     "ident":{"default":200,"minimum":123,"type":"integer"},
+	//     "last_name":{"minLength":10,"type":"string"}
+	//   },
+	//   "type":"object"
 	// }
 }

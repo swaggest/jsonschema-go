@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"path"
 	"reflect"
+	"strconv"
 	"strings"
 	"time"
 
@@ -55,16 +56,17 @@ func (r Ref) Schema() Schema {
 // Reflector creates JSON Schemas from Go values.
 type Reflector struct {
 	DefaultOptions []func(*ReflectContext)
-	typesMap       map[refl.TypeString]interface{}
+	typesMap       map[reflect.Type]interface{}
+	defNames       map[reflect.Type]string
 }
 
 // AddTypeMapping creates substitution link between types of src and dst when reflecting JSON Schema.
 func (r *Reflector) AddTypeMapping(src, dst interface{}) {
 	if r.typesMap == nil {
-		r.typesMap = map[refl.TypeString]interface{}{}
+		r.typesMap = map[reflect.Type]interface{}{}
 	}
 
-	r.typesMap[refl.GoType(refl.DeepIndirect(reflect.TypeOf(src)))] = dst
+	r.typesMap[refl.DeepIndirect(reflect.TypeOf(src))] = dst
 }
 
 func checkSchemaSetup(v reflect.Value, s *Schema) (bool, error) {
@@ -239,11 +241,11 @@ func (r *Reflector) reflect(i interface{}, rc *ReflectContext) (schema Schema, e
 	pkgPath := t.PkgPath()
 
 	if pkgPath != "" && pkgPath != "time" && pkgPath != "encoding/json" {
-		defName = toCamel(path.Base(t.PkgPath())) + strings.Title(t.Name())
+		defName = r.defName(t)
 	}
 
 	rebuildDefName := false
-	if mappedTo, found := r.typesMap[refl.GoType(t)]; found {
+	if mappedTo, found := r.typesMap[t]; found {
 		rebuildDefName = true
 		t = refl.DeepIndirect(reflect.TypeOf(mappedTo))
 		v = reflect.ValueOf(mappedTo)
@@ -259,7 +261,7 @@ func (r *Reflector) reflect(i interface{}, rc *ReflectContext) (schema Schema, e
 		defName = ""
 
 		if pkgPath != "" && pkgPath != "time" && pkgPath != "encoding/json" {
-			defName = toCamel(path.Base(t.PkgPath())) + strings.Title(t.Name())
+			defName = r.defName(t)
 		}
 	}
 
@@ -319,6 +321,43 @@ func (r *Reflector) reflect(i interface{}, rc *ReflectContext) (schema Schema, e
 	err = r.kindSwitch(t, v, &schema, rc)
 
 	return schema, err
+}
+
+func (r *Reflector) defName(t reflect.Type) string {
+	if r.defNames == nil {
+		r.defNames = map[reflect.Type]string{}
+	}
+
+	if defName, found := r.defNames[t]; found {
+		return defName
+	}
+
+	try := 1
+
+	for {
+		defName := toCamel(path.Base(t.PkgPath())) + strings.Title(t.Name())
+		if try > 1 {
+			defName = defName + "Type" + strconv.Itoa(try)
+		}
+
+		conflict := false
+
+		for tt, dn := range r.defNames {
+			if dn == defName && tt != t {
+				conflict = true
+
+				break
+			}
+		}
+
+		if !conflict {
+			r.defNames[t] = defName
+
+			return defName
+		}
+
+		try++
+	}
 }
 
 func (r *Reflector) kindSwitch(t reflect.Type, v reflect.Value, schema *Schema, rc *ReflectContext) error {
@@ -402,6 +441,17 @@ func (r *Reflector) kindSwitch(t reflect.Type, v reflect.Value, schema *Schema, 
 	return nil
 }
 
+// MakePropertyNameMapping makes property name mapping from struct value suitable for jsonschema.PropertyNameMapping.
+func MakePropertyNameMapping(v interface{}, tagName string) map[string]string {
+	res := make(map[string]string)
+
+	refl.WalkTaggedFields(reflect.ValueOf(v), func(v reflect.Value, sf reflect.StructField, tag string) {
+		res[sf.Name] = tag
+	}, tagName)
+
+	return res
+}
+
 func (r *Reflector) walkProperties(v reflect.Value, parent *Schema, rc *ReflectContext) error {
 	t := v.Type()
 	if t.Kind() == reflect.Ptr {
@@ -417,7 +467,12 @@ func (r *Reflector) walkProperties(v reflect.Value, parent *Schema, rc *ReflectC
 	for i := 0; i < t.NumField(); i++ {
 		field := t.Field(i)
 
-		tag := field.Tag.Get(rc.PropertyNameTag)
+		var tag string
+		if rc.PropertyNameMapping != nil {
+			tag = rc.PropertyNameMapping[field.Name]
+		} else {
+			tag = field.Tag.Get(rc.PropertyNameTag)
+		}
 
 		// Skip explicitly discarded field.
 		if tag == "-" {
@@ -473,6 +528,13 @@ func (r *Reflector) walkProperties(v reflect.Value, parent *Schema, rc *ReflectC
 			checkNullability(&propertySchema, rc, ft)
 		}
 
+		if propertySchema.Type != nil && propertySchema.Type.SimpleTypes != nil {
+			err = checkDefault(&propertySchema, field)
+			if err != nil {
+				return err
+			}
+		}
+
 		err = refl.PopulateFieldsFromTags(&propertySchema, field.Tag)
 
 		if err != nil {
@@ -500,6 +562,62 @@ func (r *Reflector) walkProperties(v reflect.Value, parent *Schema, rc *ReflectC
 				return err
 			}
 		}
+	}
+
+	return nil
+}
+
+func checkDefault(propertySchema *Schema, field reflect.StructField) error {
+	var err error
+
+	t := *propertySchema.Type.SimpleTypes
+
+	switch t {
+	case Integer:
+		var v *int64
+
+		err = refl.ReadIntPtrTag(field.Tag, "default", &v)
+		if err != nil {
+			return err
+		}
+
+		if v != nil {
+			propertySchema.WithDefault(*v)
+		}
+	case Number:
+		var v *float64
+
+		err = refl.ReadFloatPtrTag(field.Tag, "default", &v)
+		if err != nil {
+			return err
+		}
+
+		if v != nil {
+			propertySchema.WithDefault(*v)
+		}
+
+	case String:
+		var v *string
+
+		refl.ReadStringPtrTag(field.Tag, "default", &v)
+
+		if v != nil {
+			propertySchema.WithDefault(*v)
+		}
+
+	case Boolean:
+		var v *bool
+
+		err = refl.ReadBoolPtrTag(field.Tag, "default", &v)
+		if err != nil {
+			return err
+		}
+
+		if v != nil {
+			propertySchema.WithDefault(*v)
+		}
+
+	case Array, Null, Object:
 	}
 
 	return nil

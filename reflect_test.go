@@ -3,6 +3,7 @@ package jsonschema_test
 import (
 	"encoding"
 	"encoding/json"
+	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
 
@@ -733,4 +734,43 @@ func TestSkipEmbeddedMapsSlices(t *testing.T) {
 
 	expected = []byte(`{"items":{"type":"string"},"type":["null","array"]}`)
 	assertjson.Equal(t, expected, j, string(j))
+}
+
+func TestReflector_Reflect_propertyNameMapping(t *testing.T) {
+	reflector := jsonschema.Reflector{}
+
+	type Test struct {
+		ID   int    `minimum:"123" default:"200"`
+		Name string `minLength:"10"`
+	}
+
+	s, err := reflector.Reflect(new(Test),
+		jsonschema.PropertyNameMapping(map[string]string{
+			"ID":   "ident",
+			"Name": "last_name",
+		}))
+
+	require.NoError(t, err)
+
+	j, err := json.Marshal(s)
+	require.NoError(t, err)
+
+	expected := []byte(`{"properties":{"ident":{"minimum":123,"type":"integer","default":200},` +
+		`"last_name":{"minLength":10,"type":"string"}},"type":"object"}`)
+	assertjson.Equal(t, expected, j, string(j))
+
+	require.NoError(t, err)
+}
+
+func TestMakePropertyNameMapping(t *testing.T) {
+	type Test struct {
+		ID   int    `path:"ident" minimum:"123" default:"200"`
+		Name string `path:"last_name" minLength:"10"`
+	}
+
+	assert.Equal(
+		t,
+		map[string]string{"ID": "ident", "Name": "last_name"},
+		jsonschema.MakePropertyNameMapping(new(Test), "path"),
+	)
 }
