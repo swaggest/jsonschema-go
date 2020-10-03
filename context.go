@@ -93,11 +93,24 @@ func SkipEmbeddedMapsSlices(rc *ReflectContext) {
 	rc.SkipEmbeddedMapsSlices = true
 }
 
+// PropertyNameMapping enables property name mapping from a struct field name.
+func PropertyNameMapping(mapping map[string]string) func(rc *ReflectContext) {
+	return func(rc *ReflectContext) {
+		rc.PropertyNameMapping = mapping
+	}
+}
+
 // ReflectContext accompanies single reflect operation.
 type ReflectContext struct {
 	CollectDefinitions func(name string, schema Schema)
 	DefinitionsPrefix  string
-	PropertyNameTag    string
+
+	// PropertyNameTag enables property naming from a field tag, e.g. `header:"first_name"`.
+	PropertyNameTag string
+
+	// PropertyNameMapping enables property name mapping from a struct field name, e.g. "FirstName":"first_name".
+	// Only applicable to top-level properties (including embedded).
+	PropertyNameMapping map[string]string
 
 	// EnvelopNullability enables `anyOf` enveloping ot "type":"null" instead of injecting into definition.
 	EnvelopNullability bool
