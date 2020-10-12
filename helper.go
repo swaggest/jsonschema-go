@@ -88,6 +88,82 @@ func (s *Schema) AddType(t SimpleType) {
 	}
 }
 
+// IsTrivial is true if schema does not contain validation constraints other than type.
+func (s SchemaOrBool) IsTrivial() bool {
+	if s.TypeBoolean != nil && !*s.TypeBoolean {
+		return false
+	}
+
+	if s.TypeObject != nil {
+		return s.TypeObject.IsTrivial()
+	}
+
+	return true
+}
+
+// IsTrivial is true if schema does not contain validation constraints other than type.
+//
+// Trivial schema can define trivial items or properties.
+// This flag can be used to skip validation of structures that check types during decoding.
+//   nolint:gocyclo
+func (s Schema) IsTrivial() bool {
+	if len(s.AllOf) > 0 || len(s.AnyOf) > 0 || len(s.OneOf) > 0 || s.Not != nil ||
+		s.If != nil || s.Then != nil || s.Else != nil {
+		return false
+	}
+
+	if s.MultipleOf != nil || s.Minimum != nil || s.Maximum != nil ||
+		s.ExclusiveMinimum != nil || s.ExclusiveMaximum != nil {
+		return false
+	}
+
+	if s.MinLength != 0 || s.MaxLength != nil || s.Pattern != nil || s.Format != nil {
+		return false
+	}
+
+	if s.MinItems != 0 || s.MaxItems != nil || s.UniqueItems != nil || s.Contains != nil {
+		return false
+	}
+
+	if s.MinProperties != 0 || s.MaxProperties != nil || len(s.Required) > 0 || len(s.PatternProperties) > 0 {
+		return false
+	}
+
+	if len(s.Dependencies) > 0 || s.PropertyNames != nil || s.Const != nil || len(s.Enum) > 0 {
+		return false
+	}
+
+	if s.Type != nil && len(s.Type.SliceOfSimpleTypeValues) > 1 && !s.HasType(Null) {
+		return false
+	}
+
+	if s.Ref != nil {
+		return false
+	}
+
+	if s.Items != nil && (len(s.Items.SchemaArray) > 0 || !s.Items.SchemaOrBool.IsTrivial()) {
+		return false
+	}
+
+	if s.AdditionalItems != nil && !s.AdditionalItems.IsTrivial() {
+		return false
+	}
+
+	if s.AdditionalProperties != nil && !s.AdditionalProperties.IsTrivial() {
+		return false
+	}
+
+	if len(s.Properties) > 0 {
+		for _, ps := range s.Properties {
+			if !ps.IsTrivial() {
+				return false
+			}
+		}
+	}
+
+	return true
+}
+
 // HasType checks if Schema has a simple type.
 func (s *Schema) HasType(t SimpleType) bool {
 	if s.Type == nil {
