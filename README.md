@@ -12,6 +12,8 @@ This library provides Go structures to marshal/unmarshal and reflect [JSON Schem
 
 ## Reflector
 
+[Documentation](https://pkg.go.dev/github.com/swaggest/jsonschema-go#Reflector.Reflect).
+
 ```go
 type MyStruct struct {
     Amount float64 `json:"amount" minimum:"10.5" example:"20.6" required:"true"`
