@@ -105,6 +105,38 @@ func checkSchemaSetup(v reflect.Value, s *Schema) (bool, error) {
 }
 
 // Reflect walks Go value and builds its JSON Schema based on types and field tags.
+//
+// Values can be populated from field tags of original field:
+//   type MyObj struct {
+//      BoundedNumber `query:"boundedNumber" minimum:"-100" maximum:"100"`
+//      SpecialString `json:"specialString" pattern:"^[a-z]{4}$" minLength:"4" maxLength:"4"`
+//   }
+//
+// These tags can be used:
+//   - `title`, https://json-schema.org/draft-04/json-schema-validation.html#rfc.section.6.1
+//   - `description`, https://json-schema.org/draft-04/json-schema-validation.html#rfc.section.6.1
+//   - `default`, can be scalar or JSON value, https://json-schema.org/draft-04/json-schema-validation.html#rfc.section.6.2
+//   - `pattern`, https://json-schema.org/draft-04/json-schema-validation.html#rfc.section.5.2.3
+//   - `format`, https://json-schema.org/draft-04/json-schema-validation.html#rfc.section.7
+//   - `multipleOf`, https://json-schema.org/draft-04/json-schema-validation.html#rfc.section.5.1.1
+//   - `maximum`, https://json-schema.org/draft-04/json-schema-validation.html#rfc.section.5.1.2
+//   - `minimum`, https://json-schema.org/draft-04/json-schema-validation.html#rfc.section.5.1.3
+//   - `maxLength`, https://json-schema.org/draft-04/json-schema-validation.html#rfc.section.5.2.1
+//   - `minLength`, https://json-schema.org/draft-04/json-schema-validation.html#rfc.section.5.2.2
+//   - `maxItems`, https://json-schema.org/draft-04/json-schema-validation.html#rfc.section.5.3.2
+//   - `minItems`, https://json-schema.org/draft-04/json-schema-validation.html#rfc.section.5.3.3
+//   - `maxProperties`, https://json-schema.org/draft-04/json-schema-validation.html#rfc.section.5.4.1
+//   - `minProperties`, https://json-schema.org/draft-04/json-schema-validation.html#rfc.section.5.4.2
+//   - `exclusiveMaximum`, https://json-schema.org/draft-04/json-schema-validation.html#rfc.section.5.1.2
+//   - `exclusiveMinimum`, https://json-schema.org/draft-04/json-schema-validation.html#rfc.section.5.1.3
+//   - `uniqueItems`, https://json-schema.org/draft-04/json-schema-validation.html#rfc.section.5.3.4
+//   - `enum`, tag value must be a JSON or comma-separated list of strings, https://json-schema.org/draft-04/json-schema-validation.html#rfc.section.5.5.1
+//
+// Additionally there are structure can implement any of special interfaces for fine-grained Schema control:
+// RawExposer, Exposer, Preparer.
+//
+// These interfaces allow exposing particular schema keywords:
+// Titled, Described, Enum.
 func (r *Reflector) Reflect(i interface{}, options ...func(*ReflectContext)) (Schema, error) {
 	rc := ReflectContext{}
 	rc.DefinitionsPrefix = "#/definitions/"
