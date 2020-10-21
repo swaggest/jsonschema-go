@@ -3,7 +3,7 @@ module github.com/swaggest/jsonschema-go
 go 1.11
 
 require (
-	github.com/bool64/dev v0.1.0
+	github.com/bool64/dev v0.1.5
 	github.com/fsnotify/fsnotify v1.4.9 // indirect
 	github.com/golang/protobuf v1.3.2 // indirect
 	github.com/kr/pretty v0.2.0 // indirect

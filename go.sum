@@ -1,5 +1,7 @@
 github.com/bool64/dev v0.1.0 h1:erHyUcwsuvZU8YvydZuZDCPR6CeQXALfiVl4lx7TW7o=
 github.com/bool64/dev v0.1.0/go.mod h1:pn52JC52uSgpazChx9CeXyG+S3sW2V36HHoLNBbscdg=
+github.com/bool64/dev v0.1.5 h1:35/UOPpbQE2ol+amR3UCb9GtKgjbjPLGNX8Kpa5nqpQ=
+github.com/bool64/dev v0.1.5/go.mod h1:pn52JC52uSgpazChx9CeXyG+S3sW2V36HHoLNBbscdg=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=

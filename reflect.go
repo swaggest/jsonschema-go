@@ -115,7 +115,8 @@ func checkSchemaSetup(v reflect.Value, s *Schema) (bool, error) {
 // These tags can be used:
 //   - `title`, https://json-schema.org/draft-04/json-schema-validation.html#rfc.section.6.1
 //   - `description`, https://json-schema.org/draft-04/json-schema-validation.html#rfc.section.6.1
-//   - `default`, can be scalar or JSON value, https://json-schema.org/draft-04/json-schema-validation.html#rfc.section.6.2
+//   - `default`, can be scalar or JSON value,
+//  		https://json-schema.org/draft-04/json-schema-validation.html#rfc.section.6.2
 //   - `pattern`, https://json-schema.org/draft-04/json-schema-validation.html#rfc.section.5.2.3
 //   - `format`, https://json-schema.org/draft-04/json-schema-validation.html#rfc.section.7
 //   - `multipleOf`, https://json-schema.org/draft-04/json-schema-validation.html#rfc.section.5.1.1
@@ -130,7 +131,8 @@ func checkSchemaSetup(v reflect.Value, s *Schema) (bool, error) {
 //   - `exclusiveMaximum`, https://json-schema.org/draft-04/json-schema-validation.html#rfc.section.5.1.2
 //   - `exclusiveMinimum`, https://json-schema.org/draft-04/json-schema-validation.html#rfc.section.5.1.3
 //   - `uniqueItems`, https://json-schema.org/draft-04/json-schema-validation.html#rfc.section.5.3.4
-//   - `enum`, tag value must be a JSON or comma-separated list of strings, https://json-schema.org/draft-04/json-schema-validation.html#rfc.section.5.5.1
+//   - `enum`, tag value must be a JSON or comma-separated list of strings,
+//  		https://json-schema.org/draft-04/json-schema-validation.html#rfc.section.5.5.1
 //
 // Additionally there are structure can implement any of special interfaces for fine-grained Schema control:
 // RawExposer, Exposer, Preparer.
