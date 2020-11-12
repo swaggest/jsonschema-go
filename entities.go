@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"reflect"
 )
 
 // Schema structure is generated from "#[object]".
@@ -60,6 +61,7 @@ type Schema struct {
 	OneOf                []SchemaOrBool                              `json:"oneOf,omitempty"`
 	Not                  *SchemaOrBool                               `json:"not,omitempty"` // Core schema meta-schema.
 	ExtraProperties      map[string]interface{}                      `json:"-"`             // All unmatched properties.
+	ReflectType          reflect.Type                                `json:"-"`
 }
 
 // WithID sets ID value.

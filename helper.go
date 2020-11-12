@@ -1,6 +1,9 @@
 package jsonschema
 
-import "encoding/json"
+import (
+	"encoding/json"
+	"reflect"
+)
 
 const (
 	// XEnumNames is the name of JSON property to store names of enumerated values.
@@ -89,13 +92,13 @@ func (s *Schema) AddType(t SimpleType) {
 }
 
 // IsTrivial is true if schema does not contain validation constraints other than type.
-func (s SchemaOrBool) IsTrivial() bool {
+func (s SchemaOrBool) IsTrivial(refResolvers ...func(string) (SchemaOrBool, bool)) bool {
 	if s.TypeBoolean != nil && !*s.TypeBoolean {
 		return false
 	}
 
 	if s.TypeObject != nil {
-		return s.TypeObject.IsTrivial()
+		return s.TypeObject.IsTrivial(refResolvers...)
 	}
 
 	return true
@@ -106,13 +109,27 @@ func (s SchemaOrBool) IsTrivial() bool {
 // Trivial schema can define trivial items or properties.
 // This flag can be used to skip validation of structures that check types during decoding.
 //   nolint:gocyclo
-func (s Schema) IsTrivial() bool {
+func (s Schema) IsTrivial(refResolvers ...func(string) (SchemaOrBool, bool)) bool {
 	if len(s.AllOf) > 0 || len(s.AnyOf) > 0 || len(s.OneOf) > 0 || s.Not != nil ||
 		s.If != nil || s.Then != nil || s.Else != nil {
 		return false
 	}
 
-	if s.MultipleOf != nil || s.Minimum != nil || s.Maximum != nil ||
+	if s.Minimum != nil {
+		if *s.Minimum != 0 || s.ReflectType == nil {
+			return false
+		}
+
+		// nolint:exhaustive // Allow trivial schema non-negative integers backed by uint*.
+		switch s.ReflectType.Kind() {
+		case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+			break
+		default:
+			return false
+		}
+	}
+
+	if s.MultipleOf != nil || s.Maximum != nil ||
 		s.ExclusiveMinimum != nil || s.ExclusiveMaximum != nil {
 		return false
 	}
@@ -138,24 +155,40 @@ func (s Schema) IsTrivial() bool {
 	}
 
 	if s.Ref != nil {
+		resolved := false
+
+		for _, resolve := range refResolvers {
+			if rs, found := resolve(*s.Ref); found {
+				resolved = true
+
+				if !rs.IsTrivial(refResolvers...) {
+					return false
+				}
+
+				break
+			}
+		}
+
+		if !resolved {
+			return false
+		}
+	}
+
+	if s.Items != nil && (len(s.Items.SchemaArray) > 0 || !s.Items.SchemaOrBool.IsTrivial(refResolvers...)) {
 		return false
 	}
 
-	if s.Items != nil && (len(s.Items.SchemaArray) > 0 || !s.Items.SchemaOrBool.IsTrivial()) {
+	if s.AdditionalItems != nil && !s.AdditionalItems.IsTrivial(refResolvers...) {
 		return false
 	}
 
-	if s.AdditionalItems != nil && !s.AdditionalItems.IsTrivial() {
-		return false
-	}
-
-	if s.AdditionalProperties != nil && !s.AdditionalProperties.IsTrivial() {
+	if s.AdditionalProperties != nil && !s.AdditionalProperties.IsTrivial(refResolvers...) {
 		return false
 	}
 
 	if len(s.Properties) > 0 {
 		for _, ps := range s.Properties {
-			if !ps.IsTrivial() {
+			if !ps.IsTrivial(refResolvers...) {
 				return false
 			}
 		}
