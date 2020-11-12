@@ -2,6 +2,7 @@ package jsonschema_test
 
 import (
 	"encoding/json"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -91,4 +92,25 @@ func TestSchema_IsTrivial(t *testing.T) {
 			assert.Equal(t, s.isTrivial, schema.IsTrivial())
 		})
 	}
+}
+
+func TestSchema_IsTrivial_reflect(t *testing.T) {
+	type inner struct {
+		A uint32 `json:"a"`
+	}
+
+	type outer struct {
+		I inner `json:"inner"`
+	}
+
+	r := jsonschema.Reflector{}
+
+	s, err := r.Reflect(new(outer))
+	require.NoError(t, err)
+
+	assert.True(t, s.IsTrivial(func(ref string) (jsonschema.SchemaOrBool, bool) {
+		rs, found := s.Definitions[strings.TrimPrefix(ref, "#/definitions/")]
+
+		return rs, found
+	}))
 }

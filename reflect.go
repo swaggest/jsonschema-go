@@ -259,6 +259,8 @@ func (r *Reflector) reflect(i interface{}, rc *ReflectContext) (schema Schema, e
 		return schema, nil
 	}
 
+	schema.ReflectType = t
+
 	if t.Kind() == reflect.Ptr && t.Elem() != typeOfJSONRawMsg {
 		schema.AddType(Null)
 	}

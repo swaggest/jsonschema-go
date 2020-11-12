@@ -5,6 +5,7 @@
 [![Build Status](https://github.com/swaggest/jsonschema-go/workflows/test/badge.svg)](https://github.com/swaggest/jsonschema-go/actions?query=branch%3Amaster+workflow%3Atest)
 [![Coverage Status](https://codecov.io/gh/swaggest/jsonschema-go/branch/master/graph/badge.svg)](https://codecov.io/gh/swaggest/jsonschema-go)
 [![GoDevDoc](https://img.shields.io/badge/dev-doc-00ADD8?logo=go)](https://pkg.go.dev/github.com/swaggest/jsonschema-go)
+[![time tracker](https://wakatime.com/badge/github/swaggest/jsonschema-go.svg)](https://wakatime.com/badge/github/swaggest/jsonschema-go)
 ![Code lines](https://sloc.xyz/github/swaggest/jsonschema-go/?category=code)
 ![Comments](https://sloc.xyz/github/swaggest/jsonschema-go/?category=comments)
 
