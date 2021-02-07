@@ -16,6 +16,7 @@ import (
 var (
 	typeOfJSONRawMsg      = reflect.TypeOf(json.RawMessage{})
 	typeOfTime            = reflect.TypeOf(time.Time{})
+	typeOfDate            = reflect.TypeOf(Date{})
 	typeOfTextUnmarshaler = reflect.TypeOf((*encoding.TextUnmarshaler)(nil)).Elem()
 	typeOfEmptyInterface  = reflect.TypeOf((*interface{})(nil)).Elem()
 )
@@ -276,7 +277,8 @@ func (r *Reflector) reflect(i interface{}, rc *ReflectContext) (schema Schema, e
 	typeString = refl.GoType(t)
 	pkgPath := t.PkgPath()
 
-	if pkgPath != "" && pkgPath != "time" && pkgPath != "encoding/json" {
+	if pkgPath != "" && pkgPath != "time" && pkgPath != "encoding/json" &&
+		typeString != "github.com/swaggest/jsonschema-go::jsonschema.Date" {
 		defName = r.defName(t)
 	}
 
@@ -296,7 +298,8 @@ func (r *Reflector) reflect(i interface{}, rc *ReflectContext) (schema Schema, e
 		pkgPath = t.PkgPath()
 		defName = ""
 
-		if pkgPath != "" && pkgPath != "time" && pkgPath != "encoding/json" {
+		if pkgPath != "" && pkgPath != "time" && pkgPath != "encoding/json" &&
+			typeString != "github.com/swaggest/jsonschema-go::jsonschema.Date" {
 			defName = r.defName(t)
 		}
 	}
@@ -315,6 +318,13 @@ func (r *Reflector) reflect(i interface{}, rc *ReflectContext) (schema Schema, e
 	if t == typeOfTime {
 		schema.AddType(String)
 		schema.WithFormat("date-time")
+
+		return
+	}
+
+	if t == typeOfDate {
+		schema.AddType(String)
+		schema.WithFormat("date")
 
 		return
 	}

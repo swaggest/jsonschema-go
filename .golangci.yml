@@ -34,4 +34,6 @@ issues:
     - linters:
         - gomnd
         - goconst
+        - paralleltest
+        - forbidigo
       path: "_test.go"
