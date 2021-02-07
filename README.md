@@ -2,7 +2,7 @@
 
 <img align="right" width="100px" src="https://avatars0.githubusercontent.com/u/13019229?s=200&v=4">
 
-[![Build Status](https://github.com/swaggest/jsonschema-go/workflows/test/badge.svg)](https://github.com/swaggest/jsonschema-go/actions?query=branch%3Amaster+workflow%3Atest)
+[![Build Status](https://github.com/swaggest/jsonschema-go/workflows/test-unit/badge.svg)](https://github.com/swaggest/jsonschema-go/actions?query=branch%3Amaster+workflow%3Atest-unit)
 [![Coverage Status](https://codecov.io/gh/swaggest/jsonschema-go/branch/master/graph/badge.svg)](https://codecov.io/gh/swaggest/jsonschema-go)
 [![GoDevDoc](https://img.shields.io/badge/dev-doc-00ADD8?logo=go)](https://pkg.go.dev/github.com/swaggest/jsonschema-go)
 [![time tracker](https://wakatime.com/badge/github/swaggest/jsonschema-go.svg)](https://wakatime.com/badge/github/swaggest/jsonschema-go)
