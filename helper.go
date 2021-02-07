@@ -108,7 +108,8 @@ func (s SchemaOrBool) IsTrivial(refResolvers ...func(string) (SchemaOrBool, bool
 //
 // Trivial schema can define trivial items or properties.
 // This flag can be used to skip validation of structures that check types during decoding.
-//   nolint:gocyclo
+//
+// nolint:gocyclo
 func (s Schema) IsTrivial(refResolvers ...func(string) (SchemaOrBool, bool)) bool {
 	if len(s.AllOf) > 0 || len(s.AnyOf) > 0 || len(s.OneOf) > 0 || s.Not != nil ||
 		s.If != nil || s.Then != nil || s.Else != nil {
