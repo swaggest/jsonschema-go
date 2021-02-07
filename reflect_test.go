@@ -32,6 +32,7 @@ type Entity struct {
 	CreatedAt time.Time        `json:"createdAt"`
 	DeletedAt *time.Time       `json:"deletedAt"`
 	BirthDate jsonschema.Date  `json:"birthDate"`
+	DeathDate *jsonschema.Date `json:"deathDate"`
 	Meta      *json.RawMessage `json:"meta"`
 }
 
@@ -83,6 +84,7 @@ func TestReflector_Reflect(t *testing.T) {
 		"birthDate":{"type":"string","format":"date"},
 		"createdAt":{"type":"string","format":"date-time"},
 		"date":{"type":"string","format":"date"},
+		"deathDate":{"type":["null","string"],"format":"date"},
 		"deletedAt":{"type":["null","string"],"format":"date-time"},
 		"firstName":{"type":"string"},"height":{"type":"integer"},
 		"lastName":{"type":"string"},"meta":{},
@@ -209,13 +211,15 @@ func TestReflector_Reflect_collectDefinitions(t *testing.T) {
 }
 `), j, string(j))
 
-	assertjson.EqualMarshal(t, []byte(`{
+	assertjson.EqualMarshal(t, []byte(`
+{
   "JsonschemaGoTestPerson":{
 	"title":"Person","required":["lastName"],
 	"properties":{
 	  "birthDate":{"type":"string","format":"date"},
 	  "createdAt":{"type":"string","format":"date-time"},
 	  "date":{"type":"string","format":"date"},
+	  "deathDate":{"type":["null","string"],"format":"date"},
 	  "deletedAt":{"type":["null","string"],"format":"date-time"},
 	  "firstName":{"type":"string"},"height":{"type":"integer"},
 	  "lastName":{"type":"string"},"meta":{},

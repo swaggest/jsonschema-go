@@ -277,8 +277,7 @@ func (r *Reflector) reflect(i interface{}, rc *ReflectContext) (schema Schema, e
 	typeString = refl.GoType(t)
 	pkgPath := t.PkgPath()
 
-	if pkgPath != "" && pkgPath != "time" && pkgPath != "encoding/json" &&
-		typeString != "github.com/swaggest/jsonschema-go::jsonschema.Date" {
+	if pkgPath != "" && t != typeOfTime && t != typeOfJSONRawMsg && t != typeOfDate {
 		defName = r.defName(t)
 	}
 
@@ -298,8 +297,7 @@ func (r *Reflector) reflect(i interface{}, rc *ReflectContext) (schema Schema, e
 		pkgPath = t.PkgPath()
 		defName = ""
 
-		if pkgPath != "" && pkgPath != "time" && pkgPath != "encoding/json" &&
-			typeString != "github.com/swaggest/jsonschema-go::jsonschema.Date" {
+		if pkgPath != "" && t != typeOfTime && t != typeOfJSONRawMsg && t != typeOfDate {
 			defName = r.defName(t)
 		}
 	}
