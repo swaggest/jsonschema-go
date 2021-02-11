@@ -1,8 +1,9 @@
 package jsonschema
 
 import (
-	"encoding/json"
 	"reflect"
+
+	"github.com/segmentio/encoding/json"
 )
 
 const (

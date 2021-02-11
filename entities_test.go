@@ -3,9 +3,9 @@
 package jsonschema
 
 import (
-	"encoding/json"
 	"testing"
 
+	"github.com/segmentio/encoding/json"
 	"github.com/stretchr/testify/require"
 	"github.com/swaggest/assertjson"
 )

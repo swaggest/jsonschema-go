@@ -5,10 +5,11 @@ package jsonschema
 
 import (
 	"bytes"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"reflect"
+
+	"github.com/segmentio/encoding/json"
 )
 
 // Schema structure is generated from "#[object]".

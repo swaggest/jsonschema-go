@@ -2,8 +2,9 @@ package jsonschema
 
 import (
 	"encoding"
-	"encoding/json"
 	"time"
+
+	"github.com/segmentio/encoding/json"
 )
 
 // DateLayout describes date format.
