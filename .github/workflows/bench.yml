@@ -1,0 +1,69 @@
+name: bench
+on:
+  push:
+    tags:
+      - v*
+    branches:
+      - master
+      - main
+  pull_request:
+env:
+  GO111MODULE: "on"
+jobs:
+  bench:
+    strategy:
+      matrix:
+        go-version: [ 1.15.x ]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: ${{ matrix.go-version }}
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Restore vendor
+        uses: actions/cache@v2
+        with:
+          path: |
+            vendor
+          key: ${{ runner.os }}-go${{ matrix.go-version }}-vendor-${{ hashFiles('**/go.mod') }}
+      - name: Populate dependencies
+        run: |
+          (test -d vendor && echo vendor found) || (go mod vendor && du -sh vendor && du -sh ~/go/pkg/mod)
+      - name: Restore benchstat
+        uses: actions/cache@v2
+        with:
+          path: ~/go/bin/benchstat
+          key: ${{ runner.os }}-benchstat
+      - name: Restore base benchmark result
+        uses: actions/cache@v2
+        with:
+          path: |
+            bench-master.txt
+            bench-main.txt
+          # Use base sha for PR or new commit hash for master/main push in benchmark result key.
+          key: ${{ runner.os }}-bench-${{ (github.event.pull_request.base.sha != github.event.after) && github.event.pull_request.base.sha || github.event.after }}
+      - name: Benchmark
+        id: bench
+        run: |
+          export REF_NAME=${GITHUB_REF##*/}
+          BENCH_COUNT=5 make bench-run bench-stat
+          OUTPUT=$(make bench-stat)
+          OUTPUT="${OUTPUT//'%'/'%25'}"
+          OUTPUT="${OUTPUT//$'\n'/'%0A'}"
+          OUTPUT="${OUTPUT//$'\r'/'%0D'}"
+          echo "::set-output name=result::$OUTPUT"
+      - name: Comment Benchmark Result
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          header: bench
+          message: |
+            ### Benchmark Result
+            <details><summary>Benchmark diff with base branch</summary>
+
+            ```
+            ${{ steps.bench.outputs.result }}
+            ```
+            </details>
