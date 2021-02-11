@@ -1,8 +1,9 @@
 package jsonschema
 
 import (
-	"encoding/json"
 	"reflect"
+
+	json "github.com/goccy/go-json"
 )
 
 const (

@@ -2,7 +2,6 @@ package jsonschema
 
 import (
 	"encoding"
-	"encoding/json"
 	"fmt"
 	"path"
 	"reflect"
@@ -10,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	json "github.com/goccy/go-json"
 	"github.com/swaggest/refl"
 )
 

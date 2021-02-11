@@ -1,10 +1,10 @@
 package jsonschema_test
 
 import (
-	"encoding/json"
 	"io/ioutil"
 	"testing"
 
+	json "github.com/goccy/go-json"
 	"github.com/stretchr/testify/require"
 	"github.com/swaggest/assertjson"
 	"github.com/swaggest/jsonschema-go"

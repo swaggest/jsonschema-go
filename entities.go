@@ -5,10 +5,11 @@ package jsonschema
 
 import (
 	"bytes"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"reflect"
+
+	json "github.com/goccy/go-json"
 )
 
 // Schema structure is generated from "#[object]".

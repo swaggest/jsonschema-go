@@ -2,8 +2,9 @@ package jsonschema
 
 import (
 	"encoding"
-	"encoding/json"
 	"time"
+
+	json "github.com/goccy/go-json"
 )
 
 // DateLayout describes date format.

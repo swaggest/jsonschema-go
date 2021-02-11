@@ -1,10 +1,10 @@
 package jsonschema_test
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
 
+	json "github.com/goccy/go-json"
 	"github.com/swaggest/assertjson"
 	"github.com/swaggest/jsonschema-go"
 )
