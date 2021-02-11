@@ -4,6 +4,7 @@ go 1.13
 
 require (
 	github.com/bool64/dev v0.1.17
+	github.com/segmentio/encoding v0.2.7
 	github.com/stretchr/testify v1.4.0
 	github.com/swaggest/assertjson v1.6.3
 	github.com/swaggest/refl v0.1.7
