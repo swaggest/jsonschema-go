@@ -3,9 +3,9 @@
 package jsonschema
 
 import (
-	"encoding/json"
 	"testing"
 
+	json "github.com/goccy/go-json"
 	"github.com/stretchr/testify/require"
 	"github.com/swaggest/assertjson"
 )

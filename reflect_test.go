@@ -2,10 +2,10 @@ package jsonschema_test
 
 import (
 	"encoding"
-	"encoding/json"
 	"testing"
 	"time"
 
+	json "github.com/goccy/go-json"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/swaggest/assertjson"
