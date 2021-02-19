@@ -473,10 +473,6 @@ func (r *Reflector) kindSwitch(t reflect.Type, v reflect.Value, schema *Schema, 
 	case reflect.String:
 		schema.AddType(String)
 	case reflect.Interface:
-		if t.NumMethod() > 0 {
-			return fmt.Errorf("non-empty interface is not supported: %s", t.String())
-		}
-
 		schema.Type = nil
 	default:
 		return fmt.Errorf("type is not supported: %s", t.String())
