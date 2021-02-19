@@ -27,6 +27,7 @@ linters:
     - gocognit
     - wrapcheck
     - exhaustivestruct
+    - cyclop
 
 issues:
   exclude-use-default: false
