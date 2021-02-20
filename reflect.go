@@ -275,29 +275,14 @@ func (r *Reflector) reflect(i interface{}, rc *ReflectContext) (schema Schema, e
 	}
 
 	typeString = refl.GoType(t)
-	pkgPath := t.PkgPath()
+	defName = r.defName(t)
 
-	if pkgPath != "" && t != typeOfTime && t != typeOfJSONRawMsg && t != typeOfDate {
-		defName = r.defName(t)
-	}
-
-	rebuildDefName := false
 	if mappedTo, found := r.typesMap[t]; found {
-		rebuildDefName = true
 		t = refl.DeepIndirect(reflect.TypeOf(mappedTo))
 		v = reflect.ValueOf(mappedTo)
 
-		if _, ok := mappedTo.(IgnoreTypeName); ok {
-			rebuildDefName = false
-		}
-	}
-
-	if rebuildDefName {
-		typeString = refl.GoType(t)
-		pkgPath = t.PkgPath()
-		defName = ""
-
-		if pkgPath != "" && t != typeOfTime && t != typeOfJSONRawMsg && t != typeOfDate {
+		if _, ok := mappedTo.(IgnoreTypeName); !ok {
+			typeString = refl.GoType(t)
 			defName = r.defName(t)
 		}
 	}
@@ -313,31 +298,12 @@ func (r *Reflector) reflect(i interface{}, rc *ReflectContext) (schema Schema, e
 		}
 	}
 
-	if t == typeOfTime {
-		schema.AddType(String)
-		schema.WithFormat("date-time")
-
-		return
-	}
-
-	if t == typeOfDate {
-		schema.AddType(String)
-		schema.WithFormat("date")
-
-		return
-	}
-
-	if t.Implements(typeOfTextUnmarshaler) {
-		schema.AddType(String)
-
-		return
+	if r.isWellKnownType(t, &schema) {
+		return schema, nil
 	}
 
 	if rc.InterceptType != nil {
-		var ret bool
-
-		ret, err = rc.InterceptType(v, &schema)
-		if err != nil || ret {
+		if ret, err := rc.InterceptType(v, &schema); err != nil || ret {
 			return schema, err
 		}
 	}
@@ -347,7 +313,7 @@ func (r *Reflector) reflect(i interface{}, rc *ReflectContext) (schema Schema, e
 	}
 
 	if rc.typeCycles[typeString] {
-		return
+		return schema, nil
 	}
 
 	if t.PkgPath() != "" && len(rc.Path) > 1 {
@@ -368,10 +334,7 @@ func (r *Reflector) reflect(i interface{}, rc *ReflectContext) (schema Schema, e
 	}
 
 	if rc.InterceptType != nil {
-		var ret bool
-
-		ret, err = rc.InterceptType(v, &schema)
-		if err != nil || ret {
+		if ret, err := rc.InterceptType(v, &schema); err != nil || ret {
 			return schema, err
 		}
 	}
@@ -379,7 +342,35 @@ func (r *Reflector) reflect(i interface{}, rc *ReflectContext) (schema Schema, e
 	return schema, nil
 }
 
+func (r *Reflector) isWellKnownType(t reflect.Type, schema *Schema) bool {
+	if t == typeOfTime {
+		schema.AddType(String)
+		schema.WithFormat("date-time")
+
+		return true
+	}
+
+	if t == typeOfDate {
+		schema.AddType(String)
+		schema.WithFormat("date")
+
+		return true
+	}
+
+	if t.Implements(typeOfTextUnmarshaler) {
+		schema.AddType(String)
+
+		return true
+	}
+
+	return false
+}
+
 func (r *Reflector) defName(t reflect.Type) string {
+	if t.PkgPath() == "" || t == typeOfTime || t == typeOfJSONRawMsg || t == typeOfDate {
+		return ""
+	}
+
 	if r.defNames == nil {
 		r.defNames = map[reflect.Type]string{}
 	}

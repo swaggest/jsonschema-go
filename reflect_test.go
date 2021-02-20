@@ -717,3 +717,24 @@ func TestMakePropertyNameMapping(t *testing.T) {
 		jsonschema.MakePropertyNameMapping(new(Test), "path"),
 	)
 }
+
+type nullFloat struct {
+	Valid bool
+	Float float64
+}
+
+var _ jsonschema.Preparer = nullFloat{}
+
+func (n nullFloat) PrepareJSONSchema(schema *jsonschema.Schema) error {
+	schema.TypeEns().WithSliceOfSimpleTypeValues(jsonschema.Null, jsonschema.Number)
+
+	return nil
+}
+
+func TestInterceptType(t *testing.T) {
+	r := jsonschema.Reflector{}
+
+	s, err := r.Reflect(nullFloat{})
+	assert.NoError(t, err)
+	assertjson.EqualMarshal(t, []byte(`{"type":["null", "number"]}`), s)
+}
