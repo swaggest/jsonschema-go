@@ -8,7 +8,7 @@ linters-settings:
     check-type-assertions: true
     check-blank: true
   gocyclo:
-    min-complexity: 35
+    min-complexity: 30
   dupl:
     threshold: 100
   misspell:
