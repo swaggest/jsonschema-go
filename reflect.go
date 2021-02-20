@@ -363,8 +363,20 @@ func (r *Reflector) reflect(i interface{}, rc *ReflectContext) (schema Schema, e
 	}
 
 	err = r.kindSwitch(t, v, &schema, rc)
+	if err != nil {
+		return schema, err
+	}
 
-	return schema, err
+	if rc.InterceptType != nil {
+		var ret bool
+
+		ret, err = rc.InterceptType(v, &schema)
+		if err != nil || ret {
+			return schema, err
+		}
+	}
+
+	return schema, nil
 }
 
 func (r *Reflector) defName(t reflect.Type) string {
