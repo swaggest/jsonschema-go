@@ -375,9 +375,8 @@ func (r *Reflector) defName(t reflect.Type) string {
 		r.defNames = map[reflect.Type]string{}
 	}
 
-	defName := ""
-
-	if defName, found := r.defNames[t]; found {
+	defName, found := r.defNames[t]
+	if found {
 		return defName
 	}
 
