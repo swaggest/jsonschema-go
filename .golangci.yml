@@ -28,6 +28,8 @@ linters:
     - wrapcheck
     - exhaustivestruct
     - cyclop
+    - interfacer
+    - maligned
 
 issues:
   exclude-use-default: false

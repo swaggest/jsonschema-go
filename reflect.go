@@ -375,14 +375,20 @@ func (r *Reflector) defName(t reflect.Type) string {
 		r.defNames = map[reflect.Type]string{}
 	}
 
-	if defName, found := r.defNames[t]; found {
+	defName, found := r.defNames[t]
+	if found {
 		return defName
 	}
 
 	try := 1
 
 	for {
-		defName := toCamel(path.Base(t.PkgPath())) + strings.Title(t.Name())
+		if t.PkgPath() == "main" {
+			defName = toCamel(strings.Title(t.Name()))
+		} else {
+			defName = toCamel(path.Base(t.PkgPath())) + strings.Title(t.Name())
+		}
+
 		if try > 1 {
 			defName = defName + "Type" + strconv.Itoa(try)
 		}
