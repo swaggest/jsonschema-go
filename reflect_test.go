@@ -272,10 +272,7 @@ func TestReflector_Reflect_mapping(t *testing.T) {
 	s, err := rf.Reflect(testWrapParams{}, jsonschema.RootRef)
 	require.NoError(t, err)
 
-	j, err := json.MarshalIndent(s, "", " ")
-	require.NoError(t, err)
-
-	assertjson.Equal(t, []byte(`{
+	assertjson.EqualMarshal(t, []byte(`{
         	            	 "$ref": "#/definitions/JsonschemaGoTestTestWrapParams",
         	            	 "definitions": {
         	            	  "JsonschemaGoTestDeepReplacementTag": {
@@ -299,7 +296,7 @@ func TestReflector_Reflect_mapping(t *testing.T) {
         	            	   "type": "object"
         	            	  }
         	            	 }
-        	            	}`), j, string(j))
+        	            	}`), s)
 }
 
 func TestReflector_Reflect_map(t *testing.T) {
@@ -737,4 +734,26 @@ func TestInterceptType(t *testing.T) {
 	s, err := r.Reflect(nullFloat{})
 	assert.NoError(t, err)
 	assertjson.EqualMarshal(t, []byte(`{"type":["null", "number"]}`), s)
+}
+
+func TestReflector_Reflect_Ref(t *testing.T) {
+	type Symbol string
+
+	type topTracesInput struct {
+		RootSymbol Symbol `json:"rootSymbol" minLength:"5" example:"my_func" default:"main()"`
+	}
+
+	r := jsonschema.Reflector{}
+	s, err := r.Reflect(topTracesInput{})
+	assert.NoError(t, err)
+	assertjson.EqualMarshal(t, []byte(`{
+	  "definitions":{"JsonschemaGoTestSymbol":{"type":"string"}},
+	  "properties":{
+		"rootSymbol":{
+		  "$ref":"#/definitions/JsonschemaGoTestSymbol","default":"main()",
+		  "examples":["my_func"],"minLength":5
+		}
+	  },
+	  "type":"object"
+	}`), s)
 }

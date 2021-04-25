@@ -109,9 +109,14 @@ func checkSchemaSetup(v reflect.Value, s *Schema) (bool, error) {
 //
 // Values can be populated from field tags of original field:
 //   type MyObj struct {
-//      BoundedNumber `query:"boundedNumber" minimum:"-100" maximum:"100"`
-//      SpecialString `json:"specialString" pattern:"^[a-z]{4}$" minLength:"4" maxLength:"4"`
+//      BoundedNumber int `query:"boundedNumber" minimum:"-100" maximum:"100"`
+//      SpecialString string `json:"specialString" pattern:"^[a-z]{4}$" minLength:"4" maxLength:"4"`
 //   }
+//
+// Note: field tags are only applied to inline schemas, if you use named type then referenced schema
+// will be created and tags will be ignored. This happens because referenced schema can be used in
+// multiple fields with conflicting tags, therefore customization of referenced schema has to done on
+// the type itself via RawExposer, Exposer or Preparer.
 //
 // These tags can be used:
 //   - `title`, https://json-schema.org/draft-04/json-schema-validation.html#rfc.section.6.1
@@ -157,7 +162,7 @@ func (r *Reflector) Reflect(i interface{}, options ...func(*ReflectContext)) (Sc
 		option(&rc)
 	}
 
-	schema, err := r.reflect(i, &rc)
+	schema, err := r.reflect(i, &rc, false)
 	if err == nil && len(rc.definitions) > 0 {
 		schema.Definitions = make(map[string]SchemaOrBool, len(rc.definitions))
 
@@ -195,7 +200,7 @@ func removeNull(t *Type) {
 	}
 }
 
-func (r *Reflector) reflectDefer(defName string, typeString refl.TypeString, rc *ReflectContext, schema Schema) Schema {
+func (r *Reflector) reflectDefer(defName string, typeString refl.TypeString, rc *ReflectContext, schema Schema, keepType bool) Schema {
 	if rc.RootNullable && len(rc.Path) == 0 {
 		schema.AddType(Null)
 	}
@@ -231,10 +236,16 @@ func (r *Reflector) reflectDefer(defName string, typeString refl.TypeString, rc 
 	ref := Ref{Path: rc.DefinitionsPrefix, Name: defName}
 	rc.definitionRefs[typeString] = ref
 
-	return ref.Schema()
+	s := ref.Schema()
+
+	if keepType {
+		s.Type = schema.Type
+	}
+
+	return s
 }
 
-func (r *Reflector) reflect(i interface{}, rc *ReflectContext) (schema Schema, err error) {
+func (r *Reflector) reflect(i interface{}, rc *ReflectContext, keepType bool) (schema Schema, err error) {
 	var (
 		typeString refl.TypeString
 		defName    string
@@ -253,7 +264,7 @@ func (r *Reflector) reflect(i interface{}, rc *ReflectContext) (schema Schema, e
 			return
 		}
 
-		schema = r.reflectDefer(defName, typeString, rc, schema)
+		schema = r.reflectDefer(defName, typeString, rc, schema, keepType)
 	}()
 
 	if t == nil || t == typeOfEmptyInterface {
@@ -444,7 +455,7 @@ func (r *Reflector) kindSwitch(t reflect.Type, v reflect.Value, schema *Schema, 
 			itemValue = reflect.New(elemType).Interface()
 		}
 
-		itemsSchema, err := r.reflect(itemValue, rc)
+		itemsSchema, err := r.reflect(itemValue, rc, false)
 		if err != nil {
 			return err
 		}
@@ -462,7 +473,7 @@ func (r *Reflector) kindSwitch(t reflect.Type, v reflect.Value, schema *Schema, 
 			itemValue = reflect.New(elemType).Interface()
 		}
 
-		additionalPropertiesSchema, err := r.reflect(itemValue, rc)
+		additionalPropertiesSchema, err := r.reflect(itemValue, rc, false)
 		if err != nil {
 			return err
 		}
@@ -568,7 +579,7 @@ func (r *Reflector) walkProperties(v reflect.Value, parent *Schema, rc *ReflectC
 
 		rc.Path = append(rc.Path, propName)
 
-		propertySchema, err := r.reflect(fieldVal, rc)
+		propertySchema, err := r.reflect(fieldVal, rc, true)
 		if err != nil {
 			return err
 		}
@@ -585,7 +596,6 @@ func (r *Reflector) walkProperties(v reflect.Value, parent *Schema, rc *ReflectC
 		}
 
 		err = refl.PopulateFieldsFromTags(&propertySchema, field.Tag)
-
 		if err != nil {
 			return err
 		}
@@ -596,6 +606,11 @@ func (r *Reflector) walkProperties(v reflect.Value, parent *Schema, rc *ReflectC
 		}
 
 		reflectEnum(&propertySchema, field, fieldVal)
+
+		// Remove temporary kept type from referenced schema.
+		if propertySchema.Ref != nil {
+			propertySchema.Type = nil
+		}
 
 		if parent.Properties == nil {
 			parent.Properties = make(map[string]SchemaOrBool, 1)
@@ -673,7 +688,8 @@ func checkDefault(propertySchema *Schema, field reflect.StructField) error {
 }
 
 func checkNullability(propertySchema *Schema, rc *ReflectContext, ft reflect.Type) {
-	if propertySchema.HasType(Array) || (propertySchema.HasType(Object) && len(propertySchema.Properties) == 0) {
+	if propertySchema.HasType(Array) ||
+		(propertySchema.HasType(Object) && len(propertySchema.Properties) == 0 && propertySchema.Ref == nil) {
 		propertySchema.AddType(Null)
 	}
 

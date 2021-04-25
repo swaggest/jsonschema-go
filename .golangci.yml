@@ -1,7 +1,6 @@
 # See https://github.com/golangci/golangci-lint/blob/master/.golangci.example.yml
 run:
   tests: true
-  deadline: 5m
 
 linters-settings:
   errcheck:
@@ -22,14 +21,21 @@ linters:
   enable-all: true
   disable:
     - goerr113
-    - gochecknoglobals
     - funlen
     - gocognit
-    - wrapcheck
-    - exhaustivestruct
     - cyclop
-    - interfacer
+    - lll
     - maligned
+    - gochecknoglobals
+    - gomnd
+    - wrapcheck
+    - paralleltest
+    - forbidigo
+    - exhaustivestruct
+    - interfacer # deprecated
+    - forcetypeassert
+    - scopelint # deprecated
+    - ifshort # too many false positives
 
 issues:
   exclude-use-default: false
@@ -37,6 +43,8 @@ issues:
     - linters:
         - gomnd
         - goconst
-        - paralleltest
-        - forbidigo
+        - goerr113
+        - noctx
+        - funlen
+        - dupl
       path: "_test.go"
