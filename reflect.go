@@ -70,6 +70,13 @@ func (r *Reflector) AddTypeMapping(src, dst interface{}) {
 	r.typesMap[refl.DeepIndirect(reflect.TypeOf(src))] = dst
 }
 
+// InterceptDefName allows modifying reflected definition names.
+func (r *Reflector) InterceptDefName(f func(t reflect.Type, defaultDefName string) string) {
+	r.DefaultOptions = append(r.DefaultOptions, func(rc *ReflectContext) {
+		rc.DefName = f
+	})
+}
+
 func checkSchemaSetup(v reflect.Value, s *Schema) (bool, error) {
 	if preparer, ok := v.Interface().(Preparer); ok {
 		err := preparer.PrepareJSONSchema(s)
@@ -286,7 +293,7 @@ func (r *Reflector) reflect(i interface{}, rc *ReflectContext, keepType bool) (s
 	}
 
 	typeString = refl.GoType(t)
-	defName = r.defName(t)
+	defName = r.defName(rc, t)
 
 	if mappedTo, found := r.typesMap[t]; found {
 		t = refl.DeepIndirect(reflect.TypeOf(mappedTo))
@@ -294,7 +301,7 @@ func (r *Reflector) reflect(i interface{}, rc *ReflectContext, keepType bool) (s
 
 		if _, ok := mappedTo.(IgnoreTypeName); !ok {
 			typeString = refl.GoType(t)
-			defName = r.defName(t)
+			defName = r.defName(rc, t)
 		}
 	}
 
@@ -377,7 +384,7 @@ func (r *Reflector) isWellKnownType(t reflect.Type, schema *Schema) bool {
 	return false
 }
 
-func (r *Reflector) defName(t reflect.Type) string {
+func (r *Reflector) defName(rc *ReflectContext, t reflect.Type) string {
 	if t.PkgPath() == "" || t == typeOfTime || t == typeOfJSONRawMsg || t == typeOfDate {
 		return ""
 	}
@@ -398,6 +405,10 @@ func (r *Reflector) defName(t reflect.Type) string {
 			defName = toCamel(strings.Title(t.Name()))
 		} else {
 			defName = toCamel(path.Base(t.PkgPath())) + strings.Title(t.Name())
+		}
+
+		if rc.DefName != nil {
+			defName = rc.DefName(t, defName)
 		}
 
 		if try > 1 {
@@ -425,7 +436,7 @@ func (r *Reflector) defName(t reflect.Type) string {
 }
 
 func (r *Reflector) kindSwitch(t reflect.Type, v reflect.Value, schema *Schema, rc *ReflectContext) error {
-	// nolint: exhaustive // Covered with default case.
+	// nolint:exhaustive // Covered with default case.
 	switch t.Kind() {
 	case reflect.Struct:
 		switch {

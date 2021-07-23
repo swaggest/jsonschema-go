@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"reflect"
+	"strings"
 
 	"github.com/swaggest/assertjson"
 	"github.com/swaggest/jsonschema-go"
@@ -73,6 +75,11 @@ func ExampleReflector_Reflect() {
 	// Map the type that does not expose schema information to a type with schema information.
 	reflector.AddTypeMapping(new(WeirdResp), new(Resp))
 
+	// Modify default definition names to better match your packages structure.
+	reflector.InterceptDefName(func(t reflect.Type, defaultDefName string) string {
+		return strings.TrimPrefix(defaultDefName, "JsonschemaGoTest")
+	})
+
 	// Create schema from Go value.
 	schema, err := reflector.Reflect(new(Resp))
 	if err != nil {
@@ -91,8 +98,8 @@ func ExampleReflector_Reflect() {
 	//  "title": "Sample Response",
 	//  "description": "This is a sample response.",
 	//  "definitions": {
-	//   "JsonschemaGoTestNamedAnything": {},
-	//   "JsonschemaGoTestUUID": {
+	//   "NamedAnything": {},
+	//   "UUID": {
 	//    "examples": [
 	//     "248df4b7-aa70-47b8-a036-33ac447e668d"
 	//    ],
@@ -107,7 +114,7 @@ func ExampleReflector_Reflect() {
 	//   },
 	//   "arrayOfNamedAnything": {
 	//    "items": {
-	//     "$ref": "#/definitions/JsonschemaGoTestNamedAnything"
+	//     "$ref": "#/definitions/NamedAnything"
 	//    },
 	//    "type": "array"
 	//   },
@@ -161,7 +168,7 @@ func ExampleReflector_Reflect() {
 	//    "type": "array"
 	//   },
 	//   "uuid": {
-	//    "$ref": "#/definitions/JsonschemaGoTestUUID"
+	//    "$ref": "#/definitions/UUID"
 	//   },
 	//   "whatever": {}
 	//  },

@@ -3,6 +3,8 @@ package jsonschema_test
 import (
 	"encoding"
 	"encoding/json"
+	"reflect"
+	"strings"
 	"testing"
 	"time"
 
@@ -268,35 +270,29 @@ func TestReflector_Reflect_mapping(t *testing.T) {
 
 	rf := jsonschema.Reflector{}
 	rf.AddTypeMapping(simpleTestReplacement{}, "")
+	rf.InterceptDefName(func(t reflect.Type, defaultDefName string) string {
+		return strings.TrimPrefix(defaultDefName, "JsonschemaGoTest")
+	})
 
 	s, err := rf.Reflect(testWrapParams{}, jsonschema.RootRef)
 	require.NoError(t, err)
 
 	assertjson.EqualMarshal(t, []byte(`{
-        	            	 "$ref": "#/definitions/JsonschemaGoTestTestWrapParams",
-        	            	 "definitions": {
-        	            	  "JsonschemaGoTestDeepReplacementTag": {
-        	            	   "properties": {
-        	            	    "test_field_1": {
-        	            	     "type": "string",
-        	            	     "format": "double"
-        	            	    }
-        	            	   },
-        	            	   "type": "object"
-        	            	  },
-        	            	  "JsonschemaGoTestTestWrapParams": {
-        	            	   "properties": {
-        	            	    "deep_replacement": {
-        	            	     "$ref": "#/definitions/JsonschemaGoTestDeepReplacementTag"
-        	            	    },
-        	            	    "simple_test_replacement": {
-        	            	     "type": "string"
-        	            	    }
-        	            	   },
-        	            	   "type": "object"
-        	            	  }
-        	            	 }
-        	            	}`), s)
+	  "$ref":"#/definitions/TestWrapParams",
+	  "definitions":{
+		"DeepReplacementTag":{
+		  "properties":{"test_field_1":{"type":"string","format":"double"}},
+		  "type":"object"
+		},
+		"TestWrapParams":{
+		  "properties":{
+			"deep_replacement":{"$ref":"#/definitions/DeepReplacementTag"},
+			"simple_test_replacement":{"type":"string"}
+		  },
+		  "type":"object"
+		}
+	  }
+	}`), s)
 }
 
 func TestReflector_Reflect_map(t *testing.T) {
