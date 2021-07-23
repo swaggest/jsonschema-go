@@ -45,5 +45,5 @@ jobs:
             ### Changes Report
 
             ```
-            ${{ steps.test.outputs.report }}
+            ${{ steps.gorelease.outputs.report }}
             ```
