@@ -42,7 +42,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           header: gorelease
           message: |
-            ### Changes Report
+            ### Exported API Changes Report
 
             ```
             ${{ steps.gorelease.outputs.report }}
