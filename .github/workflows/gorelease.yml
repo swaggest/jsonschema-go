@@ -1,11 +1,11 @@
 # This script is provided by github.com/bool64/dev.
-name: test-unit
+name: gorelease
 on:
   pull_request:
 env:
   GO111MODULE: "on"
 jobs:
-  test:
+  gorelease:
     strategy:
       matrix:
         go-version: [ 1.16.x ]
@@ -30,6 +30,7 @@ jobs:
         id: gorelease
         run: |
           test -e ~/go/bin/gorelease || go install golang.org/x/exp/cmd/gorelease@latest
+          gorelease
           OUTPUT=$(gorelease)
           OUTPUT="${OUTPUT//'%'/'%25'}"
           OUTPUT="${OUTPUT//$'\n'/'%0A'}"
