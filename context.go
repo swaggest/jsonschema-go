@@ -102,8 +102,14 @@ func PropertyNameMapping(mapping map[string]string) func(rc *ReflectContext) {
 
 // ReflectContext accompanies single reflect operation.
 type ReflectContext struct {
+	// DefName returns custom definition name for a type, can be nil.
+	DefName func(t reflect.Type, defaultDefName string) string
+
+	// CollectDefinitions is triggered when named schema is created, can be nil.
 	CollectDefinitions func(name string, schema Schema)
-	DefinitionsPrefix  string
+
+	// DefinitionsPrefix defines location of named schemas, default #/definitions/.
+	DefinitionsPrefix string
 
 	// PropertyNameTag enables property naming from a field tag, e.g. `header:"first_name"`.
 	PropertyNameTag string
