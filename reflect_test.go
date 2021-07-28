@@ -753,3 +753,26 @@ func TestReflector_Reflect_Ref(t *testing.T) {
 	  "type":"object"
 	}`), s)
 }
+
+func TestReflector_Reflect_MapOfOptionals(t *testing.T) {
+	type Symbol string
+
+	type Optionals struct {
+		Map   map[Symbol]*float64 `json:"map"`
+		Slice []*float64          `json:"slice"`
+	}
+
+	r := jsonschema.Reflector{}
+	s, err := r.Reflect(Optionals{})
+	assert.NoError(t, err)
+	assertjson.EqualMarshal(t, []byte(`{
+	  "properties":{
+		"map":{
+		  "additionalProperties":{"type":["null","number"]},
+		  "type":["object","null"]
+		},
+		"slice":{"items":{"type":["null","number"]},"type":["array","null"]}
+	  },
+	  "type":"object"
+	}`), s)
+}
