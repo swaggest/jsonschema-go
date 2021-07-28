@@ -457,7 +457,7 @@ func (r *Reflector) kindSwitch(t reflect.Type, v reflect.Value, schema *Schema, 
 			break
 		}
 
-		elemType := refl.DeepIndirect(t.Elem())
+		elemType := t.Elem()
 
 		rc.Path = append(rc.Path, "[]")
 		itemValue := reflect.Zero(elemType).Interface()
@@ -475,7 +475,7 @@ func (r *Reflector) kindSwitch(t reflect.Type, v reflect.Value, schema *Schema, 
 		schema.WithItems(*(&Items{}).WithSchemaOrBool(itemsSchema.ToSchemaOrBool()))
 
 	case reflect.Map:
-		elemType := refl.DeepIndirect(t.Elem())
+		elemType := t.Elem()
 
 		rc.Path = append(rc.Path, "{}")
 		itemValue := reflect.Zero(elemType).Interface()
