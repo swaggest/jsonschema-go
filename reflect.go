@@ -551,8 +551,7 @@ func (r *Reflector) walkProperties(v reflect.Value, parent *Schema, rc *ReflectC
 		}
 
 		if tag == "" && field.Anonymous && field.Type.Kind() == reflect.Struct {
-			err := r.walkProperties(v.Field(i), parent, rc)
-			if err != nil {
+			if err := r.walkProperties(v.Field(i), parent, rc); err != nil {
 				return err
 			}
 
@@ -568,8 +567,7 @@ func (r *Reflector) walkProperties(v reflect.Value, parent *Schema, rc *ReflectC
 		omitEmpty := strings.Contains(tag, ",omitempty")
 		required := false
 
-		err := refl.ReadBoolTag(field.Tag, "required", &required)
-		if err != nil {
+		if err := refl.ReadBoolTag(field.Tag, "required", &required); err != nil {
 			return err
 		}
 
@@ -606,13 +604,18 @@ func (r *Reflector) walkProperties(v reflect.Value, parent *Schema, rc *ReflectC
 			}
 		}
 
-		err = refl.PopulateFieldsFromTags(&propertySchema, field.Tag)
-		if err != nil {
+		if err := refl.PopulateFieldsFromTags(&propertySchema, field.Tag); err != nil {
 			return err
 		}
 
-		err = reflectExample(&propertySchema, field)
-		if err != nil {
+		deprecated := false
+		if err := refl.ReadBoolTag(field.Tag, "deprecated", &deprecated); err != nil {
+			return err
+		} else if deprecated {
+			propertySchema.WithExtraPropertiesItem("deprecated", true)
+		}
+
+		if err := reflectExample(&propertySchema, field); err != nil {
 			return err
 		}
 

@@ -594,7 +594,7 @@ func (ISOCountry) JSONSchema() (jsonschema.Schema, error) {
 func TestExposer(t *testing.T) {
 	type Some struct {
 		Week    ISOWeek    `json:"week"`
-		Country ISOCountry `json:"country"`
+		Country ISOCountry `json:"country" deprecated:"true"`
 	}
 
 	s, err := (&jsonschema.Reflector{}).Reflect(Some{})
@@ -626,7 +626,8 @@ func TestExposer(t *testing.T) {
         	            	 },
         	            	 "properties": {
         	            	  "country": {
-        	            	   "$ref": "#/definitions/JsonschemaGoTestISOCountry"
+        	            	   "$ref": "#/definitions/JsonschemaGoTestISOCountry",
+        	            	   "deprecated": true
         	            	  },
         	            	  "week": {
         	            	   "$ref": "#/definitions/JsonschemaGoTestISOWeek"
