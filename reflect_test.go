@@ -40,11 +40,21 @@ type Entity struct {
 
 type Person struct {
 	Entity
-	BirthDate string `json:"date" format:"date"`
-	FirstName string `json:"firstName"`
-	LastName  string `json:"lastName" required:"true"`
-	Height    int    `json:"height"`
-	Role      Role   `json:"role" description:"The role of person."`
+	BirthDate string  `json:"date" format:"date"`
+	FirstName string  `json:"firstName"`
+	LastName  string  `json:"lastName" required:"true"`
+	Height    int     `json:"height"`
+	Role      Role    `json:"role" description:"The role of person."`
+	Enumed    Enumed  `json:"enumed"`
+	EnumedPtr *Enumed `json:"enumedPtr"`
+}
+
+type Enumed string
+
+func (e Enumed) Enum() []interface{} {
+	return []interface{}{
+		"foo", "bar",
+	}
 }
 
 var (
@@ -80,6 +90,7 @@ func TestReflector_Reflect(t *testing.T) {
 {
   "title":"Organization",
   "definitions":{
+	"JsonschemaGoTestEnumed":{"enum":["foo","bar"],"type":"string"},
 	"JsonschemaGoTestPerson":{
 	  "title":"Person","required":["lastName"],
 	  "properties":{
@@ -88,6 +99,8 @@ func TestReflector_Reflect(t *testing.T) {
 		"date":{"type":"string","format":"date"},
 		"deathDate":{"type":["null","string"],"format":"date"},
 		"deletedAt":{"type":["null","string"],"format":"date-time"},
+		"enumed":{"$ref":"#/definitions/JsonschemaGoTestEnumed"},
+		"enumedPtr":{"$ref":"#/definitions/JsonschemaGoTestEnumed"},
 		"firstName":{"type":"string"},"height":{"type":"integer"},
 		"lastName":{"type":"string"},"meta":{},
 		"role":{
@@ -215,6 +228,7 @@ func TestReflector_Reflect_collectDefinitions(t *testing.T) {
 
 	assertjson.EqualMarshal(t, []byte(`
 {
+  "JsonschemaGoTestEnumed":{"enum":["foo","bar"],"type":"string"},
   "JsonschemaGoTestPerson":{
 	"title":"Person","required":["lastName"],
 	"properties":{
@@ -223,6 +237,8 @@ func TestReflector_Reflect_collectDefinitions(t *testing.T) {
 	  "date":{"type":"string","format":"date"},
 	  "deathDate":{"type":["null","string"],"format":"date"},
 	  "deletedAt":{"type":["null","string"],"format":"date-time"},
+	  "enumed":{"$ref":"#/definitions/JsonschemaGoTestEnumed"},
+	  "enumedPtr":{"$ref":"#/definitions/JsonschemaGoTestEnumed"},
 	  "firstName":{"type":"string"},"height":{"type":"integer"},
 	  "lastName":{"type":"string"},"meta":{},
 	  "role":{
