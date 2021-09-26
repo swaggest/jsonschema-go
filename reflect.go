@@ -78,6 +78,13 @@ func (r *Reflector) InterceptDefName(f func(t reflect.Type, defaultDefName strin
 }
 
 func checkSchemaSetup(v reflect.Value, s *Schema) (bool, error) {
+	vi := v.Interface()
+	if v.Kind() == reflect.Ptr && v.IsNil() {
+		vi = reflect.New(v.Type().Elem()).Interface()
+	}
+
+	reflectEnum(s, "", vi)
+
 	if preparer, ok := v.Interface().(Preparer); ok {
 		err := preparer.PrepareJSONSchema(s)
 
@@ -575,14 +582,14 @@ func (r *Reflector) walkProperties(v reflect.Value, parent *Schema, rc *ReflectC
 			parent.Required = append(parent.Required, propName)
 		}
 
-		fieldVal := v.Field(i).Interface()
+		fv := v.Field(i)
+		fieldVal := fv.Interface()
 
 		ft := t.Field(i).Type
 
-		if fieldVal == nil && ft != typeOfEmptyInterface {
-			fieldVal = reflect.Zero(ft).Interface()
-			if fieldVal == nil {
-				fieldVal = reflect.New(ft).Interface()
+		if ft != typeOfEmptyInterface {
+			if ft.Kind() == reflect.Ptr && fv.IsNil() {
+				fieldVal = reflect.New(ft.Elem()).Interface()
 			}
 		}
 
@@ -619,7 +626,7 @@ func (r *Reflector) walkProperties(v reflect.Value, parent *Schema, rc *ReflectC
 			return err
 		}
 
-		reflectEnum(&propertySchema, field, fieldVal)
+		reflectEnum(&propertySchema, field.Tag, nil)
 
 		// Remove temporary kept type from referenced schema.
 		if propertySchema.Ref != nil {
@@ -782,18 +789,18 @@ func reflectExample(propertySchema *Schema, field reflect.StructField) error {
 	return nil
 }
 
-func reflectEnum(propertySchema *Schema, field reflect.StructField, fieldVal interface{}) {
+func reflectEnum(schema *Schema, fieldTag reflect.StructTag, fieldVal interface{}) {
 	enum := enum{}
-	enum.loadFromField(field, fieldVal)
+	enum.loadFromField(fieldTag, fieldVal)
 
 	if len(enum.items) > 0 {
-		propertySchema.Enum = enum.items
+		schema.Enum = enum.items
 		if len(enum.names) > 0 {
-			if propertySchema.ExtraProperties == nil {
-				propertySchema.ExtraProperties = make(map[string]interface{}, 1)
+			if schema.ExtraProperties == nil {
+				schema.ExtraProperties = make(map[string]interface{}, 1)
 			}
 
-			propertySchema.ExtraProperties[XEnumNames] = enum.names
+			schema.ExtraProperties[XEnumNames] = enum.names
 		}
 	}
 }
@@ -805,7 +812,7 @@ type enum struct {
 }
 
 // loadFromField loads enum from field tag: json array or comma-separated string.
-func (enum *enum) loadFromField(field reflect.StructField, fieldVal interface{}) {
+func (enum *enum) loadFromField(fieldTag reflect.StructTag, fieldVal interface{}) {
 	if e, isEnumer := fieldVal.(NamedEnum); isEnumer {
 		enum.items, enum.names = e.NamedEnum()
 	}
@@ -814,7 +821,7 @@ func (enum *enum) loadFromField(field reflect.StructField, fieldVal interface{})
 		enum.items = e.Enum()
 	}
 
-	if enumTag := field.Tag.Get("enum"); enumTag != "" {
+	if enumTag := fieldTag.Get("enum"); enumTag != "" {
 		var e []interface{}
 
 		err := json.Unmarshal([]byte(enumTag), &e)
