@@ -7,7 +7,7 @@ linters-settings:
     check-type-assertions: true
     check-blank: true
   gocyclo:
-    min-complexity: 30
+    min-complexity: 20
   dupl:
     threshold: 100
   misspell:
@@ -20,11 +20,6 @@ linters-settings:
 linters:
   enable-all: true
   disable:
-    - tagliatelle
-    - goerr113
-    - funlen
-    - gocognit
-    - cyclop
     - lll
     - maligned
     - gochecknoglobals
@@ -50,3 +45,4 @@ issues:
         - funlen
         - dupl
       path: "_test.go"
+
