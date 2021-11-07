@@ -3,6 +3,7 @@ package jsonschema_test
 import (
 	"encoding"
 	"encoding/json"
+	"mime/multipart"
 	"reflect"
 	"strings"
 	"testing"
@@ -79,6 +80,31 @@ func (o Org) PrepareJSONSchema(schema *jsonschema.Schema) error {
 	schema.WithTitle("Organization")
 
 	return nil
+}
+
+func TestReflector_Reflect_namedInterface(t *testing.T) {
+	type s struct {
+		Upload multipart.File `json:"upload"`
+	}
+
+	reflector := jsonschema.Reflector{}
+	schema, err := reflector.Reflect(s{}, jsonschema.InterceptType(func(v reflect.Value, s *jsonschema.Schema) (bool, error) {
+		if _, ok := v.Interface().(*multipart.File); ok {
+			s.AddType(jsonschema.String)
+			s.WithFormat("binary")
+
+			return true, nil
+		}
+
+		return false, nil
+	}))
+	require.NoError(t, err)
+
+	assertjson.EqualMarshal(t, []byte(`{
+	  "definitions":{"MultipartFile":{"type":["null","string"],"format":"binary"}},
+	  "properties":{"upload":{"$ref":"#/definitions/MultipartFile"}},
+	  "type":"object"
+	}`), schema)
 }
 
 func TestReflector_Reflect(t *testing.T) {

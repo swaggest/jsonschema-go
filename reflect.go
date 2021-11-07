@@ -530,6 +530,20 @@ func MakePropertyNameMapping(v interface{}, tagName string) map[string]string {
 	return res
 }
 
+func (r *Reflector) fieldVal(fv reflect.Value, ft reflect.Type) interface{} {
+	fieldVal := fv.Interface()
+
+	if ft != typeOfEmptyInterface {
+		if ft.Kind() == reflect.Ptr && fv.IsNil() {
+			fieldVal = reflect.New(ft.Elem()).Interface()
+		} else if ft.Kind() == reflect.Interface && fv.IsNil() {
+			fieldVal = reflect.New(ft).Interface()
+		}
+	}
+
+	return fieldVal
+}
+
 func (r *Reflector) walkProperties(v reflect.Value, parent *Schema, rc *ReflectContext) error {
 	t := v.Type()
 	if t.Kind() == reflect.Ptr {
@@ -582,16 +596,8 @@ func (r *Reflector) walkProperties(v reflect.Value, parent *Schema, rc *ReflectC
 			parent.Required = append(parent.Required, propName)
 		}
 
-		fv := v.Field(i)
-		fieldVal := fv.Interface()
-
 		ft := t.Field(i).Type
-
-		if ft != typeOfEmptyInterface {
-			if ft.Kind() == reflect.Ptr && fv.IsNil() {
-				fieldVal = reflect.New(ft.Elem()).Interface()
-			}
-		}
+		fieldVal := r.fieldVal(v.Field(i), ft)
 
 		rc.Path = append(rc.Path, propName)
 
