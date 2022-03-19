@@ -252,3 +252,48 @@ func ExamplePropertyNameMapping() {
 	//   "type":"object"
 	// }
 }
+
+func ExampleInterceptProperty() {
+	reflector := jsonschema.Reflector{}
+
+	type Test struct {
+		ID      int     `json:"id" minimum:"123" default:"200"`
+		Name    string  `json:"name" minLength:"10"`
+		Skipped float64 `json:"skipped"`
+	}
+
+	s, err := reflector.Reflect(new(Test),
+		// PropertyNameMapping allows configuring property names without field tag.
+		jsonschema.InterceptProperty(func(name string, field reflect.StructField, propertySchema *jsonschema.Schema) error {
+			switch name {
+			// You can alter reflected schema by updating propertySchema.
+			case "id":
+				propertySchema.WithDescription("This is ID.")
+
+			// Or you can entirely remove property from parent schema with a sentinel error.
+			case "skipped":
+				return jsonschema.ErrSkipProperty
+			}
+
+			return nil
+		}),
+	)
+	if err != nil {
+		panic(err)
+	}
+
+	j, err := assertjson.MarshalIndentCompact(s, "", "  ", 80)
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println(string(j))
+	// Output:
+	// {
+	//   "properties":{
+	//     "id":{"description":"This is ID.","default":200,"minimum":123,"type":"integer"},
+	//     "name":{"minLength":10,"type":"string"}
+	//   },
+	//   "type":"object"
+	// }
+}
