@@ -43,6 +43,8 @@ linters:
     - ireturn
 
 issues:
+  exclude:
+    - "strings.Title is deprecated"
   exclude-use-default: false
   exclude-rules:
     - linters:

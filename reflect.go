@@ -423,9 +423,9 @@ func (r *Reflector) defName(rc *ReflectContext, t reflect.Type) string {
 
 	for {
 		if t.PkgPath() == "main" {
-			defName = toCamel(strings.Title(t.Name())) // nolint:staticcheck
+			defName = toCamel(strings.Title(t.Name()))
 		} else {
-			defName = toCamel(path.Base(t.PkgPath())) + strings.Title(t.Name()) // nolint:staticcheck
+			defName = toCamel(path.Base(t.PkgPath())) + strings.Title(t.Name())
 		}
 
 		if rc.DefName != nil {
