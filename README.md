@@ -56,3 +56,23 @@ fmt.Println(string(j))
 //  "type": "object"
 // }
 ```
+
+## Customization
+
+By default, JSON Schema is generated from Go struct field types and tags.
+It works well for the majority of cases, but if it does not there are rich customization options.
+
+### Implementing interfaces on a type
+
+There are a few interfaces that can be implemented on a type to customize JSON Schema generation.
+
+* `jsonschema.Preparer` 
+* `jsonschema.Exposer`
+* `jsonschema.RawExposer`
+* `jsonschema.Described`
+* `jsonschema.Titled`
+* `jsonschema.Enum`
+* `jsonschema.NamedEnum`
+
+### Configuring the reflector
+
