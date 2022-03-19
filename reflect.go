@@ -3,6 +3,7 @@ package jsonschema
 import (
 	"encoding"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"path"
 	"reflect"
@@ -20,6 +21,17 @@ var (
 	typeOfTextUnmarshaler = reflect.TypeOf((*encoding.TextUnmarshaler)(nil)).Elem()
 	typeOfEmptyInterface  = reflect.TypeOf((*interface{})(nil)).Elem()
 )
+
+const (
+	// ErrSkipProperty indicates that property should not be added to object.
+	ErrSkipProperty = sentinelError("property skipped")
+)
+
+type sentinelError string
+
+func (e sentinelError) Error() string {
+	return string(e)
+}
 
 // IgnoreTypeName is a marker interface to ignore type name of mapped value and use original.
 type IgnoreTypeName interface {
@@ -158,7 +170,7 @@ func checkSchemaSetup(v reflect.Value, s *Schema) (bool, error) {
 // RawExposer, Exposer, Preparer.
 //
 // These interfaces allow exposing particular schema keywords:
-// Titled, Described, Enum.
+// Titled, Described, Enum, NamedEnum.
 func (r *Reflector) Reflect(i interface{}, options ...func(*ReflectContext)) (Schema, error) {
 	rc := ReflectContext{}
 	rc.DefinitionsPrefix = "#/definitions/"
@@ -255,6 +267,8 @@ func (r *Reflector) reflectDefer(defName string, typeString refl.TypeString, rc 
 	if keepType {
 		s.Type = schema.Type
 	}
+
+	s.ReflectType = schema.ReflectType
 
 	return s
 }
@@ -603,6 +617,10 @@ func (r *Reflector) walkProperties(v reflect.Value, parent *Schema, rc *ReflectC
 
 		propertySchema, err := r.reflect(fieldVal, rc, true)
 		if err != nil {
+			if errors.Is(err, ErrSkipProperty) {
+				continue
+			}
+
 			return err
 		}
 
@@ -639,19 +657,22 @@ func (r *Reflector) walkProperties(v reflect.Value, parent *Schema, rc *ReflectC
 			propertySchema.Type = nil
 		}
 
+		if rc.InterceptProperty != nil {
+			if err := rc.InterceptProperty(propName, field, &propertySchema); err != nil {
+				if errors.Is(err, ErrSkipProperty) {
+					continue
+				}
+
+				return err
+			}
+		}
+
 		if parent.Properties == nil {
 			parent.Properties = make(map[string]SchemaOrBool, 1)
 		}
 
 		parent.Properties[propName] = SchemaOrBool{
 			TypeObject: &propertySchema,
-		}
-
-		if rc.InterceptProperty != nil {
-			err = rc.InterceptProperty(propName, field, &propertySchema)
-			if err != nil {
-				return err
-			}
 		}
 	}
 
