@@ -20,7 +20,6 @@ linters-settings:
 linters:
   enable-all: true
   disable:
-    - tagliatelle
     - goerr113
     - funlen
     - gocognit
@@ -38,8 +37,14 @@ linters:
     - scopelint # deprecated
     - ifshort # too many false positives
     - golint # deprecated
+    - varnamelen
+    - tagliatelle
+    - errname
+    - ireturn
 
 issues:
+  exclude:
+    - "strings.Title is deprecated"
   exclude-use-default: false
   exclude-rules:
     - linters:
@@ -50,3 +55,4 @@ issues:
         - funlen
         - dupl
       path: "_test.go"
+
