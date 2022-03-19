@@ -3,7 +3,7 @@ module github.com/swaggest/jsonschema-go
 go 1.17
 
 require (
-	github.com/bool64/dev v0.2.8-0.20220319210643-903d374d9b1a
+	github.com/bool64/dev v0.2.8
 	github.com/stretchr/testify v1.7.0
 	github.com/swaggest/assertjson v1.6.8
 	github.com/swaggest/refl v1.0.0
