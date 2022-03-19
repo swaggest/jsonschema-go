@@ -149,6 +149,8 @@ func checkSchemaSetup(v reflect.Value, s *Schema) (bool, error) {
 //   - `description`, https://json-schema.org/draft-04/json-schema-validation.html#rfc.section.6.1
 //   - `default`, can be scalar or JSON value,
 //  		https://json-schema.org/draft-04/json-schema-validation.html#rfc.section.6.2
+//   - `const`, can be scalar or JSON value,
+//          https://json-schema.org/draft/2020-12/json-schema-validation.html#rfc.section.6.1.3
 //   - `pattern`, https://json-schema.org/draft-04/json-schema-validation.html#rfc.section.5.2.3
 //   - `format`, https://json-schema.org/draft-04/json-schema-validation.html#rfc.section.7
 //   - `multipleOf`, https://json-schema.org/draft-04/json-schema-validation.html#rfc.section.5.1.1
@@ -629,7 +631,11 @@ func (r *Reflector) walkProperties(v reflect.Value, parent *Schema, rc *ReflectC
 		}
 
 		if propertySchema.Type != nil && propertySchema.Type.SimpleTypes != nil {
-			err = checkDefault(&propertySchema, field)
+			err = checkInlineValue(&propertySchema, field, "default", propertySchema.WithDefault)
+			if err != nil {
+				return err
+			}
+			err = checkInlineValue(&propertySchema, field, "const", propertySchema.WithConst)
 			if err != nil {
 				return err
 			}
@@ -679,7 +685,7 @@ func (r *Reflector) walkProperties(v reflect.Value, parent *Schema, rc *ReflectC
 	return nil
 }
 
-func checkDefault(propertySchema *Schema, field reflect.StructField) error {
+func checkInlineValue(propertySchema *Schema, field reflect.StructField, tag string, setter func(interface{}) *Schema) error {
 	var err error
 
 	t := *propertySchema.Type.SimpleTypes
@@ -688,45 +694,45 @@ func checkDefault(propertySchema *Schema, field reflect.StructField) error {
 	case Integer:
 		var v *int64
 
-		err = refl.ReadIntPtrTag(field.Tag, "default", &v)
+		err = refl.ReadIntPtrTag(field.Tag, tag, &v)
 		if err != nil {
 			return err
 		}
 
 		if v != nil {
-			propertySchema.WithDefault(*v)
+			setter(*v)
 		}
 	case Number:
 		var v *float64
 
-		err = refl.ReadFloatPtrTag(field.Tag, "default", &v)
+		err = refl.ReadFloatPtrTag(field.Tag, tag, &v)
 		if err != nil {
 			return err
 		}
 
 		if v != nil {
-			propertySchema.WithDefault(*v)
+			setter(*v)
 		}
 
 	case String:
 		var v *string
 
-		refl.ReadStringPtrTag(field.Tag, "default", &v)
+		refl.ReadStringPtrTag(field.Tag, tag, &v)
 
 		if v != nil {
-			propertySchema.WithDefault(*v)
+			setter(*v)
 		}
 
 	case Boolean:
 		var v *bool
 
-		err = refl.ReadBoolPtrTag(field.Tag, "default", &v)
+		err = refl.ReadBoolPtrTag(field.Tag, tag, &v)
 		if err != nil {
 			return err
 		}
 
 		if v != nil {
-			propertySchema.WithDefault(*v)
+			setter(*v)
 		}
 
 	case Array, Null, Object:

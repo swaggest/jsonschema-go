@@ -819,3 +819,26 @@ func TestReflector_Reflect_MapOfOptionals(t *testing.T) {
 	  "type":"object"
 	}`), s)
 }
+
+func TestReflector_Reflect_InlineValue(t *testing.T) {
+	type InlineValues struct {
+		One   string `json:"one" default:"un"`
+		Two   string `json:"two" const:"deux"`
+		Three string `json:"three" default:"trois" const:"3"`
+		Four  int    `json:"four" const:"4"`
+	}
+
+	r := jsonschema.Reflector{}
+	s, err := r.Reflect(InlineValues{})
+	assert.NoError(t, err)
+
+	assertjson.EqualMarshal(t, []byte(`{
+	  "properties":{
+	    "one":{"default":"un","type":"string"},
+	    "two":{"const":"deux","type":"string"},
+	    "three":{"default":"trois","const":"3","type":"string"},
+	    "four":{"const":4,"type":"integer"}
+	  },
+	  "type":"object"
+	}`), s)
+}
