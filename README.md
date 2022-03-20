@@ -66,13 +66,27 @@ It works well for the majority of cases, but if it does not there are rich custo
 
 There are a few interfaces that can be implemented on a type to customize JSON Schema generation.
 
-* `jsonschema.Preparer` 
-* `jsonschema.Exposer`
-* `jsonschema.RawExposer`
-* `jsonschema.Described`
-* `jsonschema.Titled`
-* `jsonschema.Enum`
-* `jsonschema.NamedEnum`
+* [`Preparer`](https://pkg.go.dev/github.com/swaggest/jsonschema-go#Preparer) allows to change generated JSON Schema.
+* [`Exposer`](https://pkg.go.dev/github.com/swaggest/jsonschema-go#Exposer) overrides generated JSON Schema.
+* [`RawExposer`](https://pkg.go.dev/github.com/swaggest/jsonschema-go/jsonschema.RawExposer) overrides generated JSON Schema.
+* [`Described`](https://pkg.go.dev/github.com/swaggest/jsonschema-go#Described) exposes description.
+* [`Titled`](https://pkg.go.dev/github.com/swaggest/jsonschema-go/jsonschema.Titled) exposes title.
+* [`Enum`](https://pkg.go.dev/github.com/swaggest/jsonschema-go#Enum) exposes enum values.
+* [`NamedEnum`](https://pkg.go.dev/github.com/swaggest/jsonschema-go#NamedEnum) exposes enum values with names.
 
 ### Configuring the reflector
 
+Additional centralized configuration is available with 
+[`jsonschema.ReflectContext`](https://pkg.go.dev/github.com/swaggest/jsonschema-go#ReflectContext) and 
+[`Reflect`](https://pkg.go.dev/github.com/swaggest/jsonschema-go#Reflector.Reflect) options.
+
+* [`CollectDefinitions`](https://pkg.go.dev/github.com/swaggest/jsonschema-go#CollectDefinitions) disables definitions storage in schema and calls user function instead.
+* [`DefinitionsPrefix`](https://pkg.go.dev/github.com/swaggest/jsonschema-go#DefinitionsPrefix) sets path prefix for definitions.
+* [`PropertyNameTag`](https://pkg.go.dev/github.com/swaggest/jsonschema-go#PropertyNameTag) allows using field tags other than `json`.
+* [`InterceptType`](https://pkg.go.dev/github.com/swaggest/jsonschema-go#InterceptType) called for every type during schema reflection.
+* [`InterceptProperty`](https://pkg.go.dev/github.com/swaggest/jsonschema-go#InterceptProperty) called for every property during schema reflection.
+* [`InlineRefs`](https://pkg.go.dev/github.com/swaggest/jsonschema-go#InlineRefs) tries to inline all references (instead of creating definitions).
+* [`RootNullable`](https://pkg.go.dev/github.com/swaggest/jsonschema-go#RootNullable) enables nullability of root schema.
+* [`RootRef`](https://pkg.go.dev/github.com/swaggest/jsonschema-go#RootRef) converts root schema to definition reference.
+* [`StripDefinitionNamePrefix`](https://pkg.go.dev/github.com/swaggest/jsonschema-go#StripDefinitionNamePrefix) strips prefix from definition name.
+* [`PropertyNameMapping`](https://pkg.go.dev/github.com/swaggest/jsonschema-go#PropertyNameMapping) explicit name mapping instead field tags.

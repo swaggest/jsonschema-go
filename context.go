@@ -2,6 +2,7 @@ package jsonschema
 
 import (
 	"reflect"
+	"strings"
 
 	"github.com/swaggest/refl"
 )
@@ -90,6 +91,23 @@ func RootRef(rc *ReflectContext) {
 	rc.RootRef = true
 }
 
+// StripDefinitionNamePrefix checks if definition name has any of provided prefixes
+// and removes first encountered.
+func StripDefinitionNamePrefix(prefix ...string) func(rc *ReflectContext) {
+	return func(rc *ReflectContext) {
+		rc.DefName = func(t reflect.Type, defaultDefName string) string {
+			for _, p := range prefix {
+				s := strings.TrimPrefix(defaultDefName, p)
+				if s != defaultDefName {
+					return s
+				}
+			}
+
+			return defaultDefName
+		}
+	}
+}
+
 // SkipEmbeddedMapsSlices disables shortcutting into embedded maps and slices.
 func SkipEmbeddedMapsSlices(rc *ReflectContext) {
 	rc.SkipEmbeddedMapsSlices = true
@@ -108,6 +126,7 @@ type ReflectContext struct {
 	DefName func(t reflect.Type, defaultDefName string) string
 
 	// CollectDefinitions is triggered when named schema is created, can be nil.
+	// Non-empty CollectDefinitions disables collection of definitions into resulting schema.
 	CollectDefinitions func(name string, schema Schema)
 
 	// DefinitionsPrefix defines location of named schemas, default #/definitions/.
@@ -120,7 +139,7 @@ type ReflectContext struct {
 	// Only applicable to top-level properties (including embedded).
 	PropertyNameMapping map[string]string
 
-	// EnvelopNullability enables `anyOf` enveloping ot "type":"null" instead of injecting into definition.
+	// EnvelopNullability enables `anyOf` enveloping of "type":"null" instead of injecting into definition.
 	EnvelopNullability bool
 
 	InlineRefs   bool
@@ -130,6 +149,9 @@ type ReflectContext struct {
 	// SkipEmbeddedMapsSlices disables shortcutting into embedded maps and slices.
 	SkipEmbeddedMapsSlices bool
 
+	// InterceptType is called before and after type processing.
+	// So it may be called twice for the same type, first time with empty Schema and
+	// second time with fully processed schema.
 	InterceptType     InterceptTypeFunc
 	InterceptProperty InterceptPropertyFunc
 

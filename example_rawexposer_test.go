@@ -7,21 +7,28 @@ import (
 	"github.com/swaggest/jsonschema-go"
 )
 
-// StructureWithRawExposer is an example structure.
-type StructureWithRawExposer struct {
+// ParentOfRawExposer is an example structure.
+type ParentOfRawExposer struct {
+	Bar RawExposer `json:"bar"`
+}
+
+// RawExposer is an example structure.
+type RawExposer struct {
 	Foo string `json:"foo"`
 }
 
-var _ jsonschema.RawExposer = StructureWithRawExposer{}
+var _ jsonschema.RawExposer = RawExposer{}
 
-func (s StructureWithRawExposer) JSONSchemaBytes() ([]byte, error) {
-	return []byte(``)
+// JSONSchemaBytes returns raw JSON Schema bytes.
+// Fields and tags of structure are ignored.
+func (s RawExposer) JSONSchemaBytes() ([]byte, error) {
+	return []byte(`{"description":"Custom description.","type":"object","properties":{"foo":{"type":"string"}}}`), nil
 }
 
 func ExampleRawExposer() {
 	reflector := jsonschema.Reflector{}
 
-	s, err := reflector.Reflect(StructureWithPreparer{})
+	s, err := reflector.Reflect(ParentOfRawExposer{}, jsonschema.StripDefinitionNamePrefix("JsonschemaGoTest"))
 	if err != nil {
 		panic(err)
 	}
@@ -34,7 +41,12 @@ func ExampleRawExposer() {
 	fmt.Println(string(j))
 	// Output:
 	// {
-	//   "description":"Custom description.","properties":{"foo":{"type":"string"}},
-	//   "enum":["one","two","three"],"type":"object"
+	//   "definitions":{
+	//     "RawExposer":{
+	//       "description":"Custom description.",
+	//       "properties":{"foo":{"type":"string"}},"type":"object"
+	//     }
+	//   },
+	//   "properties":{"bar":{"$ref":"#/definitions/RawExposer"}},"type":"object"
 	// }
 }

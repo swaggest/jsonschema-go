@@ -97,12 +97,6 @@ func checkSchemaSetup(v reflect.Value, s *Schema) (bool, error) {
 
 	reflectEnum(s, "", vi)
 
-	if preparer, ok := v.Interface().(Preparer); ok {
-		err := preparer.PrepareJSONSchema(s)
-
-		return false, err
-	}
-
 	if exposer, ok := v.Interface().(Exposer); ok {
 		schema, err := exposer.JSONSchema()
 		if err != nil {
@@ -380,6 +374,12 @@ func (r *Reflector) reflect(i interface{}, rc *ReflectContext, keepType bool) (s
 		}
 	}
 
+	if preparer, ok := v.Interface().(Preparer); ok {
+		err := preparer.PrepareJSONSchema(&schema)
+
+		return schema, err
+	}
+
 	return schema, nil
 }
 
@@ -635,6 +635,7 @@ func (r *Reflector) walkProperties(v reflect.Value, parent *Schema, rc *ReflectC
 			if err != nil {
 				return err
 			}
+
 			err = checkInlineValue(&propertySchema, field, "const", propertySchema.WithConst)
 			if err != nil {
 				return err

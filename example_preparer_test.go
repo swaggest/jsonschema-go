@@ -7,16 +7,21 @@ import (
 	"github.com/swaggest/jsonschema-go"
 )
 
-// StructureWithPreparer is an example structure.
-type StructureWithPreparer struct {
+// ParentOfPreparer is an example structure.
+type ParentOfPreparer struct {
+	Bar Preparer `json:"bar"`
+}
+
+// Preparer is an example structure.
+type Preparer struct {
 	Foo string `json:"foo"`
 }
 
-var _ jsonschema.Preparer = StructureWithPreparer{}
+var _ jsonschema.Preparer = Preparer{}
 
-func (s StructureWithPreparer) PrepareJSONSchema(schema *jsonschema.Schema) error {
+func (s Preparer) PrepareJSONSchema(schema *jsonschema.Schema) error {
 	schema.WithDescription("Custom description.")
-	schema.WithEnum("one", "two", "three")
+	schema.Properties["foo"].TypeObject.WithEnum("one", "two", "three")
 
 	return nil
 }
@@ -24,7 +29,7 @@ func (s StructureWithPreparer) PrepareJSONSchema(schema *jsonschema.Schema) erro
 func ExamplePreparer() {
 	reflector := jsonschema.Reflector{}
 
-	s, err := reflector.Reflect(StructureWithPreparer{})
+	s, err := reflector.Reflect(ParentOfPreparer{}, jsonschema.StripDefinitionNamePrefix("JsonschemaGoTest"))
 	if err != nil {
 		panic(err)
 	}
@@ -37,7 +42,13 @@ func ExamplePreparer() {
 	fmt.Println(string(j))
 	// Output:
 	// {
-	//   "description":"Custom description.","properties":{"foo":{"type":"string"}},
-	//   "enum":["one","two","three"],"type":"object"
+	//   "definitions":{
+	//     "Preparer":{
+	//       "description":"Custom description.",
+	//       "properties":{"foo":{"enum":["one","two","three"],"type":"string"}},
+	//       "type":"object"
+	//     }
+	//   },
+	//   "properties":{"bar":{"$ref":"#/definitions/Preparer"}},"type":"object"
 	// }
 }

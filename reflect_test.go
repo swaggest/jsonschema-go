@@ -764,6 +764,8 @@ var _ jsonschema.Preparer = nullFloat{}
 func (n nullFloat) PrepareJSONSchema(schema *jsonschema.Schema) error {
 	schema.TypeEns().WithSliceOfSimpleTypeValues(jsonschema.Null, jsonschema.Number)
 
+	schema.TypeEns().SimpleTypes = nil
+
 	return nil
 }
 
