@@ -35,6 +35,41 @@ type RawExposer interface {
 	JSONSchemaBytes() ([]byte, error)
 }
 
+// OneOfExposer exposes "oneOf" items as list of samples.
+type OneOfExposer interface {
+	JSONSchemaOneOf() []interface{}
+}
+
+// AnyOfExposer exposes "anyOf" items as list of samples.
+type AnyOfExposer interface {
+	JSONSchemaAnyOf() []interface{}
+}
+
+// AllOfExposer exposes "allOf" items as list of samples.
+type AllOfExposer interface {
+	JSONSchemaAllOf() []interface{}
+}
+
+// NotExposer exposes "not" schema as a sample.
+type NotExposer interface {
+	JSONSchemaNot() interface{}
+}
+
+// IfExposer exposes "if" schema as a sample.
+type IfExposer interface {
+	JSONSchemaIf() interface{}
+}
+
+// ThenExposer exposes "then" schema as a sample.
+type ThenExposer interface {
+	JSONSchemaThen() interface{}
+}
+
+// ElseExposer exposes "else" schema as a sample.
+type ElseExposer interface {
+	JSONSchemaElse() interface{}
+}
+
 // JSONSchema implements Exposer.
 func (s Schema) JSONSchema() (Schema, error) {
 	return s, nil
