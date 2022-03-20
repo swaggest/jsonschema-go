@@ -844,3 +844,94 @@ func TestReflector_Reflect_InlineValue(t *testing.T) {
 	  "type":"object"
 	}`), s)
 }
+
+type WithSubSchemas struct {
+	Foo string `json:"foo"`
+}
+
+func (WithSubSchemas) JSONSchemaOneOf() []interface{} {
+	return []interface{}{
+		Person{},
+		Enumed(""),
+		"",
+	}
+}
+
+func (WithSubSchemas) JSONSchemaAnyOf() []interface{} {
+	return []interface{}{
+		"",
+		123,
+	}
+}
+
+func (WithSubSchemas) JSONSchemaAllOf() []interface{} {
+	return []interface{}{
+		1.23,
+		123,
+	}
+}
+
+func (WithSubSchemas) JSONSchemaNot() interface{} {
+	return Person{}
+}
+
+func (WithSubSchemas) JSONSchemaIf() interface{} {
+	return Entity{}
+}
+
+func (WithSubSchemas) JSONSchemaThen() interface{} {
+	return Role{}
+}
+
+func (WithSubSchemas) JSONSchemaElse() interface{} {
+	return Person{}
+}
+
+func TestReflector_Reflect_sub_schema(t *testing.T) {
+	r := jsonschema.Reflector{}
+
+	s, err := r.Reflect(WithSubSchemas{}, jsonschema.StripDefinitionNamePrefix("JsonschemaGoTest"))
+	assert.NoError(t, err)
+
+	assertjson.EqualMarshal(t, []byte(`{
+	  "definitions":{
+		"Entity":{
+		  "properties":{
+			"birthDate":{"type":"string","format":"date"},
+			"createdAt":{"type":"string","format":"date-time"},
+			"deathDate":{"type":["null","string"],"format":"date"},
+			"deletedAt":{"type":["null","string"],"format":"date-time"},"meta":{}
+		  },
+		  "type":"object"
+		},
+		"Enumed":{"enum":["foo","bar"],"type":"string"},
+		"Person":{
+		  "required":["lastName"],
+		  "properties":{
+			"birthDate":{"type":"string","format":"date"},
+			"createdAt":{"type":"string","format":"date-time"},
+			"date":{"type":"string","format":"date"},
+			"deathDate":{"type":["null","string"],"format":"date"},
+			"deletedAt":{"type":["null","string"],"format":"date-time"},
+			"enumed":{"$ref":"#/definitions/Enumed"},
+			"enumedPtr":{"$ref":"#/definitions/Enumed"},
+			"firstName":{"type":"string"},"height":{"type":"integer"},
+			"lastName":{"type":"string"},"meta":{},
+			"role":{"$ref":"#/definitions/Role","description":"The role of person."}
+		  },
+		  "type":"object"
+		},
+		"Role":{"type":"string"}
+	  },
+	  "properties":{"foo":{"type":"string"}},"type":"object",
+	  "if":{"$ref":"#/definitions/Entity"},"then":{"$ref":"#/definitions/Role"},
+	  "else":{"$ref":"#/definitions/Person"},
+	  "allOf":[{"type":"number"},{"type":"integer"}],
+	  "anyOf":[{"type":"string"},{"type":"integer"}],
+	  "oneOf":[
+		{"$ref":"#/definitions/Person"},{"$ref":"#/definitions/Enumed"},
+		{"type":"string"}
+	  ],
+	  "not":{"$ref":"#/definitions/Person"}
+	}`), s)
+}

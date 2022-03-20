@@ -363,8 +363,11 @@ func (r *Reflector) reflect(i interface{}, rc *ReflectContext, keepType bool) (s
 		schema.WithTitle(vt.Title())
 	}
 
-	err = r.kindSwitch(t, v, &schema, rc)
-	if err != nil {
+	if err = r.applySubSchemas(v, rc, &schema); err != nil {
+		return schema, err
+	}
+
+	if err = r.kindSwitch(t, v, &schema, rc); err != nil {
 		return schema, err
 	}
 
@@ -381,6 +384,107 @@ func (r *Reflector) reflect(i interface{}, rc *ReflectContext, keepType bool) (s
 	}
 
 	return schema, nil
+}
+
+func (r *Reflector) applySubSchemas(v reflect.Value, rc *ReflectContext, schema *Schema) error {
+	vi := v.Interface()
+
+	if e, ok := vi.(OneOfExposer); ok {
+		var schemas []SchemaOrBool
+
+		for _, item := range e.JSONSchemaOneOf() {
+			rc.Path = append(rc.Path, "oneOf")
+
+			s, err := r.reflect(item, rc, false)
+			if err != nil {
+				return fmt.Errorf("failed to reflect 'oneOf' values of %T: %w", vi, err)
+			}
+
+			schemas = append(schemas, s.ToSchemaOrBool())
+		}
+
+		schema.OneOf = schemas
+	}
+
+	if e, ok := vi.(AnyOfExposer); ok {
+		var schemas []SchemaOrBool
+
+		for _, item := range e.JSONSchemaAnyOf() {
+			rc.Path = append(rc.Path, "anyOf")
+
+			s, err := r.reflect(item, rc, false)
+			if err != nil {
+				return fmt.Errorf("failed to reflect 'anyOf' values of %T: %w", vi, err)
+			}
+
+			schemas = append(schemas, s.ToSchemaOrBool())
+		}
+
+		schema.AnyOf = schemas
+	}
+
+	if e, ok := vi.(AllOfExposer); ok {
+		var schemas []SchemaOrBool
+
+		for _, item := range e.JSONSchemaAllOf() {
+			rc.Path = append(rc.Path, "allOf")
+
+			s, err := r.reflect(item, rc, false)
+			if err != nil {
+				return fmt.Errorf("failed to reflect 'allOf' values of %T: %w", vi, err)
+			}
+
+			schemas = append(schemas, s.ToSchemaOrBool())
+		}
+
+		schema.AllOf = schemas
+	}
+
+	if e, ok := vi.(NotExposer); ok {
+		rc.Path = append(rc.Path, "not")
+
+		s, err := r.reflect(e.JSONSchemaNot(), rc, false)
+		if err != nil {
+			return fmt.Errorf("failed to reflect 'not' value of %T: %w", vi, err)
+		}
+
+		schema.WithNot(s.ToSchemaOrBool())
+	}
+
+	if e, ok := vi.(IfExposer); ok {
+		rc.Path = append(rc.Path, "if")
+
+		s, err := r.reflect(e.JSONSchemaIf(), rc, false)
+		if err != nil {
+			return fmt.Errorf("failed to reflect 'if' value of %T: %w", vi, err)
+		}
+
+		schema.WithIf(s.ToSchemaOrBool())
+	}
+
+	if e, ok := vi.(ThenExposer); ok {
+		rc.Path = append(rc.Path, "if")
+
+		s, err := r.reflect(e.JSONSchemaThen(), rc, false)
+		if err != nil {
+			return fmt.Errorf("failed to reflect 'then' value of %T: %w", vi, err)
+		}
+
+		schema.WithThen(s.ToSchemaOrBool())
+	}
+
+	if e, ok := vi.(ElseExposer); ok {
+		rc.Path = append(rc.Path, "if")
+
+		s, err := r.reflect(e.JSONSchemaElse(), rc, false)
+		if err != nil {
+			return fmt.Errorf("failed to reflect 'else' value of %T: %w", vi, err)
+		}
+
+		schema.WithElse(s.ToSchemaOrBool())
+	}
+
+	return nil
 }
 
 func (r *Reflector) isWellKnownType(t reflect.Type, schema *Schema) bool {
