@@ -679,11 +679,15 @@ func (r *Reflector) walkProperties(v reflect.Value, parent *Schema, rc *ReflectC
 	for i := 0; i < t.NumField(); i++ {
 		field := t.Field(i)
 
-		var tag string
+		var (
+			tag      string
+			tagFound bool
+		)
+
 		if rc.PropertyNameMapping != nil {
-			tag = rc.PropertyNameMapping[field.Name]
+			tag, tagFound = rc.PropertyNameMapping[field.Name], true
 		} else {
-			tag = field.Tag.Get(rc.PropertyNameTag)
+			tag, tagFound = field.Tag.Lookup(rc.PropertyNameTag)
 		}
 
 		// Skip explicitly discarded field.
@@ -700,13 +704,17 @@ func (r *Reflector) walkProperties(v reflect.Value, parent *Schema, rc *ReflectC
 		}
 
 		// Skip the field if tag is not set.
-		if tag == "" {
+		if !tagFound {
 			continue
 		}
 
 		propName := strings.Split(tag, ",")[0]
 		omitEmpty := strings.Contains(tag, ",omitempty")
 		required := false
+
+		if propName == "" {
+			propName = field.Name
+		}
 
 		if err := refl.ReadBoolTag(field.Tag, "required", &required); err != nil {
 			return err

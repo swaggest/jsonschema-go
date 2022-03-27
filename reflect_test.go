@@ -935,3 +935,21 @@ func TestReflector_Reflect_sub_schema(t *testing.T) {
 	  "not":{"$ref":"#/definitions/Person"}
 	}`), s)
 }
+
+func TestReflector_Reflect_jsonEmptyName(t *testing.T) {
+	type Test struct {
+		Foo string `json:",omitempty"`
+		Bar int    `json:""`
+		Baz bool   `json:"-"`
+	}
+
+	r := jsonschema.Reflector{}
+
+	s, err := r.Reflect(Test{})
+	assert.NoError(t, err)
+
+	assertjson.EqualMarshal(t, []byte(`{
+	  "properties":{"Bar":{"type":"integer"},"Foo":{"type":"string"}},
+	  "type":"object"
+	}`), s)
+}
