@@ -99,3 +99,4 @@ Additional centralized configuration is available with
 * [`RootRef`](https://pkg.go.dev/github.com/swaggest/jsonschema-go#RootRef) converts root schema to definition reference.
 * [`StripDefinitionNamePrefix`](https://pkg.go.dev/github.com/swaggest/jsonschema-go#StripDefinitionNamePrefix) strips prefix from definition name.
 * [`PropertyNameMapping`](https://pkg.go.dev/github.com/swaggest/jsonschema-go#PropertyNameMapping) explicit name mapping instead field tags.
+* [`ProcessWithoutTags`](https://pkg.go.dev/github.com/swaggest/jsonschema-go#ProcessWithoutTags) enables processing fields without any tags specified.

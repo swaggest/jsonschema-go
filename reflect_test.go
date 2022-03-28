@@ -953,3 +953,39 @@ func TestReflector_Reflect_jsonEmptyName(t *testing.T) {
 	  "type":"object"
 	}`), s)
 }
+
+func TestReflector_Reflect_processWithoutTags_true(t *testing.T) {
+	type Test struct {
+		Foo string
+		Bar int
+		Baz bool `json:"baz"`
+	}
+
+	r := jsonschema.Reflector{}
+
+	s, err := r.Reflect(Test{}, jsonschema.ProcessWithoutTags(true))
+	assert.NoError(t, err)
+
+	assertjson.EqualMarshal(t, []byte(`{
+	  "properties":{"Bar":{"type":"integer"},"Foo":{"type":"string"},"baz":{"type":"boolean"}},
+	  "type":"object"
+	}`), s)
+}
+
+func TestReflector_Reflect_processWithoutTags_false(t *testing.T) {
+	type Test struct {
+		Foo string
+		Bar int
+		Baz bool `json:"baz"`
+	}
+
+	r := jsonschema.Reflector{}
+
+	s, err := r.Reflect(Test{})
+	assert.NoError(t, err)
+
+	assertjson.EqualMarshal(t, []byte(`{
+	  "properties":{"baz":{"type":"boolean"}},
+	  "type":"object"
+	}`), s)
+}
