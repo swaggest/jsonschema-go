@@ -269,6 +269,8 @@ func ExampleInterceptProperty() {
 			// You can alter reflected schema by updating propertySchema.
 			case "id":
 				propertySchema.WithDescription("This is ID.")
+				// You can access schema that holds the property.
+				propertySchema.Parent.WithDescription("Schema with ID.")
 
 			// Or you can entirely remove property from parent schema with a sentinel error.
 			case "skipped":
@@ -290,6 +292,7 @@ func ExampleInterceptProperty() {
 	fmt.Println(string(j))
 	// Output:
 	// {
+	//   "description":"Schema with ID.",
 	//   "properties":{
 	//     "id":{"description":"This is ID.","default":200,"minimum":123,"type":"integer"},
 	//     "name":{"minLength":10,"type":"string"}

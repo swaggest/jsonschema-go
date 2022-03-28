@@ -62,6 +62,7 @@ type Schema struct {
 	Not                  *SchemaOrBool                               `json:"not,omitempty"` // Core schema meta-schema.
 	ExtraProperties      map[string]interface{}                      `json:"-"`             // All unmatched properties.
 	ReflectType          reflect.Type                                `json:"-"`
+	Parent               *Schema                                     `json:"-"`
 }
 
 // WithID sets ID value.
