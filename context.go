@@ -120,6 +120,13 @@ func PropertyNameMapping(mapping map[string]string) func(rc *ReflectContext) {
 	}
 }
 
+// ProcessWithoutTags enables processing fields without any tags specified.
+func ProcessWithoutTags(process bool) func(rc *ReflectContext) {
+	return func(rc *ReflectContext) {
+		rc.ProcessWithoutTags = process
+	}
+}
+
 // ReflectContext accompanies single reflect operation.
 type ReflectContext struct {
 	// DefName returns custom definition name for a type, can be nil.
@@ -138,6 +145,9 @@ type ReflectContext struct {
 	// PropertyNameMapping enables property name mapping from a struct field name, e.g. "FirstName":"first_name".
 	// Only applicable to top-level properties (including embedded).
 	PropertyNameMapping map[string]string
+
+	// ProcessWithoutTags enables processing fields without any tags specified.
+	ProcessWithoutTags bool
 
 	// EnvelopNullability enables `anyOf` enveloping of "type":"null" instead of injecting into definition.
 	EnvelopNullability bool
