@@ -184,7 +184,7 @@ func (r *Reflector) Reflect(i interface{}, options ...func(*ReflectContext)) (Sc
 		option(&rc)
 	}
 
-	schema, err := r.reflect(i, &rc, false)
+	schema, err := r.reflect(i, &rc, false, nil)
 	if err == nil && len(rc.definitions) > 0 {
 		schema.Definitions = make(map[string]SchemaOrBool, len(rc.definitions))
 
@@ -269,7 +269,7 @@ func (r *Reflector) reflectDefer(defName string, typeString refl.TypeString, rc 
 	return s
 }
 
-func (r *Reflector) reflect(i interface{}, rc *ReflectContext, keepType bool) (schema Schema, err error) {
+func (r *Reflector) reflect(i interface{}, rc *ReflectContext, keepType bool, parent *Schema) (schema Schema, err error) {
 	var (
 		typeString refl.TypeString
 		defName    string
@@ -296,6 +296,7 @@ func (r *Reflector) reflect(i interface{}, rc *ReflectContext, keepType bool) (s
 	}
 
 	schema.ReflectType = t
+	schema.Parent = parent
 
 	if t.Kind() == reflect.Ptr && t.Elem() != typeOfJSONRawMsg {
 		schema.AddType(Null)
@@ -395,7 +396,7 @@ func (r *Reflector) applySubSchemas(v reflect.Value, rc *ReflectContext, schema 
 		for _, item := range e.JSONSchemaOneOf() {
 			rc.Path = append(rc.Path, "oneOf")
 
-			s, err := r.reflect(item, rc, false)
+			s, err := r.reflect(item, rc, false, schema)
 			if err != nil {
 				return fmt.Errorf("failed to reflect 'oneOf' values of %T: %w", vi, err)
 			}
@@ -412,7 +413,7 @@ func (r *Reflector) applySubSchemas(v reflect.Value, rc *ReflectContext, schema 
 		for _, item := range e.JSONSchemaAnyOf() {
 			rc.Path = append(rc.Path, "anyOf")
 
-			s, err := r.reflect(item, rc, false)
+			s, err := r.reflect(item, rc, false, schema)
 			if err != nil {
 				return fmt.Errorf("failed to reflect 'anyOf' values of %T: %w", vi, err)
 			}
@@ -429,7 +430,7 @@ func (r *Reflector) applySubSchemas(v reflect.Value, rc *ReflectContext, schema 
 		for _, item := range e.JSONSchemaAllOf() {
 			rc.Path = append(rc.Path, "allOf")
 
-			s, err := r.reflect(item, rc, false)
+			s, err := r.reflect(item, rc, false, schema)
 			if err != nil {
 				return fmt.Errorf("failed to reflect 'allOf' values of %T: %w", vi, err)
 			}
@@ -443,7 +444,7 @@ func (r *Reflector) applySubSchemas(v reflect.Value, rc *ReflectContext, schema 
 	if e, ok := vi.(NotExposer); ok {
 		rc.Path = append(rc.Path, "not")
 
-		s, err := r.reflect(e.JSONSchemaNot(), rc, false)
+		s, err := r.reflect(e.JSONSchemaNot(), rc, false, schema)
 		if err != nil {
 			return fmt.Errorf("failed to reflect 'not' value of %T: %w", vi, err)
 		}
@@ -454,7 +455,7 @@ func (r *Reflector) applySubSchemas(v reflect.Value, rc *ReflectContext, schema 
 	if e, ok := vi.(IfExposer); ok {
 		rc.Path = append(rc.Path, "if")
 
-		s, err := r.reflect(e.JSONSchemaIf(), rc, false)
+		s, err := r.reflect(e.JSONSchemaIf(), rc, false, schema)
 		if err != nil {
 			return fmt.Errorf("failed to reflect 'if' value of %T: %w", vi, err)
 		}
@@ -465,7 +466,7 @@ func (r *Reflector) applySubSchemas(v reflect.Value, rc *ReflectContext, schema 
 	if e, ok := vi.(ThenExposer); ok {
 		rc.Path = append(rc.Path, "if")
 
-		s, err := r.reflect(e.JSONSchemaThen(), rc, false)
+		s, err := r.reflect(e.JSONSchemaThen(), rc, false, schema)
 		if err != nil {
 			return fmt.Errorf("failed to reflect 'then' value of %T: %w", vi, err)
 		}
@@ -476,7 +477,7 @@ func (r *Reflector) applySubSchemas(v reflect.Value, rc *ReflectContext, schema 
 	if e, ok := vi.(ElseExposer); ok {
 		rc.Path = append(rc.Path, "if")
 
-		s, err := r.reflect(e.JSONSchemaElse(), rc, false)
+		s, err := r.reflect(e.JSONSchemaElse(), rc, false, schema)
 		if err != nil {
 			return fmt.Errorf("failed to reflect 'else' value of %T: %w", vi, err)
 		}
@@ -593,7 +594,7 @@ func (r *Reflector) kindSwitch(t reflect.Type, v reflect.Value, schema *Schema, 
 			itemValue = reflect.New(elemType).Interface()
 		}
 
-		itemsSchema, err := r.reflect(itemValue, rc, false)
+		itemsSchema, err := r.reflect(itemValue, rc, false, schema)
 		if err != nil {
 			return err
 		}
@@ -611,7 +612,7 @@ func (r *Reflector) kindSwitch(t reflect.Type, v reflect.Value, schema *Schema, 
 			itemValue = reflect.New(elemType).Interface()
 		}
 
-		additionalPropertiesSchema, err := r.reflect(itemValue, rc, false)
+		additionalPropertiesSchema, err := r.reflect(itemValue, rc, false, schema)
 		if err != nil {
 			return err
 		}
@@ -729,7 +730,7 @@ func (r *Reflector) walkProperties(v reflect.Value, parent *Schema, rc *ReflectC
 
 		rc.Path = append(rc.Path, propName)
 
-		propertySchema, err := r.reflect(fieldVal, rc, true)
+		propertySchema, err := r.reflect(fieldVal, rc, true, parent)
 		if err != nil {
 			if errors.Is(err, ErrSkipProperty) {
 				continue

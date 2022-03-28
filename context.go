@@ -36,6 +36,7 @@ type InterceptTypeFunc func(reflect.Value, *Schema) (bool, error)
 // InterceptPropertyFunc can intercept field reflection to control or modify schema.
 //
 // Return ErrSkipProperty to avoid adding this property to parent Schema.Properties.
+// Pointer to parent Schema is available in propertySchema.Parent.
 type InterceptPropertyFunc func(name string, field reflect.StructField, propertySchema *Schema) error
 
 // InterceptType adds hook to customize schema.
