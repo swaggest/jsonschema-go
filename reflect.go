@@ -709,6 +709,12 @@ func (r *Reflector) walkProperties(v reflect.Value, parent *Schema, rc *ReflectC
 			continue
 		}
 
+		// Skip the field if it's non-exported.  There is field.IsExported() method, but it was introduced in go 1.17
+		// and will break backward compatibility.
+		if field.PkgPath != "" {
+			continue
+		}
+
 		propName := strings.Split(tag, ",")[0]
 		omitEmpty := strings.Contains(tag, ",omitempty")
 		required := false
