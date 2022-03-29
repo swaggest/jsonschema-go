@@ -964,7 +964,7 @@ func TestReflector_Reflect_processWithoutTags_true(t *testing.T) {
 
 	r := jsonschema.Reflector{}
 
-	s, err := r.Reflect(Test{}, jsonschema.ProcessWithoutTags(true))
+	s, err := r.Reflect(Test{}, jsonschema.ProcessWithoutTags)
 	assert.NoError(t, err)
 
 	assertjson.EqualMarshal(t, []byte(`{
