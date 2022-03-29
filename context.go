@@ -122,10 +122,8 @@ func PropertyNameMapping(mapping map[string]string) func(rc *ReflectContext) {
 }
 
 // ProcessWithoutTags enables processing fields without any tags specified.
-func ProcessWithoutTags(process bool) func(rc *ReflectContext) {
-	return func(rc *ReflectContext) {
-		rc.ProcessWithoutTags = process
-	}
+func ProcessWithoutTags(rc *ReflectContext) {
+	rc.ProcessWithoutTags = true
 }
 
 // ReflectContext accompanies single reflect operation.
