@@ -45,6 +45,7 @@ linters:
 issues:
   exclude:
     - "strings.Title is deprecated"
+    - "cyclomatic complexity \\d+ of func `\\(Schema\\).IsTrivial` is high"
   exclude-use-default: false
   exclude-rules:
     - linters:
@@ -54,5 +55,7 @@ issues:
         - noctx
         - funlen
         - dupl
+        - structcheck
+        - unused
       path: "_test.go"
 

@@ -564,7 +564,7 @@ func (r *Reflector) defName(rc *ReflectContext, t reflect.Type) string {
 }
 
 func (r *Reflector) kindSwitch(t reflect.Type, v reflect.Value, schema *Schema, rc *ReflectContext) error {
-	// nolint:exhaustive // Covered with default case.
+	//nolint:exhaustive // Covered with default case.
 	switch t.Kind() {
 	case reflect.Struct:
 		switch {
