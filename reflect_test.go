@@ -719,8 +719,10 @@ func TestReflector_Reflect_propertyNameMapping(t *testing.T) {
 	reflector := jsonschema.Reflector{}
 
 	type Test struct {
-		ID   int    `minimum:"123" default:"200"`
-		Name string `minLength:"10"`
+		ID               int    `minimum:"123" default:"200"`
+		Name             string `minLength:"10"`
+		UntaggedUnmapped int
+		unexported       int
 	}
 
 	s, err := reflector.Reflect(new(Test),

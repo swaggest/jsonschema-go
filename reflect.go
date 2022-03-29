@@ -686,7 +686,7 @@ func (r *Reflector) walkProperties(v reflect.Value, parent *Schema, rc *ReflectC
 		)
 
 		if rc.PropertyNameMapping != nil {
-			tag, tagFound = rc.PropertyNameMapping[field.Name], true
+			tag, tagFound = rc.PropertyNameMapping[field.Name]
 		} else {
 			tag, tagFound = field.Tag.Lookup(rc.PropertyNameTag)
 		}
