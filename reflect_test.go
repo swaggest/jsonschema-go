@@ -958,8 +958,8 @@ func TestReflector_Reflect_processWithoutTags_true(t *testing.T) {
 	type Test struct {
 		Foo string
 		Bar int
-		Baz bool   `json:"baz"`
-		qux string // nolint:structcheck,unused
+		Baz bool `json:"baz"`
+		qux string
 	}
 
 	r := jsonschema.Reflector{}
@@ -977,8 +977,8 @@ func TestReflector_Reflect_processWithoutTags_false(t *testing.T) {
 	type Test struct {
 		Foo string
 		Bar int
-		Baz bool   `json:"baz"`
-		qux string // nolint:structcheck,unused
+		Baz bool `json:"baz"`
+		qux string
 	}
 
 	r := jsonschema.Reflector{}
