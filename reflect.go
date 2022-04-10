@@ -162,6 +162,13 @@ func checkSchemaSetup(v reflect.Value, s *Schema) (bool, error) {
 //   - `enum`, tag value must be a JSON or comma-separated list of strings,
 //  		https://json-schema.org/draft-04/json-schema-validation.html#rfc.section.5.5.1
 //
+// Unnamed fields can be used to configure parent schema:
+//   type MyObj struct {
+//      BoundedNumber int `query:"boundedNumber" minimum:"-100" maximum:"100"`
+//      SpecialString string `json:"specialString" pattern:"^[a-z]{4}$" minLength:"4" maxLength:"4"`
+//      _             struct{} `additionalProperties:"false" description:"MyObj is my object."`
+//   }
+//
 // Additionally there are structure can implement any of special interfaces for fine-grained Schema control:
 // RawExposer, Exposer, Preparer.
 //
@@ -699,6 +706,24 @@ func (r *Reflector) walkProperties(v reflect.Value, parent *Schema, rc *ReflectC
 		if tag == "" && field.Anonymous && field.Type.Kind() == reflect.Struct {
 			if err := r.walkProperties(v.Field(i), parent, rc); err != nil {
 				return err
+			}
+
+			continue
+		}
+
+		// Use unnamed fields to configure parent schema.
+		if field.Name == "_" {
+			if err := refl.PopulateFieldsFromTags(parent, field.Tag); err != nil {
+				return err
+			}
+
+			var additionalProperties *bool
+			if err := refl.ReadBoolPtrTag(field.Tag, "additionalProperties", &additionalProperties); err != nil {
+				return err
+			}
+
+			if additionalProperties != nil {
+				parent.AdditionalProperties = &SchemaOrBool{TypeBoolean: additionalProperties}
 			}
 
 			continue
