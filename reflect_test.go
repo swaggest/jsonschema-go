@@ -1013,4 +1013,16 @@ func TestReflector_Reflect_parentTags(t *testing.T) {
 	  "title":"Test","description":"This is a test.","additionalProperties":false,
 	  "properties":{"foo":{"type":"string"}},"type":"object"
 	}`), s)
+
+	// Failure scenarios.
+	s, err = r.Reflect(struct {
+		_ string `additionalProperties:"abc"`
+	}{})
+	assert.EqualError(t, err, "failed to parse bool value abc in tag additionalProperties: strconv.ParseBool: parsing \"abc\": invalid syntax")
+
+	s, err = r.Reflect(struct {
+		_ string `minProperties:"abc"`
+	}{})
+	assert.EqualError(t, err, "failed to parse int value abc in tag minProperties: strconv.ParseInt: parsing \"abc\": invalid syntax")
+
 }
