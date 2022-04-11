@@ -993,3 +993,35 @@ func TestReflector_Reflect_processWithoutTags_false(t *testing.T) {
 	  "type":"object"
 	}`), s)
 }
+
+func TestReflector_Reflect_parentTags(t *testing.T) {
+	type Test struct {
+		Foo string   `json:"foo"`
+		_   struct{} `title:"Test"` // Tags of unnamed field are applied to parent schema.
+
+		// There can be more than one field to set up parent schema.
+		// Types of such fields are not relevant, only tags matter.
+		_ string `additionalProperties:"false" description:"This is a test."`
+	}
+
+	r := jsonschema.Reflector{}
+
+	s, err := r.Reflect(Test{})
+	assert.NoError(t, err)
+
+	assertjson.EqualMarshal(t, []byte(`{
+	  "title":"Test","description":"This is a test.","additionalProperties":false,
+	  "properties":{"foo":{"type":"string"}},"type":"object"
+	}`), s)
+
+	// Failure scenarios.
+	_, err = r.Reflect(struct {
+		_ string `additionalProperties:"abc"`
+	}{})
+	assert.EqualError(t, err, "failed to parse bool value abc in tag additionalProperties: strconv.ParseBool: parsing \"abc\": invalid syntax")
+
+	_, err = r.Reflect(struct {
+		_ string `minProperties:"abc"`
+	}{})
+	assert.EqualError(t, err, "failed to parse int value abc in tag minProperties: strconv.ParseInt: parsing \"abc\": invalid syntax")
+}
