@@ -169,12 +169,21 @@ func checkSchemaSetup(v reflect.Value, s *Schema) (bool, error) {
 //      _             struct{} `additionalProperties:"false" description:"MyObj is my object."`
 //   }
 //
+// In case of a structure with multiple name tags, you can enable filtering of unnamed fields with
+// ReflectContext.UnnamedFieldWithTag option and add matching name tags to structure (e.g. query:"_").
+//   type MyObj struct {
+//      BoundedNumber int `query:"boundedNumber" minimum:"-100" maximum:"100"`
+//      SpecialString string `json:"specialString" pattern:"^[a-z]{4}$" minLength:"4" maxLength:"4"`
+//      // These parent schema tags would only be applied to `query` schema reflection (not for `json`).
+//      _ struct{} `query:"_" additionalProperties:"false" description:"MyObj is my object."`
+//   }
+//
 // Additionally there are structure can implement any of special interfaces for fine-grained Schema control:
 // RawExposer, Exposer, Preparer.
 //
 // These interfaces allow exposing particular schema keywords:
 // Titled, Described, Enum, NamedEnum.
-func (r *Reflector) Reflect(i interface{}, options ...func(*ReflectContext)) (Schema, error) {
+func (r *Reflector) Reflect(i interface{}, options ...func(rc *ReflectContext)) (Schema, error) {
 	rc := ReflectContext{}
 	rc.DefinitionsPrefix = "#/definitions/"
 	rc.PropertyNameTag = "json"
@@ -712,7 +721,7 @@ func (r *Reflector) walkProperties(v reflect.Value, parent *Schema, rc *ReflectC
 		}
 
 		// Use unnamed fields to configure parent schema.
-		if field.Name == "_" {
+		if field.Name == "_" && (!rc.UnnamedFieldWithTag || tagFound) {
 			if err := refl.PopulateFieldsFromTags(parent, field.Tag); err != nil {
 				return err
 			}

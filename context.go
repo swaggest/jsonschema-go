@@ -148,6 +148,11 @@ type ReflectContext struct {
 	// ProcessWithoutTags enables processing fields without any tags specified.
 	ProcessWithoutTags bool
 
+	// UnnamedFieldWithTag enables a requirement that name tag is present
+	// when processing _ fields to set up parent schema, e.g.
+	//   _ struct{} `header:"_" additionalProperties:"false"`.
+	UnnamedFieldWithTag bool
+
 	// EnvelopNullability enables `anyOf` enveloping of "type":"null" instead of injecting into definition.
 	EnvelopNullability bool
 
