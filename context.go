@@ -1,6 +1,7 @@
 package jsonschema
 
 import (
+	"context"
 	"reflect"
 	"strings"
 
@@ -128,6 +129,9 @@ func ProcessWithoutTags(rc *ReflectContext) {
 
 // ReflectContext accompanies single reflect operation.
 type ReflectContext struct {
+	// Context allows communicating user data between reflection steps.
+	context.Context
+
 	// DefName returns custom definition name for a type, can be nil.
 	DefName func(t reflect.Type, defaultDefName string) string
 

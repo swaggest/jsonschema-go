@@ -1,6 +1,7 @@
 package jsonschema_test
 
 import (
+	"context"
 	"encoding"
 	"encoding/json"
 	"mime/multipart"
@@ -1069,4 +1070,25 @@ func TestReflector_Reflect_parentTagsFiltered(t *testing.T) {
 		_ string `minProperties:"abc"`
 	}{})
 	assert.EqualError(t, err, "failed to parse int value abc in tag minProperties: strconv.ParseInt: parsing \"abc\": invalid syntax")
+}
+
+func TestReflector_Reflect_context(t *testing.T) {
+	type ctxKey struct{}
+
+	type Test struct {
+		Foo string `json:"foo"`
+	}
+
+	r := jsonschema.Reflector{}
+
+	_, err := r.Reflect(new(Test),
+		func(rc *jsonschema.ReflectContext) {
+			rc.Context = context.WithValue(rc.Context, ctxKey{}, true)
+		},
+		func(rc *jsonschema.ReflectContext) {
+			assert.Equal(t, true, rc.Value(ctxKey{}))
+		},
+	)
+
+	require.NoError(t, err)
 }
