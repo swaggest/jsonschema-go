@@ -1,6 +1,7 @@
 package jsonschema
 
 import (
+	"context"
 	"encoding"
 	"encoding/json"
 	"errors"
@@ -185,6 +186,7 @@ func checkSchemaSetup(v reflect.Value, s *Schema) (bool, error) {
 // Titled, Described, Enum, NamedEnum.
 func (r *Reflector) Reflect(i interface{}, options ...func(rc *ReflectContext)) (Schema, error) {
 	rc := ReflectContext{}
+	rc.Context = context.Background()
 	rc.DefinitionsPrefix = "#/definitions/"
 	rc.PropertyNameTag = "json"
 	rc.Path = []string{"#"}
