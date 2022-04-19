@@ -21,6 +21,7 @@ var (
 	typeOfDate            = reflect.TypeOf(Date{})
 	typeOfTextUnmarshaler = reflect.TypeOf((*encoding.TextUnmarshaler)(nil)).Elem()
 	typeOfEmptyInterface  = reflect.TypeOf((*interface{})(nil)).Elem()
+	typeOfSchemaInliner   = reflect.TypeOf((*SchemaInliner)(nil)).Elem()
 )
 
 const (
@@ -37,6 +38,11 @@ func (e sentinelError) Error() string {
 // IgnoreTypeName is a marker interface to ignore type name of mapped value and use original.
 type IgnoreTypeName interface {
 	IgnoreTypeName()
+}
+
+// SchemaInliner is a marker interface to inline schema without creating a definition.
+type SchemaInliner interface {
+	InlineJSONSchema()
 }
 
 // IgnoreTypeName instructs reflector to keep original type name during mapping.
@@ -362,7 +368,7 @@ func (r *Reflector) reflect(i interface{}, rc *ReflectContext, keepType bool, pa
 		}
 	}
 
-	if ref, ok := rc.definitionRefs[typeString]; ok {
+	if ref, ok := rc.definitionRefs[typeString]; ok && defName != "" {
 		return ref.Schema(), nil
 	}
 
@@ -370,7 +376,7 @@ func (r *Reflector) reflect(i interface{}, rc *ReflectContext, keepType bool, pa
 		return schema, nil
 	}
 
-	if t.PkgPath() != "" && len(rc.Path) > 1 {
+	if t.PkgPath() != "" && len(rc.Path) > 1 && defName != "" {
 		rc.typeCycles[typeString] = true
 	}
 
@@ -532,6 +538,10 @@ func (r *Reflector) isWellKnownType(t reflect.Type, schema *Schema) bool {
 
 func (r *Reflector) defName(rc *ReflectContext, t reflect.Type) string {
 	if t.PkgPath() == "" || t == typeOfTime || t == typeOfJSONRawMsg || t == typeOfDate {
+		return ""
+	}
+
+	if t.Implements(typeOfSchemaInliner) {
 		return ""
 	}
 
@@ -1026,3 +1036,78 @@ func (enum *enum) loadFromField(fieldTag reflect.StructTag, fieldVal interface{}
 		enum.items = e
 	}
 }
+
+type (
+	oneOf []interface{}
+	allOf []interface{}
+	anyOf []interface{}
+)
+
+var (
+	_ Preparer = oneOf{}
+	_ Preparer = anyOf{}
+	_ Preparer = allOf{}
+)
+
+// OneOf exposes list of values as JSON "oneOf" schema.
+func OneOf(v ...interface{}) OneOfExposer {
+	return oneOf(v)
+}
+
+// PrepareJSONSchema removes unnecessary constraints.
+func (oneOf) PrepareJSONSchema(schema *Schema) error {
+	schema.Type = nil
+	schema.Items = nil
+
+	return nil
+}
+
+// JSONSchemaOneOf implements OneOfExposer.
+func (o oneOf) JSONSchemaOneOf() []interface{} {
+	return o
+}
+
+// InlineJSONSchema implements SchemaInliner.
+func (o oneOf) InlineJSONSchema() {}
+
+// AnyOf exposes list of values as JSON "anyOf" schema.
+func AnyOf(v ...interface{}) AnyOfExposer {
+	return anyOf(v)
+}
+
+// PrepareJSONSchema removes unnecessary constraints.
+func (anyOf) PrepareJSONSchema(schema *Schema) error {
+	schema.Type = nil
+	schema.Items = nil
+
+	return nil
+}
+
+// JSONSchemaAnyOf implements AnyOfExposer.
+func (o anyOf) JSONSchemaAnyOf() []interface{} {
+	return o
+}
+
+// InlineJSONSchema implements SchemaInliner.
+func (o anyOf) InlineJSONSchema() {}
+
+// AllOf exposes list of values as JSON "allOf" schema.
+func AllOf(v ...interface{}) AllOfExposer {
+	return allOf(v)
+}
+
+// PrepareJSONSchema removes unnecessary constraints.
+func (allOf) PrepareJSONSchema(schema *Schema) error {
+	schema.Type = nil
+	schema.Items = nil
+
+	return nil
+}
+
+// JSONSchemaAllOf implements AllOfExposer.
+func (o allOf) JSONSchemaAllOf() []interface{} {
+	return o
+}
+
+// InlineJSONSchema implements SchemaInliner.
+func (o allOf) InlineJSONSchema() {}

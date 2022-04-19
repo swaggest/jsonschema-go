@@ -1092,3 +1092,108 @@ func TestReflector_Reflect_context(t *testing.T) {
 
 	require.NoError(t, err)
 }
+
+func TestOneOf(t *testing.T) {
+	r := jsonschema.Reflector{}
+
+	type Test struct {
+		Foo jsonschema.OneOfExposer `json:"foo"`
+		Bar jsonschema.OneOfExposer `json:"bar"`
+	}
+
+	tt := Test{
+		Foo: jsonschema.OneOf(1.23, "abc"),
+		Bar: jsonschema.OneOf(123, true),
+	}
+
+	s, err := r.Reflect(tt, jsonschema.RootRef)
+	require.NoError(t, err)
+
+	assertjson.EqualMarshal(t, []byte(`{
+	  "$ref":"#/definitions/JsonschemaGoTestTest",
+	  "definitions":{
+		"JsonschemaGoTestTest":{
+		  "properties":{
+			"bar":{"oneOf":[{"type":"integer"},{"type":"boolean"}]},
+			"foo":{"oneOf":[{"type":"number"},{"type":"string"}]}
+		  },
+		  "type":"object"
+		}
+	  }
+	}`), s)
+
+	s, err = r.Reflect(jsonschema.OneOf(123, true), jsonschema.RootRef)
+	require.NoError(t, err)
+
+	assertjson.EqualMarshal(t, []byte(`{"oneOf":[{"type":"integer"},{"type":"boolean"}]}`), s)
+}
+
+func TestAnyOf(t *testing.T) {
+	r := jsonschema.Reflector{}
+
+	type Test struct {
+		Foo jsonschema.AnyOfExposer `json:"foo"`
+		Bar jsonschema.AnyOfExposer `json:"bar"`
+	}
+
+	tt := Test{
+		Foo: jsonschema.AnyOf(1.23, "abc"),
+		Bar: jsonschema.AnyOf(123, true),
+	}
+
+	s, err := r.Reflect(tt, jsonschema.RootRef)
+	require.NoError(t, err)
+
+	assertjson.EqualMarshal(t, []byte(`{
+	  "$ref":"#/definitions/JsonschemaGoTestTest",
+	  "definitions":{
+		"JsonschemaGoTestTest":{
+		  "properties":{
+			"bar":{"anyOf":[{"type":"integer"},{"type":"boolean"}]},
+			"foo":{"anyOf":[{"type":"number"},{"type":"string"}]}
+		  },
+		  "type":"object"
+		}
+	  }
+	}`), s)
+
+	s, err = r.Reflect(jsonschema.AnyOf(123, true), jsonschema.RootRef)
+	require.NoError(t, err)
+
+	assertjson.EqualMarshal(t, []byte(`{"anyOf":[{"type":"integer"},{"type":"boolean"}]}`), s)
+}
+
+func TestAllOf(t *testing.T) {
+	r := jsonschema.Reflector{}
+
+	type Test struct {
+		Foo jsonschema.AllOfExposer `json:"foo"`
+		Bar jsonschema.AllOfExposer `json:"bar"`
+	}
+
+	tt := Test{
+		Foo: jsonschema.AllOf(1.23, "abc"),
+		Bar: jsonschema.AllOf(123, true),
+	}
+
+	s, err := r.Reflect(tt, jsonschema.RootRef)
+	require.NoError(t, err)
+
+	assertjson.EqualMarshal(t, []byte(`{
+	  "$ref":"#/definitions/JsonschemaGoTestTest",
+	  "definitions":{
+		"JsonschemaGoTestTest":{
+		  "properties":{
+			"bar":{"allOf":[{"type":"integer"},{"type":"boolean"}]},
+			"foo":{"allOf":[{"type":"number"},{"type":"string"}]}
+		  },
+		  "type":"object"
+		}
+	  }
+	}`), s)
+
+	s, err = r.Reflect(jsonschema.AllOf(123, true), jsonschema.RootRef)
+	require.NoError(t, err)
+
+	assertjson.EqualMarshal(t, []byte(`{"allOf":[{"type":"integer"},{"type":"boolean"}]}`), s)
+}
