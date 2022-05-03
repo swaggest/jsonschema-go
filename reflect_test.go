@@ -1197,3 +1197,47 @@ func TestAllOf(t *testing.T) {
 
 	assertjson.EqualMarshal(t, []byte(`{"allOf":[{"type":"integer"},{"type":"boolean"}]}`), s)
 }
+
+type withTextMarshaler int
+
+func (w *withTextMarshaler) UnmarshalText(_ []byte) error {
+	*w = 1
+
+	return nil
+}
+
+func (w withTextMarshaler) MarshalText() ([]byte, error) {
+	return []byte("bar"), nil
+}
+
+func TestReflector_Reflect_defaultTextMarshaler(t *testing.T) {
+	type test struct {
+		Foo withTextMarshaler `json:"foo" default:"bar" example:"baz"`
+	}
+
+	v, err := json.Marshal(test{})
+	require.NoError(t, err)
+
+	assert.Equal(t, `{"foo":"bar"}`, string(v))
+
+	r := jsonschema.Reflector{}
+
+	s, err := r.Reflect(new(test), jsonschema.RootRef)
+	require.NoError(t, err)
+
+	assertjson.EqualMarshal(t, []byte(`{
+	  "$ref":"#/definitions/JsonschemaGoTestTest",
+	  "definitions":{
+		"JsonschemaGoTestTest":{
+		  "properties":{
+			"foo":{
+			  "$ref":"#/definitions/JsonschemaGoTestWithTextMarshaler",
+			  "default":"bar","examples":["baz"]
+			}
+		  },
+		  "type":"object"
+		},
+		"JsonschemaGoTestWithTextMarshaler":{"type":"string"}
+	  }
+	}`), s)
+}

@@ -20,6 +20,7 @@ var (
 	typeOfTime            = reflect.TypeOf(time.Time{})
 	typeOfDate            = reflect.TypeOf(Date{})
 	typeOfTextUnmarshaler = reflect.TypeOf((*encoding.TextUnmarshaler)(nil)).Elem()
+	typeOfTextMarshaler   = reflect.TypeOf((*encoding.TextMarshaler)(nil)).Elem()
 	typeOfEmptyInterface  = reflect.TypeOf((*interface{})(nil)).Elem()
 	typeOfSchemaInliner   = reflect.TypeOf((*SchemaInliner)(nil)).Elem()
 )
@@ -527,7 +528,8 @@ func (r *Reflector) isWellKnownType(t reflect.Type, schema *Schema) bool {
 		return true
 	}
 
-	if t.Implements(typeOfTextUnmarshaler) {
+	if (t.Implements(typeOfTextUnmarshaler) || reflect.PtrTo(t).Implements(typeOfTextUnmarshaler)) &&
+		(t.Implements(typeOfTextMarshaler) || reflect.PtrTo(t).Implements(typeOfTextMarshaler)) {
 		schema.AddType(String)
 
 		return true
@@ -798,7 +800,7 @@ func (r *Reflector) walkProperties(v reflect.Value, parent *Schema, rc *ReflectC
 		if propertySchema.Type != nil && propertySchema.Type.SimpleTypes != nil {
 			err = checkInlineValue(&propertySchema, field, "default", propertySchema.WithDefault)
 			if err != nil {
-				return err
+				return fmt.Errorf("%s: %w", strings.Join(append(rc.Path[1:], field.Name), "."), err)
 			}
 
 			err = checkInlineValue(&propertySchema, field, "const", propertySchema.WithConst)
@@ -852,32 +854,43 @@ func (r *Reflector) walkProperties(v reflect.Value, parent *Schema, rc *ReflectC
 }
 
 func checkInlineValue(propertySchema *Schema, field reflect.StructField, tag string, setter func(interface{}) *Schema) error {
-	var err error
+	var val interface{}
 
 	t := *propertySchema.Type.SimpleTypes
+
+	isText := false
+	if field.Type.Implements(typeOfTextUnmarshaler) || reflect.PtrTo(field.Type).Implements(typeOfTextUnmarshaler) {
+		isText = true
+	}
 
 	switch t {
 	case Integer:
 		var v *int64
 
-		err = refl.ReadIntPtrTag(field.Tag, tag, &v)
-		if err != nil {
+		if err := refl.ReadIntPtrTag(field.Tag, tag, &v); err != nil {
+			if isText {
+				break
+			}
+
 			return err
 		}
 
 		if v != nil {
-			setter(*v)
+			val = *v
 		}
 	case Number:
 		var v *float64
 
-		err = refl.ReadFloatPtrTag(field.Tag, tag, &v)
-		if err != nil {
+		if err := refl.ReadFloatPtrTag(field.Tag, tag, &v); err != nil {
+			if isText {
+				break
+			}
+
 			return err
 		}
 
 		if v != nil {
-			setter(*v)
+			val = *v
 		}
 
 	case String:
@@ -886,22 +899,39 @@ func checkInlineValue(propertySchema *Schema, field reflect.StructField, tag str
 		refl.ReadStringPtrTag(field.Tag, tag, &v)
 
 		if v != nil {
-			setter(*v)
+			val = *v
 		}
 
 	case Boolean:
 		var v *bool
 
-		err = refl.ReadBoolPtrTag(field.Tag, tag, &v)
-		if err != nil {
+		if err := refl.ReadBoolPtrTag(field.Tag, tag, &v); err != nil {
+			if isText {
+				break
+			}
+
 			return err
 		}
 
 		if v != nil {
-			setter(*v)
+			val = *v
 		}
 
 	case Array, Null, Object:
+	}
+
+	if val == nil && isText {
+		var v *string
+
+		refl.ReadStringPtrTag(field.Tag, tag, &v)
+
+		if v != nil {
+			val = *v
+		}
+	}
+
+	if val != nil {
+		setter(val)
 	}
 
 	return nil
@@ -932,11 +962,13 @@ func checkNullability(propertySchema *Schema, rc *ReflectContext, ft reflect.Typ
 }
 
 func reflectExample(propertySchema *Schema, field reflect.StructField) error {
-	var err error
+	var val interface{}
 
 	if propertySchema.Type == nil || propertySchema.Type.SimpleTypes == nil {
 		return nil
 	}
+
+	isText := field.Type.Implements(typeOfTextUnmarshaler) || reflect.PtrTo(field.Type).Implements(typeOfTextUnmarshaler)
 
 	t := *propertySchema.Type.SimpleTypes
 	switch t {
@@ -946,43 +978,66 @@ func reflectExample(propertySchema *Schema, field reflect.StructField) error {
 		refl.ReadStringPtrTag(field.Tag, "example", &example)
 
 		if example != nil {
-			propertySchema.WithExamples(*example)
+			val = *example
 		}
 	case Integer:
 		var example *int64
 
-		err = refl.ReadIntPtrTag(field.Tag, "example", &example)
-		if err != nil {
+		if err := refl.ReadIntPtrTag(field.Tag, "example", &example); err != nil {
+			if isText {
+				break
+			}
+
 			return err
 		}
 
 		if example != nil {
-			propertySchema.WithExamples(*example)
+			val = *example
 		}
 	case Number:
 		var example *float64
 
-		err = refl.ReadFloatPtrTag(field.Tag, "example", &example)
-		if err != nil {
+		if err := refl.ReadFloatPtrTag(field.Tag, "example", &example); err != nil {
+			if isText {
+				break
+			}
+
 			return err
 		}
 
 		if example != nil {
-			propertySchema.WithExamples(*example)
+			val = *example
 		}
 	case Boolean:
 		var example *bool
 
-		err = refl.ReadBoolPtrTag(field.Tag, "example", &example)
-		if err != nil {
+		if err := refl.ReadBoolPtrTag(field.Tag, "example", &example); err != nil {
+			if isText {
+				break
+			}
+
 			return err
 		}
 
 		if example != nil {
-			propertySchema.WithExamples(*example)
+			val = *example
 		}
 	case Array, Null, Object:
 		return nil
+	}
+
+	if val == nil && isText {
+		var example *string
+
+		refl.ReadStringPtrTag(field.Tag, "example", &example)
+
+		if example != nil {
+			val = *example
+		}
+	}
+
+	if val != nil {
+		propertySchema.WithExamples(val)
 	}
 
 	return nil
