@@ -858,20 +858,11 @@ func checkInlineValue(propertySchema *Schema, field reflect.StructField, tag str
 
 	t := *propertySchema.Type.SimpleTypes
 
-	isText := false
-	if field.Type.Implements(typeOfTextUnmarshaler) || reflect.PtrTo(field.Type).Implements(typeOfTextUnmarshaler) {
-		isText = true
-	}
-
 	switch t {
 	case Integer:
 		var v *int64
 
 		if err := refl.ReadIntPtrTag(field.Tag, tag, &v); err != nil {
-			if isText {
-				break
-			}
-
 			return err
 		}
 
@@ -882,10 +873,6 @@ func checkInlineValue(propertySchema *Schema, field reflect.StructField, tag str
 		var v *float64
 
 		if err := refl.ReadFloatPtrTag(field.Tag, tag, &v); err != nil {
-			if isText {
-				break
-			}
-
 			return err
 		}
 
@@ -906,10 +893,6 @@ func checkInlineValue(propertySchema *Schema, field reflect.StructField, tag str
 		var v *bool
 
 		if err := refl.ReadBoolPtrTag(field.Tag, tag, &v); err != nil {
-			if isText {
-				break
-			}
-
 			return err
 		}
 
@@ -918,16 +901,6 @@ func checkInlineValue(propertySchema *Schema, field reflect.StructField, tag str
 		}
 
 	case Array, Null, Object:
-	}
-
-	if val == nil && isText {
-		var v *string
-
-		refl.ReadStringPtrTag(field.Tag, tag, &v)
-
-		if v != nil {
-			val = *v
-		}
 	}
 
 	if val != nil {
@@ -968,8 +941,6 @@ func reflectExample(propertySchema *Schema, field reflect.StructField) error {
 		return nil
 	}
 
-	isText := field.Type.Implements(typeOfTextUnmarshaler) || reflect.PtrTo(field.Type).Implements(typeOfTextUnmarshaler)
-
 	t := *propertySchema.Type.SimpleTypes
 	switch t {
 	case String:
@@ -984,10 +955,6 @@ func reflectExample(propertySchema *Schema, field reflect.StructField) error {
 		var example *int64
 
 		if err := refl.ReadIntPtrTag(field.Tag, "example", &example); err != nil {
-			if isText {
-				break
-			}
-
 			return err
 		}
 
@@ -998,10 +965,6 @@ func reflectExample(propertySchema *Schema, field reflect.StructField) error {
 		var example *float64
 
 		if err := refl.ReadFloatPtrTag(field.Tag, "example", &example); err != nil {
-			if isText {
-				break
-			}
-
 			return err
 		}
 
@@ -1012,10 +975,6 @@ func reflectExample(propertySchema *Schema, field reflect.StructField) error {
 		var example *bool
 
 		if err := refl.ReadBoolPtrTag(field.Tag, "example", &example); err != nil {
-			if isText {
-				break
-			}
-
 			return err
 		}
 
@@ -1024,16 +983,6 @@ func reflectExample(propertySchema *Schema, field reflect.StructField) error {
 		}
 	case Array, Null, Object:
 		return nil
-	}
-
-	if val == nil && isText {
-		var example *string
-
-		refl.ReadStringPtrTag(field.Tag, "example", &example)
-
-		if example != nil {
-			val = *example
-		}
 	}
 
 	if val != nil {
