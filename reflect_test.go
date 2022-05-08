@@ -1222,7 +1222,7 @@ func TestReflector_Reflect_defaultTextMarshaler(t *testing.T) {
 
 	r := jsonschema.Reflector{}
 
-	s, err := r.Reflect(new(test), jsonschema.RootRef)
+	s, err := r.Reflect(test{}, jsonschema.RootRef)
 	require.NoError(t, err)
 
 	assertjson.EqualMarshal(t, []byte(`{
@@ -1238,6 +1238,40 @@ func TestReflector_Reflect_defaultTextMarshaler(t *testing.T) {
 		  "type":"object"
 		},
 		"JsonschemaGoTestWithTextMarshaler":{"type":"string"}
+	  }
+	}`), s)
+}
+
+func TestReflector_Reflect_skipNonConstraints(t *testing.T) {
+	type test struct {
+		Foo withTextMarshaler `json:"foo" default:"bar" example:"baz"`
+		Du  time.Duration     `json:"du" default:"10s"`
+	}
+
+	v, err := json.Marshal(test{})
+	require.NoError(t, err)
+
+	assert.Equal(t, `{"foo":"bar","du":0}`, string(v))
+
+	r := jsonschema.Reflector{}
+
+	s, err := r.Reflect(test{}, jsonschema.RootRef, func(rc *jsonschema.ReflectContext) {
+		rc.SkipNonConstraints = true
+	})
+	require.NoError(t, err)
+
+	assertjson.EqualMarshal(t, []byte(`{
+	  "$ref":"#/definitions/JsonschemaGoTestTest",
+	  "definitions":{
+		"JsonschemaGoTestTest":{
+		  "properties":{
+			"du":{"$ref":"#/definitions/TimeDuration"},
+			"foo":{"$ref":"#/definitions/JsonschemaGoTestWithTextMarshaler"}
+		  },
+		  "type":"object"
+		},
+		"JsonschemaGoTestWithTextMarshaler":{"type":"string"},
+		"TimeDuration":{"type":"integer"}
 	  }
 	}`), s)
 }

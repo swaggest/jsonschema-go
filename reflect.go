@@ -664,7 +664,7 @@ func (r *Reflector) kindSwitch(t reflect.Type, v reflect.Value, schema *Schema, 
 	case reflect.Interface:
 		schema.Type = nil
 	default:
-		return fmt.Errorf("type is not supported: %s", t.String())
+		return fmt.Errorf("%s: type is not supported: %s", strings.Join(rc.Path[1:], "."), t.String())
 	}
 
 	return nil
@@ -798,9 +798,11 @@ func (r *Reflector) walkProperties(v reflect.Value, parent *Schema, rc *ReflectC
 		}
 
 		if propertySchema.Type != nil && propertySchema.Type.SimpleTypes != nil {
-			err = checkInlineValue(&propertySchema, field, "default", propertySchema.WithDefault)
-			if err != nil {
-				return fmt.Errorf("%s: %w", strings.Join(append(rc.Path[1:], field.Name), "."), err)
+			if !rc.SkipNonConstraints {
+				err = checkInlineValue(&propertySchema, field, "default", propertySchema.WithDefault)
+				if err != nil {
+					return fmt.Errorf("%s: %w", strings.Join(append(rc.Path[1:], field.Name), "."), err)
+				}
 			}
 
 			err = checkInlineValue(&propertySchema, field, "const", propertySchema.WithConst)
@@ -820,8 +822,10 @@ func (r *Reflector) walkProperties(v reflect.Value, parent *Schema, rc *ReflectC
 			propertySchema.WithExtraPropertiesItem("deprecated", true)
 		}
 
-		if err := reflectExample(&propertySchema, field); err != nil {
-			return err
+		if !rc.SkipNonConstraints {
+			if err := reflectExample(&propertySchema, field); err != nil {
+				return err
+			}
 		}
 
 		reflectEnum(&propertySchema, field.Tag, nil)

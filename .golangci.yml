@@ -58,5 +58,6 @@ issues:
         - dupl
         - structcheck
         - unused
+        - unparam
       path: "_test.go"
 
