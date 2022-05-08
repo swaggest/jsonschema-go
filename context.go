@@ -173,6 +173,9 @@ type ReflectContext struct {
 	InterceptType     InterceptTypeFunc
 	InterceptProperty InterceptPropertyFunc
 
+	// SkipNonConstraints disables parsing of `default` and `example` field tags.
+	SkipNonConstraints bool
+
 	Path           []string
 	definitions    map[refl.TypeString]Schema // list of all definition objects
 	definitionRefs map[refl.TypeString]Ref
