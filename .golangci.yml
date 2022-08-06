@@ -48,6 +48,8 @@ linters:
 issues:
   exclude:
     - "strings.Title is deprecated"
+    - "strings.Title has been deprecated"
+    - "\"io/ioutil\" has been deprecated"
     - "cyclomatic complexity \\d+ of func `\\(Schema\\).IsTrivial` is high"
   exclude-use-default: false
   exclude-rules:
@@ -61,5 +63,6 @@ issues:
         - structcheck
         - unused
         - unparam
+        - nosnakecase
       path: "_test.go"
 
