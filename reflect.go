@@ -136,10 +136,11 @@ func checkSchemaSetup(v reflect.Value, s *Schema) (bool, error) {
 // Reflect walks Go value and builds its JSON Schema based on types and field tags.
 //
 // Values can be populated from field tags of original field:
-//   type MyObj struct {
-//      BoundedNumber int `query:"boundedNumber" minimum:"-100" maximum:"100"`
-//      SpecialString string `json:"specialString" pattern:"^[a-z]{4}$" minLength:"4" maxLength:"4"`
-//   }
+//
+//	type MyObj struct {
+//	   BoundedNumber int `query:"boundedNumber" minimum:"-100" maximum:"100"`
+//	   SpecialString string `json:"specialString" pattern:"^[a-z]{4}$" minLength:"4" maxLength:"4"`
+//	}
 //
 // Note: field tags are only applied to inline schemas, if you use named type then referenced schema
 // will be created and tags will be ignored. This happens because referenced schema can be used in
@@ -150,9 +151,9 @@ func checkSchemaSetup(v reflect.Value, s *Schema) (bool, error) {
 //   - `title`, https://json-schema.org/draft-04/json-schema-validation.html#rfc.section.6.1
 //   - `description`, https://json-schema.org/draft-04/json-schema-validation.html#rfc.section.6.1
 //   - `default`, can be scalar or JSON value,
-//  		https://json-schema.org/draft-04/json-schema-validation.html#rfc.section.6.2
+//     https://json-schema.org/draft-04/json-schema-validation.html#rfc.section.6.2
 //   - `const`, can be scalar or JSON value,
-//          https://json-schema.org/draft/2020-12/json-schema-validation.html#rfc.section.6.1.3
+//     https://json-schema.org/draft/2020-12/json-schema-validation.html#rfc.section.6.1.3
 //   - `pattern`, https://json-schema.org/draft-04/json-schema-validation.html#rfc.section.5.2.3
 //   - `format`, https://json-schema.org/draft-04/json-schema-validation.html#rfc.section.7
 //   - `multipleOf`, https://json-schema.org/draft-04/json-schema-validation.html#rfc.section.5.1.1
@@ -168,23 +169,25 @@ func checkSchemaSetup(v reflect.Value, s *Schema) (bool, error) {
 //   - `exclusiveMinimum`, https://json-schema.org/draft-04/json-schema-validation.html#rfc.section.5.1.3
 //   - `uniqueItems`, https://json-schema.org/draft-04/json-schema-validation.html#rfc.section.5.3.4
 //   - `enum`, tag value must be a JSON or comma-separated list of strings,
-//  		https://json-schema.org/draft-04/json-schema-validation.html#rfc.section.5.5.1
+//     https://json-schema.org/draft-04/json-schema-validation.html#rfc.section.5.5.1
 //
 // Unnamed fields can be used to configure parent schema:
-//   type MyObj struct {
-//      BoundedNumber int `query:"boundedNumber" minimum:"-100" maximum:"100"`
-//      SpecialString string `json:"specialString" pattern:"^[a-z]{4}$" minLength:"4" maxLength:"4"`
-//      _             struct{} `additionalProperties:"false" description:"MyObj is my object."`
-//   }
+//
+//	type MyObj struct {
+//	   BoundedNumber int `query:"boundedNumber" minimum:"-100" maximum:"100"`
+//	   SpecialString string `json:"specialString" pattern:"^[a-z]{4}$" minLength:"4" maxLength:"4"`
+//	   _             struct{} `additionalProperties:"false" description:"MyObj is my object."`
+//	}
 //
 // In case of a structure with multiple name tags, you can enable filtering of unnamed fields with
 // ReflectContext.UnnamedFieldWithTag option and add matching name tags to structure (e.g. query:"_").
-//   type MyObj struct {
-//      BoundedNumber int `query:"boundedNumber" minimum:"-100" maximum:"100"`
-//      SpecialString string `json:"specialString" pattern:"^[a-z]{4}$" minLength:"4" maxLength:"4"`
-//      // These parent schema tags would only be applied to `query` schema reflection (not for `json`).
-//      _ struct{} `query:"_" additionalProperties:"false" description:"MyObj is my object."`
-//   }
+//
+//	type MyObj struct {
+//	   BoundedNumber int `query:"boundedNumber" minimum:"-100" maximum:"100"`
+//	   SpecialString string `json:"specialString" pattern:"^[a-z]{4}$" minLength:"4" maxLength:"4"`
+//	   // These parent schema tags would only be applied to `query` schema reflection (not for `json`).
+//	   _ struct{} `query:"_" additionalProperties:"false" description:"MyObj is my object."`
+//	}
 //
 // Additionally there are structure can implement any of special interfaces for fine-grained Schema control:
 // RawExposer, Exposer, Preparer.
