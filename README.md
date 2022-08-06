@@ -103,6 +103,7 @@ These tags can be used:
 * [`exclusiveMinimum`](https://json-schema.org/draft-04/json-schema-validation.html#rfc.section.5.1.3), boolean
 * [`uniqueItems`](https://json-schema.org/draft-04/json-schema-validation.html#rfc.section.5.3.4), boolean
 * [`enum`](https://json-schema.org/draft-04/json-schema-validation.html#rfc.section.5.5.1), tag value must be a JSON or comma-separated list of strings
+* `required`, boolean, marks property as required
 
 Unnamed fields can be used to configure parent schema:
 
