@@ -67,6 +67,65 @@ fmt.Println(string(j))
 By default, JSON Schema is generated from Go struct field types and tags.
 It works well for the majority of cases, but if it does not there are rich customization options.
 
+### Field tags
+
+```go
+type MyObj struct {
+   BoundedNumber int `query:"boundedNumber" minimum:"-100" maximum:"100"`
+   SpecialString string `json:"specialString" pattern:"^[a-z]{4}$" minLength:"4" maxLength:"4"`
+}
+```
+
+Note: field tags are only applied to inline schemas, if you use named type then referenced schema
+will be created and tags will be ignored. This happens because referenced schema can be used in
+multiple fields with conflicting tags, therefore customization of referenced schema has to done on
+the type itself via `RawExposer`, `Exposer` or `Preparer`.
+
+Each tag value has to be put in double quotes (`"123"`).
+
+These tags can be used:
+* [`title`](https://json-schema.org/draft-04/json-schema-validation.html#rfc.section.6.1), string
+* [`description`](https://json-schema.org/draft-04/json-schema-validation.html#rfc.section.6.1), string
+* [`default`](https://json-schema.org/draft-04/json-schema-validation.html#rfc.section.6.2), can be scalar or JSON value
+* [`const`](https://json-schema.org/draft/2020-12/json-schema-validation.html#rfc.section.6.1.3), can be scalar or JSON value
+* [`pattern`](https://json-schema.org/draft-04/json-schema-validation.html#rfc.section.5.2.3), string
+* [`format`](https://json-schema.org/draft-04/json-schema-validation.html#rfc.section.7), string
+* [`multipleOf`](https://json-schema.org/draft-04/json-schema-validation.html#rfc.section.5.1.1), float > 0
+* [`maximum`](https://json-schema.org/draft-04/json-schema-validation.html#rfc.section.5.1.2), float
+* [`minimum`](https://json-schema.org/draft-04/json-schema-validation.html#rfc.section.5.1.3), float
+* [`maxLength`](https://json-schema.org/draft-04/json-schema-validation.html#rfc.section.5.2.1), integer
+* [`minLength`](https://json-schema.org/draft-04/json-schema-validation.html#rfc.section.5.2.2), integer
+* [`maxItems`](https://json-schema.org/draft-04/json-schema-validation.html#rfc.section.5.3.2), integer
+* [`minItems`](https://json-schema.org/draft-04/json-schema-validation.html#rfc.section.5.3.3), integer
+* [`maxProperties`](https://json-schema.org/draft-04/json-schema-validation.html#rfc.section.5.4.1), integer
+* [`minProperties`](https://json-schema.org/draft-04/json-schema-validation.html#rfc.section.5.4.2), integer
+* [`exclusiveMaximum`](https://json-schema.org/draft-04/json-schema-validation.html#rfc.section.5.1.2), boolean
+* [`exclusiveMinimum`](https://json-schema.org/draft-04/json-schema-validation.html#rfc.section.5.1.3), boolean
+* [`uniqueItems`](https://json-schema.org/draft-04/json-schema-validation.html#rfc.section.5.3.4), boolean
+* [`enum`](https://json-schema.org/draft-04/json-schema-validation.html#rfc.section.5.5.1), tag value must be a JSON or comma-separated list of strings
+
+Unnamed fields can be used to configure parent schema:
+
+```go
+type MyObj struct {
+   BoundedNumber int `query:"boundedNumber" minimum:"-100" maximum:"100"`
+   SpecialString string `json:"specialString" pattern:"^[a-z]{4}$" minLength:"4" maxLength:"4"`
+   _             struct{} `additionalProperties:"false" description:"MyObj is my object."`
+}
+```
+
+In case of a structure with multiple name tags, you can enable filtering of unnamed fields with
+ReflectContext.UnnamedFieldWithTag option and add matching name tags to structure (e.g. query:"_").
+
+```go
+type MyObj struct {
+   BoundedNumber int `query:"boundedNumber" minimum:"-100" maximum:"100"`
+   SpecialString string `json:"specialString" pattern:"^[a-z]{4}$" minLength:"4" maxLength:"4"`
+   // These parent schema tags would only be applied to `query` schema reflection (not for `json`).
+   _ struct{} `query:"_" additionalProperties:"false" description:"MyObj is my object."`
+}
+```
+
 ### Implementing interfaces on a type
 
 There are a few interfaces that can be implemented on a type to customize JSON Schema generation.
@@ -87,6 +146,16 @@ And a few interfaces to expose subschemas (`anyOf`, `allOf`, `oneOf`, `not` and 
 * [`IfExposer`](https://pkg.go.dev/github.com/swaggest/jsonschema-go/jsonschema.IfExposer) exposes `if` subschema.
 * [`ThenExposer`](https://pkg.go.dev/github.com/swaggest/jsonschema-go/jsonschema.ThenExposer) exposes `then` subschema.
 * [`ElseExposer`](https://pkg.go.dev/github.com/swaggest/jsonschema-go/jsonschema.ElseExposer) exposes `else` subschema.
+
+There are also helper functions 
+[`jsonschema.AllOf`](https://pkg.go.dev/github.com/swaggest/jsonschema-go/jsonschema.AllOf), 
+[`jsonschema.AnyOf`](https://pkg.go.dev/github.com/swaggest/jsonschema-go/jsonschema.AnyOf), 
+[`jsonschema.OneOf`](https://pkg.go.dev/github.com/swaggest/jsonschema-go/jsonschema.OneOf) 
+to create exposer instance from multiple values.
+
+```go
+
+```
 
 ### Configuring the reflector
 
