@@ -65,4 +65,7 @@ issues:
         - unparam
         - nosnakecase
       path: "_test.go"
+    - linters:
+        - errcheck # Error checking omitted for brevity.
+      path: "example_"
 
