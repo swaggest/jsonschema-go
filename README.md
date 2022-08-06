@@ -149,9 +149,9 @@ And a few interfaces to expose subschemas (`anyOf`, `allOf`, `oneOf`, `not` and 
 * [`ElseExposer`](https://pkg.go.dev/github.com/swaggest/jsonschema-go/jsonschema.ElseExposer) exposes `else` subschema.
 
 There are also helper functions 
-[`jsonschema.AllOf`](https://pkg.go.dev/github.com/swaggest/jsonschema-go/jsonschema.AllOf), 
-[`jsonschema.AnyOf`](https://pkg.go.dev/github.com/swaggest/jsonschema-go/jsonschema.AnyOf), 
-[`jsonschema.OneOf`](https://pkg.go.dev/github.com/swaggest/jsonschema-go/jsonschema.OneOf) 
+[`jsonschema.AllOf`](https://pkg.go.dev/github.com/swaggest/jsonschema-go#AllOf), 
+[`jsonschema.AnyOf`](https://pkg.go.dev/github.com/swaggest/jsonschema-go#AnyOf), 
+[`jsonschema.OneOf`](https://pkg.go.dev/github.com/swaggest/jsonschema-go#OneOf) 
 to create exposer instance from multiple values.
 
 ### Configuring the reflector
