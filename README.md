@@ -153,10 +153,6 @@ There are also helper functions
 [`jsonschema.OneOf`](https://pkg.go.dev/github.com/swaggest/jsonschema-go/jsonschema.OneOf) 
 to create exposer instance from multiple values.
 
-```go
-
-```
-
 ### Configuring the reflector
 
 Additional centralized configuration is available with 
