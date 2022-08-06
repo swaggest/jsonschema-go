@@ -42,6 +42,8 @@ linters:
     - tagliatelle
     - errname
     - ireturn
+    - exhaustruct
+    - nonamedreturns
 
 issues:
   exclude:
