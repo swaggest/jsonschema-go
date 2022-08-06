@@ -133,20 +133,20 @@ There are a few interfaces that can be implemented on a type to customize JSON S
 
 * [`Preparer`](https://pkg.go.dev/github.com/swaggest/jsonschema-go#Preparer) allows to change generated JSON Schema.
 * [`Exposer`](https://pkg.go.dev/github.com/swaggest/jsonschema-go#Exposer) overrides generated JSON Schema.
-* [`RawExposer`](https://pkg.go.dev/github.com/swaggest/jsonschema-go/jsonschema.RawExposer) overrides generated JSON Schema.
+* [`RawExposer`](https://pkg.go.dev/github.com/swaggest/jsonschema-go#RawExposer) overrides generated JSON Schema.
 * [`Described`](https://pkg.go.dev/github.com/swaggest/jsonschema-go#Described) exposes description.
-* [`Titled`](https://pkg.go.dev/github.com/swaggest/jsonschema-go/jsonschema.Titled) exposes title.
+* [`Titled`](https://pkg.go.dev/github.com/swaggest/jsonschema-go#Titled) exposes title.
 * [`Enum`](https://pkg.go.dev/github.com/swaggest/jsonschema-go#Enum) exposes enum values.
 * [`NamedEnum`](https://pkg.go.dev/github.com/swaggest/jsonschema-go#NamedEnum) exposes enum values with names.
 
 And a few interfaces to expose subschemas (`anyOf`, `allOf`, `oneOf`, `not` and `if`, `then`, `else`).
-* [`AnyOfExposer`](https://pkg.go.dev/github.com/swaggest/jsonschema-go/jsonschema.AnyOfExposer) exposes `anyOf` subschemas.
-* [`AllOfExposer`](https://pkg.go.dev/github.com/swaggest/jsonschema-go/jsonschema.AllOfExposer) exposes `allOf` subschemas.
-* [`OneOfExposer`](https://pkg.go.dev/github.com/swaggest/jsonschema-go/jsonschema.OneOfExposer) exposes `oneOf` subschemas.
-* [`NotExposer`](https://pkg.go.dev/github.com/swaggest/jsonschema-go/jsonschema.NotExposer) exposes `not` subschema.
-* [`IfExposer`](https://pkg.go.dev/github.com/swaggest/jsonschema-go/jsonschema.IfExposer) exposes `if` subschema.
-* [`ThenExposer`](https://pkg.go.dev/github.com/swaggest/jsonschema-go/jsonschema.ThenExposer) exposes `then` subschema.
-* [`ElseExposer`](https://pkg.go.dev/github.com/swaggest/jsonschema-go/jsonschema.ElseExposer) exposes `else` subschema.
+* [`AnyOfExposer`](https://pkg.go.dev/github.com/swaggest/jsonschema-go#AnyOfExposer) exposes `anyOf` subschemas.
+* [`AllOfExposer`](https://pkg.go.dev/github.com/swaggest/jsonschema-go#AllOfExposer) exposes `allOf` subschemas.
+* [`OneOfExposer`](https://pkg.go.dev/github.com/swaggest/jsonschema-go#OneOfExposer) exposes `oneOf` subschemas.
+* [`NotExposer`](https://pkg.go.dev/github.com/swaggest/jsonschema-go#NotExposer) exposes `not` subschema.
+* [`IfExposer`](https://pkg.go.dev/github.com/swaggest/jsonschema-go#IfExposer) exposes `if` subschema.
+* [`ThenExposer`](https://pkg.go.dev/github.com/swaggest/jsonschema-go#ThenExposer) exposes `then` subschema.
+* [`ElseExposer`](https://pkg.go.dev/github.com/swaggest/jsonschema-go#ElseExposer) exposes `else` subschema.
 
 There are also helper functions 
 [`jsonschema.AllOf`](https://pkg.go.dev/github.com/swaggest/jsonschema-go#AllOf), 
