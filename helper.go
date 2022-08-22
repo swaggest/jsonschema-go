@@ -188,22 +188,6 @@ func (s Schema) IsTrivial(refResolvers ...func(string) (SchemaOrBool, bool)) boo
 		return false
 	}
 
-	if s.Ref != nil {
-		resolved := false
-
-		for _, resolve := range refResolvers {
-			if _, found := resolve(*s.Ref); found {
-				resolved = true
-				// Do not traversal existed ref.
-				break
-			}
-		}
-
-		if !resolved {
-			return false
-		}
-	}
-
 	if s.Items != nil && (len(s.Items.SchemaArray) > 0 || !s.Items.SchemaOrBool.IsTrivial(refResolvers...)) {
 		return false
 	}
@@ -224,7 +208,36 @@ func (s Schema) IsTrivial(refResolvers ...func(string) (SchemaOrBool, bool)) boo
 		}
 	}
 
-	return true
+	if s.Ref == nil {
+		return true
+	}
+
+	resolved := false
+
+	// If same ref is met, it is returned as trivial schema to avoid duplicate recursion.
+	skipRef := func(ref string) (SchemaOrBool, bool) {
+		if ref == *s.Ref {
+			return SchemaOrBool{}, true
+		}
+
+		return SchemaOrBool{}, false
+	}
+
+	rr := append([]func(ref string) (SchemaOrBool, bool){skipRef}, refResolvers...)
+
+	for _, resolve := range refResolvers {
+		if rs, found := resolve(*s.Ref); found {
+			resolved = true
+
+			if !rs.IsTrivial(rr...) {
+				return false
+			}
+
+			break
+		}
+	}
+
+	return resolved
 }
 
 // HasType checks if Schema has a simple type.
