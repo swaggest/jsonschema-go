@@ -192,13 +192,9 @@ func (s Schema) IsTrivial(refResolvers ...func(string) (SchemaOrBool, bool)) boo
 		resolved := false
 
 		for _, resolve := range refResolvers {
-			if rs, found := resolve(*s.Ref); found {
+			if _, found := resolve(*s.Ref); found {
 				resolved = true
-
-				if !rs.IsTrivial(refResolvers...) {
-					return false
-				}
-
+				// Do not traversal existed ref.
 				break
 			}
 		}
