@@ -114,3 +114,57 @@ func TestSchema_IsTrivial_reflect(t *testing.T) {
 		return rs, found
 	}))
 }
+
+func TestSchema_IsTrivial_recursive(t *testing.T) {
+	type Lvl2 struct {
+		Scalar int `json:"scalar" minimum:"100"`
+	}
+
+	type Lvl1 struct {
+		Scalar     string `json:"scalar"`
+		Recursion1 []Lvl1 `json:"l1s"`
+		L2         []Lvl2 `json:"bs"`
+	}
+
+	type TopLevel struct {
+		L1 Lvl1 `json:"asd"`
+	}
+
+	r := jsonschema.Reflector{}
+
+	s, err := r.Reflect(TopLevel{})
+	require.NoError(t, err)
+
+	assert.False(t, s.IsTrivial(func(ref string) (jsonschema.SchemaOrBool, bool) {
+		rs, found := s.Definitions[strings.TrimPrefix(ref, "#/definitions/")]
+
+		return rs, found
+	}))
+}
+
+func TestSchema_IsTrivial_recursiveTrivial(t *testing.T) {
+	type Lvl2 struct {
+		Scalar int `json:"scalar"`
+	}
+
+	type Lvl1 struct {
+		Scalar     string `json:"scalar"`
+		Recursion1 []Lvl1 `json:"l1s"`
+		L2         []Lvl2 `json:"bs"`
+	}
+
+	type TopLevel struct {
+		L1 Lvl1 `json:"asd"`
+	}
+
+	r := jsonschema.Reflector{}
+
+	s, err := r.Reflect(TopLevel{})
+	require.NoError(t, err)
+
+	assert.True(t, s.IsTrivial(func(ref string) (jsonschema.SchemaOrBool, bool) {
+		rs, found := s.Definitions[strings.TrimPrefix(ref, "#/definitions/")]
+
+		return rs, found
+	}))
+}
