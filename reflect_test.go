@@ -1275,3 +1275,27 @@ func TestReflector_Reflect_skipNonConstraints(t *testing.T) {
 	  }
 	}`), s)
 }
+
+func TestReflector_Reflect_examples(t *testing.T) {
+	type WantExample struct {
+		A string   `json:"a" example:"example of a"`
+		B []string `json:"b" example:"example of b"`
+		C int      `json:"c" examples:"[\"foo\", 2, 3]" example:"123"`
+	}
+
+	reflector := jsonschema.Reflector{}
+	schema, err := reflector.Reflect(WantExample{})
+	require.NoError(t, err)
+
+	assertjson.EqualMarshal(t, []byte(`{
+	  "properties":{
+		"a":{"examples":["example of a"],"type":"string"},
+		"b":{
+		  "items":{"examples":["example of b"],"type":"string"},
+		  "type":["array","null"]
+		},
+		"c":{"examples":[123,"foo",2,3],"type":"integer"}
+	  },
+	  "type":"object"
+	}`), schema)
+}
