@@ -87,6 +87,8 @@ These tags can be used:
 * [`title`](https://json-schema.org/draft-04/json-schema-validation.html#rfc.section.6.1), string
 * [`description`](https://json-schema.org/draft-04/json-schema-validation.html#rfc.section.6.1), string
 * [`default`](https://json-schema.org/draft-04/json-schema-validation.html#rfc.section.6.2), can be scalar or JSON value
+* [`example`](https://json-schema.org/draft/2020-12/json-schema-validation.html#name-examples), a scalar value that matches type of parent property, for an array it is applied to items
+* [`examples`](https://json-schema.org/draft/2020-12/json-schema-validation.html#name-examples), a JSON array value
 * [`const`](https://json-schema.org/draft/2020-12/json-schema-validation.html#rfc.section.6.1.3), can be scalar or JSON value
 * [`pattern`](https://json-schema.org/draft-04/json-schema-validation.html#rfc.section.5.2.3), string
 * [`format`](https://json-schema.org/draft-04/json-schema-validation.html#rfc.section.7), string
