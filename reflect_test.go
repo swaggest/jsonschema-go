@@ -1299,3 +1299,23 @@ func TestReflector_Reflect_examples(t *testing.T) {
 	  "type":"object"
 	}`), schema)
 }
+
+func TestReflector_Reflect_namedSlice(t *testing.T) {
+	type PanicType []string
+
+	type PanicStruct struct {
+		IPPolicy PanicType `json:"ip_policy" example:"127.0.0.1"`
+	}
+
+	reflector := jsonschema.Reflector{}
+	schema, err := reflector.Reflect(PanicStruct{})
+	require.NoError(t, err)
+
+	assertjson.EqualMarshal(t, []byte(`{
+	  "definitions":{
+		"JsonschemaGoTestPanicType":{"items":{"type":"string"},"type":["array","null"]}
+	  },
+	  "properties":{"ip_policy":{"$ref":"#/definitions/JsonschemaGoTestPanicType"}},
+	  "type":"object"
+	}`), schema)
+}

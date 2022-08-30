@@ -1003,7 +1003,8 @@ func reflectExample(propertySchema *Schema, field reflect.StructField) error {
 		if example != nil {
 			val = *example
 		}
-	case propertySchema.HasType(Array) && val == nil:
+	case propertySchema.HasType(Array) && val == nil && propertySchema.Items != nil &&
+		propertySchema.Items.SchemaOrBool != nil && propertySchema.Items.SchemaOrBool.TypeObject != nil:
 		return reflectExample(propertySchema.Items.SchemaOrBool.TypeObject, field)
 	default:
 		return nil
