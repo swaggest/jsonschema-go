@@ -667,6 +667,10 @@ func (r *Reflector) kindSwitch(t reflect.Type, v reflect.Value, schema *Schema, 
 	case reflect.Interface:
 		schema.Type = nil
 	default:
+		if rc.SkipUnsupportedProperties {
+			return ErrSkipProperty
+		}
+
 		return fmt.Errorf("%s: type is not supported: %s", strings.Join(rc.Path[1:], "."), t.String())
 	}
 

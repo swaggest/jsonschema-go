@@ -976,6 +976,27 @@ func TestReflector_Reflect_processWithoutTags_true(t *testing.T) {
 	}`), s)
 }
 
+func TestReflector_Reflect_processWithoutTags_tolerateUnknownTypes(t *testing.T) {
+	type Test struct {
+		Foo  string
+		Bar  int
+		Baz  bool `json:"baz"`
+		Fun  func()
+		Chan chan bool
+		qux  string
+	}
+
+	r := jsonschema.Reflector{}
+
+	s, err := r.Reflect(Test{}, jsonschema.ProcessWithoutTags, jsonschema.SkipUnsupportedProperties)
+	assert.NoError(t, err)
+
+	assertjson.EqualMarshal(t, []byte(`{
+	  "properties":{"Bar":{"type":"integer"},"Foo":{"type":"string"},"baz":{"type":"boolean"}},
+	  "type":"object"
+	}`), s)
+}
+
 func TestReflector_Reflect_processWithoutTags_false(t *testing.T) {
 	type Test struct {
 		Foo string

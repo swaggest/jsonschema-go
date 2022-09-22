@@ -127,6 +127,11 @@ func ProcessWithoutTags(rc *ReflectContext) {
 	rc.ProcessWithoutTags = true
 }
 
+// SkipUnsupportedProperties skips properties with unsupported types (func, chan, etc...) instead of failing.
+func SkipUnsupportedProperties(rc *ReflectContext) {
+	rc.SkipUnsupportedProperties = true
+}
+
 // ReflectContext accompanies single reflect operation.
 type ReflectContext struct {
 	// Context allows communicating user data between reflection steps.
@@ -175,6 +180,9 @@ type ReflectContext struct {
 
 	// SkipNonConstraints disables parsing of `default` and `example` field tags.
 	SkipNonConstraints bool
+
+	// SkipUnsupportedProperties skips properties with unsupported types (func, chan, etc...) instead of failing.
+	SkipUnsupportedProperties bool
 
 	Path           []string
 	definitions    map[refl.TypeString]Schema // list of all definition objects
