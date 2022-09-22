@@ -110,11 +110,6 @@ func StripDefinitionNamePrefix(prefix ...string) func(rc *ReflectContext) {
 	}
 }
 
-// SkipEmbeddedMapsSlices disables shortcutting into embedded maps and slices.
-func SkipEmbeddedMapsSlices(rc *ReflectContext) {
-	rc.SkipEmbeddedMapsSlices = true
-}
-
 // PropertyNameMapping enables property name mapping from a struct field name.
 func PropertyNameMapping(mapping map[string]string) func(rc *ReflectContext) {
 	return func(rc *ReflectContext) {
@@ -125,6 +120,16 @@ func PropertyNameMapping(mapping map[string]string) func(rc *ReflectContext) {
 // ProcessWithoutTags enables processing fields without any tags specified.
 func ProcessWithoutTags(rc *ReflectContext) {
 	rc.ProcessWithoutTags = true
+}
+
+// SkipEmbeddedMapsSlices disables shortcutting into embedded maps and slices.
+func SkipEmbeddedMapsSlices(rc *ReflectContext) {
+	rc.SkipEmbeddedMapsSlices = true
+}
+
+// SkipUnsupportedProperties skips properties with unsupported types (func, chan, etc...) instead of failing.
+func SkipUnsupportedProperties(rc *ReflectContext) {
+	rc.SkipUnsupportedProperties = true
 }
 
 // ReflectContext accompanies single reflect operation.
@@ -175,6 +180,9 @@ type ReflectContext struct {
 
 	// SkipNonConstraints disables parsing of `default` and `example` field tags.
 	SkipNonConstraints bool
+
+	// SkipUnsupportedProperties skips properties with unsupported types (func, chan, etc...) instead of failing.
+	SkipUnsupportedProperties bool
 
 	Path           []string
 	definitions    map[refl.TypeString]Schema // list of all definition objects
