@@ -194,6 +194,22 @@ func checkSchemaSetup(v reflect.Value, s *Schema) (bool, error) {
 //
 // These interfaces allow exposing particular schema keywords:
 // Titled, Described, Enum, NamedEnum.
+//
+// Available options:
+//
+//	CollectDefinitions
+//	DefinitionsPrefix
+//	PropertyNameTag
+//	InterceptType
+//	InterceptProperty
+//	InlineRefs
+//	RootNullable
+//	RootRef
+//	StripDefinitionNamePrefix
+//	PropertyNameMapping
+//	ProcessWithoutTags
+//	SkipEmbeddedMapsSlices
+//	SkipUnsupportedProperties
 func (r *Reflector) Reflect(i interface{}, options ...func(rc *ReflectContext)) (Schema, error) {
 	rc := ReflectContext{}
 	rc.Context = context.Background()

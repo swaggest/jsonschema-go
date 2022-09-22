@@ -110,11 +110,6 @@ func StripDefinitionNamePrefix(prefix ...string) func(rc *ReflectContext) {
 	}
 }
 
-// SkipEmbeddedMapsSlices disables shortcutting into embedded maps and slices.
-func SkipEmbeddedMapsSlices(rc *ReflectContext) {
-	rc.SkipEmbeddedMapsSlices = true
-}
-
 // PropertyNameMapping enables property name mapping from a struct field name.
 func PropertyNameMapping(mapping map[string]string) func(rc *ReflectContext) {
 	return func(rc *ReflectContext) {
@@ -125,6 +120,11 @@ func PropertyNameMapping(mapping map[string]string) func(rc *ReflectContext) {
 // ProcessWithoutTags enables processing fields without any tags specified.
 func ProcessWithoutTags(rc *ReflectContext) {
 	rc.ProcessWithoutTags = true
+}
+
+// SkipEmbeddedMapsSlices disables shortcutting into embedded maps and slices.
+func SkipEmbeddedMapsSlices(rc *ReflectContext) {
+	rc.SkipEmbeddedMapsSlices = true
 }
 
 // SkipUnsupportedProperties skips properties with unsupported types (func, chan, etc...) instead of failing.
