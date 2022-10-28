@@ -648,6 +648,18 @@ func (r *Reflector) kindSwitch(t reflect.Type, v reflect.Value, schema *Schema, 
 			return err
 		}
 
+		if elemType.Kind() == reflect.Ptr {
+			if itemsSchema.Ref != nil {
+				item := itemsSchema
+				itemsSchema.Ref = nil
+				itemsSchema.AllOf = []SchemaOrBool{
+					item.ToSchemaOrBool(),
+				}
+			}
+
+			itemsSchema.AddType(Null)
+		}
+
 		schema.AddType(Array)
 		schema.WithItems(*(&Items{}).WithSchemaOrBool(itemsSchema.ToSchemaOrBool()))
 
@@ -938,15 +950,14 @@ func checkInlineValue(propertySchema *Schema, field reflect.StructField, tag str
 }
 
 func checkNullability(propertySchema *Schema, rc *ReflectContext, ft reflect.Type) {
-	if propertySchema.HasType(Array) ||
-		(propertySchema.HasType(Object) && len(propertySchema.Properties) == 0 && propertySchema.Ref == nil) {
+	if propertySchema.HasType(Object) && len(propertySchema.Properties) == 0 && propertySchema.Ref == nil {
 		propertySchema.AddType(Null)
 	}
 
 	if propertySchema.Ref != nil && ft.Kind() != reflect.Struct {
 		def := rc.getDefinition(*propertySchema.Ref)
 
-		if (def.HasType(Array) || def.HasType(Object)) && !def.HasType(Null) {
+		if def.HasType(Object) && !def.HasType(Null) {
 			if rc.EnvelopNullability {
 				refSchema := *propertySchema
 				propertySchema.Ref = nil
