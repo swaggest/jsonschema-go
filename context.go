@@ -190,13 +190,3 @@ type ReflectContext struct {
 	typeCycles     map[refl.TypeString]bool
 	rootDefName    string
 }
-
-func (rc *ReflectContext) getDefinition(ref string) Schema {
-	for ts, r := range rc.definitionRefs {
-		if r.Path+r.Name == ref {
-			return rc.definitions[ts]
-		}
-	}
-
-	return Schema{}
-}

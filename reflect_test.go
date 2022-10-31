@@ -13,6 +13,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/swaggest/assertjson"
+
 	"github.com/swaggest/jsonschema-go"
 )
 
@@ -127,7 +128,14 @@ func TestReflector_Reflect(t *testing.T) {
 		"deathDate":{"type":["null","string"],"format":"date"},
 		"deletedAt":{"type":["null","string"],"format":"date-time"},
 		"enumed":{"$ref":"#/definitions/JsonschemaGoTestEnumed"},
-		"enumedPtr":{"$ref":"#/definitions/JsonschemaGoTestEnumed"},
+		"enumedPtr":{
+		 "anyOf": [
+          {
+		   "$ref": "#/definitions/JsonschemaGoTestEnumed"
+   		  }
+		 ],
+		 "type": "null"
+		},
 		"firstName":{"type":"string"},"height":{"type":"integer"},
 		"lastName":{"type":"string"},"meta":{},
 		"role":{
@@ -140,7 +148,15 @@ func TestReflector_Reflect(t *testing.T) {
 	"JsonschemaGoTestRole":{"type":"string"}
   },
   "properties":{
-	"chiefOfMorale":{"$ref":"#/definitions/JsonschemaGoTestPerson"},
+	"chiefOfMorale":{
+	 "anyOf": [
+	  {
+	   "$ref": "#/definitions/JsonschemaGoTestPerson",
+	   "type": "object"
+	  }
+	 ],
+	 "type": "null"
+	},
 	"employees":{"items":{"$ref":"#/definitions/JsonschemaGoTestPerson"},"type":"array"}
   },
   "type":"object"
@@ -240,7 +256,13 @@ func TestReflector_Reflect_collectDefinitions(t *testing.T) {
  "title": "Organization",
  "properties": {
   "chiefOfMorale": {
-   "$ref": "#/definitions/JsonschemaGoTestPerson"
+   "anyOf": [
+    {
+     "$ref": "#/definitions/JsonschemaGoTestPerson",
+     "type": "object"
+    }
+   ],
+   "type": "null"
   },
   "employees": {
    "items": {
@@ -250,8 +272,7 @@ func TestReflector_Reflect_collectDefinitions(t *testing.T) {
   }
  },
  "type": "object"
-}
-`), j, string(j))
+}`), j, string(j))
 
 	assertjson.EqualMarshal(t, []byte(`
 {
@@ -265,7 +286,14 @@ func TestReflector_Reflect_collectDefinitions(t *testing.T) {
 	  "deathDate":{"type":["null","string"],"format":"date"},
 	  "deletedAt":{"type":["null","string"],"format":"date-time"},
 	  "enumed":{"$ref":"#/definitions/JsonschemaGoTestEnumed"},
-	  "enumedPtr":{"$ref":"#/definitions/JsonschemaGoTestEnumed"},
+	  "enumedPtr":{
+	   "anyOf": [
+	    {
+	     "$ref": "#/definitions/JsonschemaGoTestEnumed"
+	    }
+	   ],
+	   "type": "null"
+      },
 	  "firstName":{"type":"string"},"height":{"type":"integer"},
 	  "lastName":{"type":"string"},"meta":{},
 	  "role":{
@@ -292,8 +320,19 @@ func TestReflector_Reflect_recursiveStruct(t *testing.T) {
 	j, err := json.Marshal(s)
 	require.NoError(t, err)
 
-	assertjson.Equal(t, []byte(`{"properties":{"parent":{"$ref":"#"},"siblings":{"items":{"$ref":"#"},"type":"array"},
-		"val":{"type":"string"}},"type":"object"}`), j, string(j))
+	assertjson.Equal(t, []byte(`{
+		"properties": {
+		 "parent":{
+		  "anyOf": [
+		   {
+		    "$ref": "#"
+		   }
+		  ],
+		  "type": "null"
+		 },
+   		 "siblings":{"items":{"$ref":"#"},"type":"array"},
+		 "val":{"type":"string"}},"type":"object"
+	}`), j, string(j))
 }
 
 func TestReflector_Reflect_mapping(t *testing.T) {
@@ -526,10 +565,7 @@ func TestReflector_Reflect_pointer(t *testing.T) {
         	            	   "additionalProperties": {
         	            	    "$ref": "#/definitions/JsonschemaGoTestSt"
         	            	   },
-        	            	   "type": [
-        	            	    "object",
-        	            	    "null"
-        	            	   ]
+        	            	   "type": "object"
         	            	  },
         	            	  "JsonschemaGoTestSt": {
         	            	   "properties": {
@@ -537,10 +573,7 @@ func TestReflector_Reflect_pointer(t *testing.T) {
         	            	     "type": "integer"
         	            	    }
         	            	   },
-        	            	   "type": [
-        	            	    "object",
-        	            	    "null"
-        	            	   ]
+        	            	   "type": "object"
         	            	  }
         	            	 },
         	            	 "properties": {
@@ -819,7 +852,7 @@ func TestReflector_Reflect_MapOfOptionals(t *testing.T) {
 		  "additionalProperties":{"type":["null","number"]},
 		  "type":["object","null"]
 		},
-		"slice":{"items":{"type":["null","number"]},"type":["array","null"]}
+		"slice":{"items":{"type":["null","number"]},"type":"array"}
 	  },
 	  "type":"object"
 	}`), s)
@@ -917,7 +950,14 @@ func TestReflector_Reflect_sub_schema(t *testing.T) {
 			"deathDate":{"type":["null","string"],"format":"date"},
 			"deletedAt":{"type":["null","string"],"format":"date-time"},
 			"enumed":{"$ref":"#/definitions/Enumed"},
-			"enumedPtr":{"$ref":"#/definitions/Enumed"},
+			"enumedPtr":{
+			 "anyOf": [
+			  {
+			   "$ref": "#/definitions/Enumed"
+			  }
+			 ],
+			 "type": "null"
+			},
 			"firstName":{"type":"string"},"height":{"type":"integer"},
 			"lastName":{"type":"string"},"meta":{},
 			"role":{"$ref":"#/definitions/Role","description":"The role of person."}
@@ -1313,7 +1353,7 @@ func TestReflector_Reflect_examples(t *testing.T) {
 		"a":{"examples":["example of a"],"type":"string"},
 		"b":{
 		  "items":{"examples":["example of b"],"type":"string"},
-		  "type":["array","null"]
+		  "type":"array"
 		},
 		"c":{"examples":[123,"foo",2,3],"type":"integer"}
 	  },
@@ -1334,7 +1374,7 @@ func TestReflector_Reflect_namedSlice(t *testing.T) {
 
 	assertjson.EqualMarshal(t, []byte(`{
 	  "definitions":{
-		"JsonschemaGoTestPanicType":{"items":{"type":"string"},"type":["array","null"]}
+		"JsonschemaGoTestPanicType":{"items":{"type":"string"},"type":"array"}
 	  },
 	  "properties":{"ip_policy":{"$ref":"#/definitions/JsonschemaGoTestPanicType"}},
 	  "type":"object"

@@ -787,7 +787,6 @@ func (r *Reflector) walkProperties(v reflect.Value, parent *Schema, rc *ReflectC
 		}
 
 		propName := strings.Split(tag, ",")[0]
-		omitEmpty := strings.Contains(tag, ",omitempty")
 		required := false
 
 		if propName == "" {
@@ -816,9 +815,7 @@ func (r *Reflector) walkProperties(v reflect.Value, parent *Schema, rc *ReflectC
 			return err
 		}
 
-		if !omitEmpty {
-			checkNullability(&propertySchema, rc, ft)
-		}
+		checkNullability(&propertySchema, ft)
 
 		if propertySchema.Type != nil && propertySchema.Type.SimpleTypes != nil {
 			if !rc.SkipNonConstraints {
@@ -937,27 +934,19 @@ func checkInlineValue(propertySchema *Schema, field reflect.StructField, tag str
 	return nil
 }
 
-func checkNullability(propertySchema *Schema, rc *ReflectContext, ft reflect.Type) {
-	if propertySchema.HasType(Array) ||
-		(propertySchema.HasType(Object) && len(propertySchema.Properties) == 0 && propertySchema.Ref == nil) {
+func checkNullability(propertySchema *Schema, ft reflect.Type) {
+	if propertySchema.HasType(Object) && len(propertySchema.Properties) == 0 && propertySchema.Ref == nil {
 		propertySchema.AddType(Null)
 	}
 
-	if propertySchema.Ref != nil && ft.Kind() != reflect.Struct {
-		def := rc.getDefinition(*propertySchema.Ref)
-
-		if (def.HasType(Array) || def.HasType(Object)) && !def.HasType(Null) {
-			if rc.EnvelopNullability {
-				refSchema := *propertySchema
-				propertySchema.Ref = nil
-				propertySchema.AnyOf = []SchemaOrBool{
-					Null.ToSchemaOrBool(),
-					refSchema.ToSchemaOrBool(),
-				}
-			} else {
-				def.AddType(Null)
-			}
+	if ft.Kind() == reflect.Ptr && propertySchema.Ref != nil {
+		refSchema := *propertySchema
+		propertySchema.Ref = nil
+		propertySchema.AnyOf = []SchemaOrBool{
+			refSchema.ToSchemaOrBool(),
 		}
+		propertySchema.Type = nil
+		propertySchema.AddType(Null)
 	}
 }
 
