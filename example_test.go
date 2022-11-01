@@ -153,7 +153,12 @@ func ExampleReflector_Reflect() {
 	//   },
 	//   "nullableWhatever": {},
 	//   "parent": {
-	//    "$ref": "#"
+	//    "type": "null",
+	//    "anyOf": [
+	//     {
+	//      "$ref": "#"
+	//     }
+	//    ]
 	//   },
 	//   "recursiveArray": {
 	//    "items": {

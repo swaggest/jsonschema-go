@@ -13,7 +13,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/swaggest/assertjson"
-
 	"github.com/swaggest/jsonschema-go"
 )
 
@@ -427,15 +426,17 @@ func TestReflector_Reflect_pointer_envelop(t *testing.T) {
 	type NamedMap map[string]St
 
 	type Cont struct {
-		PtrOmitempty      *St           `json:"ptrOmitempty,omitempty"`
-		Ptr               *St           `json:"ptr"`
-		Val               St            `json:"val"`
-		SliceOmitempty    []St          `json:"sliceOmitempty,omitempty" minItems:"3"`
-		Slice             []St          `json:"slice" minItems:"2"`
-		MapOmitempty      map[string]St `json:"mapOmitempty,omitempty" minProperties:"3"`
-		Map               map[string]St `json:"map" minProperties:"2"`
-		NamedMapOmitempty NamedMap      `json:"namedMapOmitempty,omitempty" minProperties:"1"`
-		NamedMap          NamedMap      `json:"namedMap" minProperties:"5"`
+		PtrOmitempty      *St            `json:"ptrOmitempty,omitempty"`
+		Ptr               *St            `json:"ptr"`
+		Val               St             `json:"val"`
+		SliceOmitempty    []St           `json:"sliceOmitempty,omitempty" minItems:"3"`
+		Slice             []St           `json:"slice" minItems:"2"`
+		PointerMap        *map[string]St `json:"pointerMap" minProperties:"2"`
+		MapOmitempty      map[string]St  `json:"mapOmitempty,omitempty" minProperties:"3"`
+		Map               map[string]St  `json:"map" minProperties:"2"`
+		NamedMapOmitempty NamedMap       `json:"namedMapOmitempty,omitempty" minProperties:"1"`
+		NamedMap          NamedMap       `json:"namedMap" minProperties:"5"`
+		PointerNamedMap   *NamedMap      `json:"pointerNamedMap" minProperties:"5"`
 	}
 
 	s, err := (&jsonschema.Reflector{}).Reflect(Cont{}, func(rc *jsonschema.ReflectContext) {
@@ -469,10 +470,7 @@ func TestReflector_Reflect_pointer_envelop(t *testing.T) {
         	            	   "additionalProperties": {
         	            	    "$ref": "#/definitions/JsonschemaGoTestSt"
         	            	   },
-        	            	   "type": [
-        	            	    "object",
-        	            	    "null"
-        	            	   ]
+        	            	   "type": "object"
         	            	  },
         	            	  "mapOmitempty": {
         	            	   "minProperties": 3,
@@ -481,43 +479,56 @@ func TestReflector_Reflect_pointer_envelop(t *testing.T) {
         	            	   },
         	            	   "type": "object"
         	            	  },
+                              "pointerMap": {
+                               "additionalProperties": {
+                                "$ref": "#/definitions/JsonschemaGoTestSt"
+                               },
+                               "minProperties": 2,
+                               "type": [
+                                 "null",
+                                 "object"
+                               ]
+                              },
         	            	  "namedMap": {
         	            	   "minProperties": 5,
-        	            	   "anyOf": [
-        	            	    {
-        	            	     "type": "null"
-        	            	    },
-        	            	    {
-        	            	     "$ref": "#/definitions/JsonschemaGoTestNamedMap"
-        	            	    }
-        	            	   ]
+							   "$ref": "#/definitions/JsonschemaGoTestNamedMap"
         	            	  },
         	            	  "namedMapOmitempty": {
         	            	   "$ref": "#/definitions/JsonschemaGoTestNamedMap",
         	            	   "minProperties": 1
         	            	  },
+                              "pointerNamedMap": {
+                               "anyOf": [
+                                {
+                                 "$ref": "#/definitions/JsonschemaGoTestNamedMap"
+                                }
+                               ],
+                               "minProperties": 5,
+                               "type": "null"
+                              },
         	            	  "ptr": {
         	            	   "anyOf": [
         	            	    {
-        	            	     "type": "null"
-        	            	    },
-        	            	    {
         	            	     "$ref": "#/definitions/JsonschemaGoTestSt"
         	            	    }
-        	            	   ]
+        	            	   ],
+							   "type": "null"
         	            	  },
         	            	  "ptrOmitempty": {
-        	            	   "$ref": "#/definitions/JsonschemaGoTestSt"
+                               "anyOf": [
+                                {
+                                 "$ref": "#/definitions/JsonschemaGoTestSt",
+                                 "type": "object"
+                                }
+                               ],
+                               "type": "null"
         	            	  },
         	            	  "slice": {
         	            	   "items": {
         	            	    "$ref": "#/definitions/JsonschemaGoTestSt"
         	            	   },
         	            	   "minItems": 2,
-        	            	   "type": [
-        	            	    "array",
-        	            	    "null"
-        	            	   ]
+        	            	   "type": "array"
         	            	  },
         	            	  "sliceOmitempty": {
         	            	   "items": {
@@ -542,15 +553,17 @@ func TestReflector_Reflect_pointer(t *testing.T) {
 	type NamedMap map[string]St
 
 	type Cont struct {
-		PtrOmitempty      *St           `json:"ptrOmitempty,omitempty"`
-		Ptr               *St           `json:"ptr"`
-		Val               St            `json:"val"`
-		SliceOmitempty    []St          `json:"sliceOmitempty,omitempty" minItems:"3"`
-		Slice             []St          `json:"slice" minItems:"2"`
-		MapOmitempty      map[string]St `json:"mapOmitempty,omitempty" minProperties:"3"`
-		Map               map[string]St `json:"map" minProperties:"2"`
-		NamedMapOmitempty NamedMap      `json:"namedMapOmitempty,omitempty" minProperties:"1"`
-		NamedMap          NamedMap      `json:"namedMap" minProperties:"5"`
+		PtrOmitempty      *St            `json:"ptrOmitempty,omitempty"`
+		Ptr               *St            `json:"ptr"`
+		Val               St             `json:"val"`
+		SliceOmitempty    []St           `json:"sliceOmitempty,omitempty" minItems:"3"`
+		Slice             []St           `json:"slice" minItems:"2"`
+		MapOmitempty      map[string]St  `json:"mapOmitempty,omitempty" minProperties:"3"`
+		Map               map[string]St  `json:"map" minProperties:"2"`
+		PointerMap        *map[string]St `json:"pointerMap" minProperties:"2"`
+		NamedMapOmitempty NamedMap       `json:"namedMapOmitempty,omitempty" minProperties:"1"`
+		NamedMap          NamedMap       `json:"namedMap" minProperties:"5"`
+		PointerNamedMap   *NamedMap      `json:"pointerNamedMap" minProperties:"5"`
 	}
 
 	s, err := (&jsonschema.Reflector{}).Reflect(Cont{})
@@ -582,10 +595,7 @@ func TestReflector_Reflect_pointer(t *testing.T) {
         	            	   "additionalProperties": {
         	            	    "$ref": "#/definitions/JsonschemaGoTestSt"
         	            	   },
-        	            	   "type": [
-        	            	    "object",
-        	            	    "null"
-        	            	   ]
+        	            	   "type": "object"
         	            	  },
         	            	  "mapOmitempty": {
         	            	   "minProperties": 3,
@@ -594,6 +604,16 @@ func TestReflector_Reflect_pointer(t *testing.T) {
         	            	   },
         	            	   "type": "object"
         	            	  },
+                              "pointerMap": {
+                               "additionalProperties": {
+                                "$ref": "#/definitions/JsonschemaGoTestSt"
+                               },
+                               "minProperties": 2,
+                               "type": [
+                                "null",
+                                "object"
+                               ]
+                              },
         	            	  "namedMap": {
         	            	   "$ref": "#/definitions/JsonschemaGoTestNamedMap",
         	            	   "minProperties": 5
@@ -602,21 +622,38 @@ func TestReflector_Reflect_pointer(t *testing.T) {
         	            	   "$ref": "#/definitions/JsonschemaGoTestNamedMap",
         	            	   "minProperties": 1
         	            	  },
+                              "pointerNamedMap": {
+                               "anyOf": [
+                                {
+                                 "$ref": "#/definitions/JsonschemaGoTestNamedMap"
+                                }
+                               ],
+                               "minProperties": 5,
+                               "type": "null"
+                              },
         	            	  "ptr": {
-        	            	   "$ref": "#/definitions/JsonschemaGoTestSt"
+                               "anyOf": [
+                                {
+ 								 "$ref": "#/definitions/JsonschemaGoTestSt"
+                                }
+                               ],
+                               "type": "null"
         	            	  },
         	            	  "ptrOmitempty": {
-        	            	   "$ref": "#/definitions/JsonschemaGoTestSt"
+                               "anyOf": [
+                                {
+                                 "$ref": "#/definitions/JsonschemaGoTestSt",
+                                 "type": "object"
+                                }
+                               ],
+                               "type": "null"
         	            	  },
         	            	  "slice": {
         	            	   "items": {
         	            	    "$ref": "#/definitions/JsonschemaGoTestSt"
         	            	   },
         	            	   "minItems": 2,
-        	            	   "type": [
-        	            	    "array",
-        	            	    "null"
-        	            	   ]
+        	            	   "type": "array"
         	            	  },
         	            	  "sliceOmitempty": {
         	            	   "items": {
@@ -850,7 +887,7 @@ func TestReflector_Reflect_MapOfOptionals(t *testing.T) {
 	  "properties":{
 		"map":{
 		  "additionalProperties":{"type":["null","number"]},
-		  "type":["object","null"]
+		  "type":"object"
 		},
 		"slice":{"items":{"type":["null","number"]},"type":"array"}
 	  },

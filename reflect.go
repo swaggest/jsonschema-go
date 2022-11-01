@@ -935,10 +935,6 @@ func checkInlineValue(propertySchema *Schema, field reflect.StructField, tag str
 }
 
 func checkNullability(propertySchema *Schema, ft reflect.Type) {
-	if propertySchema.HasType(Object) && len(propertySchema.Properties) == 0 && propertySchema.Ref == nil {
-		propertySchema.AddType(Null)
-	}
-
 	if ft.Kind() == reflect.Ptr && propertySchema.Ref != nil {
 		refSchema := *propertySchema
 		propertySchema.Ref = nil
