@@ -128,7 +128,7 @@ func TestReflector_Reflect(t *testing.T) {
 		"deletedAt":{"type":["null","string"],"format":"date-time"},
 		"enumed":{"$ref":"#/definitions/JsonschemaGoTestEnumed"},
 		"enumedPtr":{
-		 "anyOf": [
+		 "allOf": [
           {
 		   "$ref": "#/definitions/JsonschemaGoTestEnumed"
    		  }
@@ -148,7 +148,7 @@ func TestReflector_Reflect(t *testing.T) {
   },
   "properties":{
 	"chiefOfMorale":{
-	 "anyOf": [
+	 "allOf": [
 	  {
 	   "$ref": "#/definitions/JsonschemaGoTestPerson",
 	   "type": "object"
@@ -255,7 +255,7 @@ func TestReflector_Reflect_collectDefinitions(t *testing.T) {
  "title": "Organization",
  "properties": {
   "chiefOfMorale": {
-   "anyOf": [
+   "allOf": [
     {
      "$ref": "#/definitions/JsonschemaGoTestPerson",
      "type": "object"
@@ -286,7 +286,7 @@ func TestReflector_Reflect_collectDefinitions(t *testing.T) {
 	  "deletedAt":{"type":["null","string"],"format":"date-time"},
 	  "enumed":{"$ref":"#/definitions/JsonschemaGoTestEnumed"},
 	  "enumedPtr":{
-	   "anyOf": [
+	   "allOf": [
 	    {
 	     "$ref": "#/definitions/JsonschemaGoTestEnumed"
 	    }
@@ -322,7 +322,7 @@ func TestReflector_Reflect_recursiveStruct(t *testing.T) {
 	assertjson.Equal(t, []byte(`{
 		"properties": {
 		 "parent":{
-		  "anyOf": [
+		  "allOf": [
 		   {
 		    "$ref": "#"
 		   }
@@ -498,7 +498,7 @@ func TestReflector_Reflect_pointer_envelop(t *testing.T) {
         	            	   "minProperties": 1
         	            	  },
                               "pointerNamedMap": {
-                               "anyOf": [
+                               "allOf": [
                                 {
                                  "$ref": "#/definitions/JsonschemaGoTestNamedMap"
                                 }
@@ -507,7 +507,7 @@ func TestReflector_Reflect_pointer_envelop(t *testing.T) {
                                "type": "null"
                               },
         	            	  "ptr": {
-        	            	   "anyOf": [
+        	            	   "allOf": [
         	            	    {
         	            	     "$ref": "#/definitions/JsonschemaGoTestSt"
         	            	    }
@@ -515,7 +515,7 @@ func TestReflector_Reflect_pointer_envelop(t *testing.T) {
 							   "type": "null"
         	            	  },
         	            	  "ptrOmitempty": {
-                               "anyOf": [
+                               "allOf": [
                                 {
                                  "$ref": "#/definitions/JsonschemaGoTestSt",
                                  "type": "object"
@@ -623,7 +623,7 @@ func TestReflector_Reflect_pointer(t *testing.T) {
         	            	   "minProperties": 1
         	            	  },
                               "pointerNamedMap": {
-                               "anyOf": [
+                               "allOf": [
                                 {
                                  "$ref": "#/definitions/JsonschemaGoTestNamedMap"
                                 }
@@ -632,7 +632,7 @@ func TestReflector_Reflect_pointer(t *testing.T) {
                                "type": "null"
                               },
         	            	  "ptr": {
-                               "anyOf": [
+                               "allOf": [
                                 {
  								 "$ref": "#/definitions/JsonschemaGoTestSt"
                                 }
@@ -640,7 +640,7 @@ func TestReflector_Reflect_pointer(t *testing.T) {
                                "type": "null"
         	            	  },
         	            	  "ptrOmitempty": {
-                               "anyOf": [
+                               "allOf": [
                                 {
                                  "$ref": "#/definitions/JsonschemaGoTestSt",
                                  "type": "object"
@@ -988,7 +988,7 @@ func TestReflector_Reflect_sub_schema(t *testing.T) {
 			"deletedAt":{"type":["null","string"],"format":"date-time"},
 			"enumed":{"$ref":"#/definitions/Enumed"},
 			"enumedPtr":{
-			 "anyOf": [
+			 "allOf": [
 			  {
 			   "$ref": "#/definitions/Enumed"
 			  }

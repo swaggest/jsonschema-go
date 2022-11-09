@@ -154,7 +154,7 @@ func ExampleReflector_Reflect() {
 	//   "nullableWhatever": {},
 	//   "parent": {
 	//    "type": "null",
-	//    "anyOf": [
+	//    "allOf": [
 	//     {
 	//      "$ref": "#"
 	//     }

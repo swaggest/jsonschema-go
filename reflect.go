@@ -938,7 +938,7 @@ func checkNullability(propertySchema *Schema, ft reflect.Type) {
 	if ft.Kind() == reflect.Ptr && propertySchema.Ref != nil {
 		refSchema := *propertySchema
 		propertySchema.Ref = nil
-		propertySchema.AnyOf = []SchemaOrBool{
+		propertySchema.AllOf = []SchemaOrBool{
 			refSchema.ToSchemaOrBool(),
 		}
 		propertySchema.Type = nil
