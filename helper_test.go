@@ -26,6 +26,14 @@ func TestSchemaOrBool_JSONSchemaBytes(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, map[string]interface{}{"type": "string"}, m)
 
+	var sb jsonschema.SchemaOrBool
+
+	sb.WithTypeBoolean(true)
+	require.NoError(t, sb.FromSimpleMap(m))
+	assert.Nil(t, sb.TypeBoolean)
+	require.NotNil(t, sb.TypeObject)
+	assert.True(t, sb.TypeObject.HasType(jsonschema.String))
+
 	sbf := jsonschema.SchemaOrBool{}
 	sbf.WithTypeBoolean(false)
 	m, err = sbf.ToSimpleMap()

@@ -76,18 +76,32 @@ func (r Ref) Schema() Schema {
 
 // Reflector creates JSON Schemas from Go values.
 type Reflector struct {
-	DefaultOptions []func(*ReflectContext)
-	typesMap       map[reflect.Type]interface{}
-	defNames       map[reflect.Type]string
+	DefaultOptions   []func(*ReflectContext)
+	typesMap         map[reflect.Type]interface{}
+	inlineDefinition map[refl.TypeString]bool
+	defNames         map[reflect.Type]string
 }
 
 // AddTypeMapping creates substitution link between types of src and dst when reflecting JSON Schema.
+//
+// A configured Schema instance can also be used as dst.
 func (r *Reflector) AddTypeMapping(src, dst interface{}) {
 	if r.typesMap == nil {
 		r.typesMap = map[reflect.Type]interface{}{}
 	}
 
 	r.typesMap[refl.DeepIndirect(reflect.TypeOf(src))] = dst
+}
+
+// InlineDefinition enables schema inlining for a type of given sample.
+//
+// Inlined schema is used instead of a reference to a shared definition.
+func (r *Reflector) InlineDefinition(sample interface{}) {
+	if r.inlineDefinition == nil {
+		r.inlineDefinition = map[refl.TypeString]bool{}
+	}
+
+	r.inlineDefinition[refl.GoType(refl.DeepIndirect(reflect.TypeOf(sample)))] = true
 }
 
 // InterceptDefName allows modifying reflected definition names.
@@ -276,6 +290,10 @@ func (r *Reflector) reflectDefer(defName string, typeString refl.TypeString, rc 
 	}
 
 	if rc.InlineRefs {
+		return schema
+	}
+
+	if r.inlineDefinition[typeString] {
 		return schema
 	}
 

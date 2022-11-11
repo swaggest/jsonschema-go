@@ -1340,3 +1340,34 @@ func TestReflector_Reflect_namedSlice(t *testing.T) {
 	  "type":"object"
 	}`), schema)
 }
+
+func TestReflector_Reflect_uuid(t *testing.T) {
+	reflector := jsonschema.Reflector{}
+
+	// Create custom schema mapping for 3rd party type.
+	uuidDef := jsonschema.Schema{}
+	uuidDef.AddType(jsonschema.String)
+	uuidDef.WithFormat("uuid")
+	uuidDef.WithExamples("248df4b7-aa70-47b8-a036-33ac447e668d")
+
+	// Map 3rd party type with your own schema.
+	reflector.AddTypeMapping(UUID{}, uuidDef)
+	reflector.InlineDefinition(UUID{})
+
+	type MyStruct struct {
+		ID UUID `json:"uuid"`
+	}
+
+	s, err := reflector.Reflect(MyStruct{})
+	require.NoError(t, err)
+
+	assertjson.EqualMarshal(t, []byte(`{
+	  "properties":{
+		"uuid":{
+		  "examples":["248df4b7-aa70-47b8-a036-33ac447e668d"],"type":"string",
+		  "format":"uuid"
+		}
+	  },
+	  "type":"object"
+	}`), s)
+}
