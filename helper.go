@@ -271,7 +271,7 @@ func (s Schema) JSONSchemaBytes() ([]byte, error) {
 	return json.Marshal(s)
 }
 
-// ToSimpleMap encodes JSON Schema as generic map.
+// ToSimpleMap encodes JSON Schema as a map.
 func (s SchemaOrBool) ToSimpleMap() (map[string]interface{}, error) {
 	var m map[string]interface{}
 
@@ -296,4 +296,16 @@ func (s SchemaOrBool) ToSimpleMap() (map[string]interface{}, error) {
 	}
 
 	return m, nil
+}
+
+// FromSimpleMap decodes JSON Schema from a map.
+func (s *SchemaOrBool) FromSimpleMap(m map[string]interface{}) error {
+	j, err := json.Marshal(m)
+	if err != nil {
+		return err
+	}
+
+	s.TypeBoolean = nil
+
+	return json.Unmarshal(j, s.TypeObjectEns())
 }

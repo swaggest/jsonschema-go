@@ -44,6 +44,10 @@ linters:
     - ireturn
     - exhaustruct
     - nonamedreturns
+    - nosnakecase
+    - structcheck
+    - varcheck
+    - deadcode
 
 issues:
   exclude:
@@ -67,5 +71,6 @@ issues:
       path: "_test.go"
     - linters:
         - errcheck # Error checking omitted for brevity.
+        - errchkjson
       path: "example_"
 

@@ -60,6 +60,111 @@ func (r *Resp) PrepareJSONSchema(s *jsonschema.Schema) error {
 	return nil
 }
 
+func ExampleReflector_InlineDefinition() {
+	reflector := jsonschema.Reflector{}
+
+	// Create custom schema mapping for 3rd party type.
+	uuidDef := jsonschema.Schema{}
+	uuidDef.AddType(jsonschema.String)
+	uuidDef.WithFormat("uuid")
+	uuidDef.WithExamples("248df4b7-aa70-47b8-a036-33ac447e668d")
+
+	// Map 3rd party type with your own schema.
+	reflector.AddTypeMapping(UUID{}, uuidDef)
+	reflector.InlineDefinition(UUID{})
+
+	type MyStruct struct {
+		ID UUID `json:"id"`
+	}
+
+	schema, _ := reflector.Reflect(MyStruct{})
+
+	schemaJSON, _ := json.MarshalIndent(schema, "", " ")
+
+	fmt.Println(string(schemaJSON))
+	// Output:
+	// {
+	//  "properties": {
+	//   "id": {
+	//    "examples": [
+	//     "248df4b7-aa70-47b8-a036-33ac447e668d"
+	//    ],
+	//    "type": "string",
+	//    "format": "uuid"
+	//   }
+	//  },
+	//  "type": "object"
+	// }
+}
+
+func ExampleReflector_AddTypeMapping_schema() {
+	reflector := jsonschema.Reflector{}
+
+	// Create custom schema mapping for 3rd party type.
+	uuidDef := jsonschema.Schema{}
+	uuidDef.AddType(jsonschema.String)
+	uuidDef.WithFormat("uuid")
+	uuidDef.WithExamples("248df4b7-aa70-47b8-a036-33ac447e668d")
+
+	// Map 3rd party type with your own schema.
+	reflector.AddTypeMapping(UUID{}, uuidDef)
+
+	type MyStruct struct {
+		ID UUID `json:"id"`
+	}
+
+	schema, _ := reflector.Reflect(MyStruct{})
+
+	schemaJSON, _ := json.MarshalIndent(schema, "", " ")
+
+	fmt.Println(string(schemaJSON))
+	// Output:
+	// {
+	//  "definitions": {
+	//   "JsonschemaGoTestUUID": {
+	//    "examples": [
+	//     "248df4b7-aa70-47b8-a036-33ac447e668d"
+	//    ],
+	//    "type": "string",
+	//    "format": "uuid"
+	//   }
+	//  },
+	//  "properties": {
+	//   "id": {
+	//    "$ref": "#/definitions/JsonschemaGoTestUUID"
+	//   }
+	//  },
+	//  "type": "object"
+	// }
+}
+
+func ExampleReflector_AddTypeMapping_type() {
+	reflector := jsonschema.Reflector{}
+
+	// Map 3rd party type with a different type.
+	// Reflector will perceive all UUIDs as plain strings.
+	reflector.AddTypeMapping(UUID{}, "")
+
+	type MyStruct struct {
+		ID UUID `json:"id"`
+	}
+
+	schema, _ := reflector.Reflect(MyStruct{})
+
+	schemaJSON, _ := json.MarshalIndent(schema, "", " ")
+
+	fmt.Println(string(schemaJSON))
+	// Output:
+	// {
+	//  "properties": {
+	//   "id": {
+	//    "type": "string"
+	//   }
+	//  },
+	//  "type": "object"
+	// }
+}
+
 func ExampleReflector_Reflect() {
 	reflector := jsonschema.Reflector{}
 
