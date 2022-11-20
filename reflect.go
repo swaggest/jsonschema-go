@@ -251,7 +251,7 @@ func (r *Reflector) Reflect(i interface{}, options ...func(rc *ReflectContext)) 
 			ref := rc.definitionRefs[typeString]
 
 			if rc.CollectDefinitions != nil {
-				rc.CollectDefinitions(ref.Name, def)
+				rc.CollectDefinitions(ref.Name, *def)
 			} else {
 				schema.Definitions[ref.Name] = def.ToSchemaOrBool()
 			}
@@ -312,11 +312,11 @@ func (r *Reflector) reflectDefer(defName string, typeString refl.TypeString, rc 
 	}
 
 	if rc.definitions == nil {
-		rc.definitions = make(map[refl.TypeString]Schema, 1)
+		rc.definitions = make(map[refl.TypeString]*Schema, 1)
 		rc.definitionRefs = make(map[refl.TypeString]Ref, 1)
 	}
 
-	rc.definitions[typeString] = schema
+	rc.definitions[typeString] = &schema
 	ref := Ref{Path: rc.DefinitionsPrefix, Name: defName}
 	rc.definitionRefs[typeString] = ref
 
@@ -834,9 +834,7 @@ func (r *Reflector) walkProperties(v reflect.Value, parent *Schema, rc *ReflectC
 			return err
 		}
 
-		if !omitEmpty {
-			checkNullability(&propertySchema, rc, ft)
-		}
+		checkNullability(&propertySchema, rc, ft, omitEmpty)
 
 		if propertySchema.Type != nil && propertySchema.Type.SimpleTypes != nil {
 			if !rc.SkipNonConstraints {
@@ -955,16 +953,54 @@ func checkInlineValue(propertySchema *Schema, field reflect.StructField, tag str
 	return nil
 }
 
-func checkNullability(propertySchema *Schema, rc *ReflectContext, ft reflect.Type) {
+// checkNullability checks Go semantic conditions and adds null type to schemas when appropriate.
+//
+// Presence of `omitempty` field tag disables nullability for the reason that marshaled value
+// would be absent instead of having `null`.
+//
+// Shared definitions (used by $ref) are not nullable by default, so that they can be set to nullable
+// where necessary with `"anyOf":[{"type":"null"},{"$ref":"..."}]` (see ReflectContext.EnvelopNullability).
+//
+// Nullability cases include:
+//   - Array, slice accepts `null` as a value.
+//   - Object without properties, it is a map, and it accepts `null` as a value.
+//   - Pointer type.
+func checkNullability(propertySchema *Schema, rc *ReflectContext, ft reflect.Type, omitEmpty bool) {
+	in := InterceptNullability{
+		OrigSchema: *propertySchema,
+		Schema:     propertySchema,
+		Type:       ft,
+		OmitEmpty:  omitEmpty,
+	}
+
+	defer func() {
+		if rc.InterceptNullability != nil {
+			rc.InterceptNullability(in)
+		}
+	}()
+
+	if omitEmpty {
+		return
+	}
+
 	if propertySchema.HasType(Array) ||
 		(propertySchema.HasType(Object) && len(propertySchema.Properties) == 0 && propertySchema.Ref == nil) {
 		propertySchema.AddType(Null)
+
+		in.NullAdded = true
+	}
+
+	if ft.Kind() == reflect.Ptr && propertySchema.Ref == nil && ft.Elem() != typeOfJSONRawMsg {
+		propertySchema.AddType(Null)
+
+		in.NullAdded = true
 	}
 
 	if propertySchema.Ref != nil && ft.Kind() != reflect.Struct {
 		def := rc.getDefinition(*propertySchema.Ref)
+		in.RefDef = def
 
-		if (def.HasType(Array) || def.HasType(Object)) && !def.HasType(Null) {
+		if (def.HasType(Array) || def.HasType(Object) || ft.Kind() == reflect.Ptr) && !def.HasType(Null) {
 			if rc.EnvelopNullability {
 				refSchema := *propertySchema
 				propertySchema.Ref = nil
@@ -972,8 +1008,6 @@ func checkNullability(propertySchema *Schema, rc *ReflectContext, ft reflect.Typ
 					Null.ToSchemaOrBool(),
 					refSchema.ToSchemaOrBool(),
 				}
-			} else {
-				def.AddType(Null)
 			}
 		}
 	}

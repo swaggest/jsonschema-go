@@ -191,7 +191,7 @@ func ExampleReflector_Reflect() {
 		log.Fatal(err)
 	}
 
-	j, err := json.MarshalIndent(schema, "", " ")
+	j, err := assertjson.MarshalIndentCompact(schema, "", "  ", 80)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -200,85 +200,34 @@ func ExampleReflector_Reflect() {
 
 	// Output:
 	// {
-	//  "title": "Sample Response",
-	//  "description": "This is a sample response.",
-	//  "definitions": {
-	//   "NamedAnything": {},
-	//   "UUID": {
-	//    "examples": [
-	//     "248df4b7-aa70-47b8-a036-33ac447e668d"
-	//    ],
-	//    "type": "string",
-	//    "format": "uuid"
-	//   }
-	//  },
-	//  "properties": {
-	//   "arrayOfAnything": {
-	//    "items": {},
-	//    "type": "array"
-	//   },
-	//   "arrayOfNamedAnything": {
-	//    "items": {
-	//     "$ref": "#/definitions/NamedAnything"
-	//    },
-	//    "type": "array"
-	//   },
-	//   "field1": {
-	//    "type": "integer"
-	//   },
-	//   "field2": {
-	//    "type": "string"
-	//   },
-	//   "info": {
-	//    "required": [
-	//     "foo"
-	//    ],
-	//    "properties": {
-	//     "bar": {
-	//      "description": "This is Bar.",
-	//      "type": "number"
-	//     },
-	//     "foo": {
-	//      "default": "baz",
-	//      "pattern": "\\d+",
-	//      "type": "string"
+	//   "title":"Sample Response","description":"This is a sample response.",
+	//   "definitions":{
+	//     "NamedAnything":{},
+	//     "UUID":{
+	//       "examples":["248df4b7-aa70-47b8-a036-33ac447e668d"],"type":"string",
+	//       "format":"uuid"
 	//     }
-	//    },
-	//    "type": "object"
 	//   },
-	//   "map": {
-	//    "additionalProperties": {
-	//     "type": "integer"
-	//    },
-	//    "type": "object"
+	//   "properties":{
+	//     "arrayOfAnything":{"items":{},"type":"array"},
+	//     "arrayOfNamedAnything":{"items":{"$ref":"#/definitions/NamedAnything"},"type":"array"},
+	//     "field1":{"type":"integer"},"field2":{"type":"string"},
+	//     "info":{
+	//       "required":["foo"],
+	//       "properties":{
+	//         "bar":{"description":"This is Bar.","type":"number"},
+	//         "foo":{"default":"baz","pattern":"\\d+","type":"string"}
+	//       },
+	//       "type":"object"
+	//     },
+	//     "map":{"additionalProperties":{"type":"integer"},"type":"object"},
+	//     "mapOfAnything":{"additionalProperties":{},"type":"object"},
+	//     "nullableWhatever":{},"parent":{"$ref":"#"},
+	//     "recursiveArray":{"items":{"$ref":"#"},"type":"array"},
+	//     "recursiveStructArray":{"items":{"$ref":"#"},"type":"array"},
+	//     "uuid":{"$ref":"#/definitions/UUID"},"whatever":{}
 	//   },
-	//   "mapOfAnything": {
-	//    "additionalProperties": {},
-	//    "type": "object"
-	//   },
-	//   "nullableWhatever": {},
-	//   "parent": {
-	//    "$ref": "#"
-	//   },
-	//   "recursiveArray": {
-	//    "items": {
-	//     "$ref": "#"
-	//    },
-	//    "type": "array"
-	//   },
-	//   "recursiveStructArray": {
-	//    "items": {
-	//     "$ref": "#"
-	//    },
-	//    "type": "array"
-	//   },
-	//   "uuid": {
-	//    "$ref": "#/definitions/UUID"
-	//   },
-	//   "whatever": {}
-	//  },
-	//  "type": "object",
-	//  "x-foo": "bar"
+	//   "type":"object","x-foo":"bar"
 	// }
 }
 

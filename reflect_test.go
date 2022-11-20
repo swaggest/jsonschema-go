@@ -113,39 +113,37 @@ func TestReflector_Reflect(t *testing.T) {
 	schema, err := reflector.Reflect(Org{})
 	require.NoError(t, err)
 
-	assertjson.EqualMarshal(t, []byte(`
-{
-  "title":"Organization",
-  "definitions":{
-	"JsonschemaGoTestEnumed":{"enum":["foo","bar"],"type":"string"},
-	"JsonschemaGoTestPerson":{
-	  "title":"Person","required":["lastName"],
+	assertjson.EqualMarshal(t, []byte(`{
+	  "title":"Organization",
+	  "definitions":{
+		"JsonschemaGoTestEnumed":{"enum":["foo","bar"],"type":"string"},
+		"JsonschemaGoTestPerson":{
+		  "title":"Person","required":["lastName"],
+		  "properties":{
+			"birthDate":{"type":"string","format":"date"},
+			"createdAt":{"type":"string","format":"date-time"},
+			"date":{"type":"string","format":"date"},
+			"deathDate":{"type":["null","string"],"format":"date"},
+			"deletedAt":{"type":["null","string"],"format":"date-time"},
+			"enumed":{"$ref":"#/definitions/JsonschemaGoTestEnumed"},
+			"enumedPtr":{"$ref":"#/definitions/JsonschemaGoTestEnumed"},
+			"firstName":{"type":"string"},"height":{"type":"integer"},
+			"lastName":{"type":"string"},"meta":{},
+			"role":{
+			  "$ref":"#/definitions/JsonschemaGoTestRole",
+			  "description":"The role of person."
+			}
+		  },
+		  "type":"object"
+		},
+		"JsonschemaGoTestRole":{"type":"string"}
+	  },
 	  "properties":{
-		"birthDate":{"type":"string","format":"date"},
-		"createdAt":{"type":"string","format":"date-time"},
-		"date":{"type":"string","format":"date"},
-		"deathDate":{"type":["null","string"],"format":"date"},
-		"deletedAt":{"type":["null","string"],"format":"date-time"},
-		"enumed":{"$ref":"#/definitions/JsonschemaGoTestEnumed"},
-		"enumedPtr":{"$ref":"#/definitions/JsonschemaGoTestEnumed"},
-		"firstName":{"type":"string"},"height":{"type":"integer"},
-		"lastName":{"type":"string"},"meta":{},
-		"role":{
-		  "$ref":"#/definitions/JsonschemaGoTestRole",
-		  "description":"The role of person."
-		}
+		"chiefOfMorale":{"$ref":"#/definitions/JsonschemaGoTestPerson"},
+		"employees":{"items":{"$ref":"#/definitions/JsonschemaGoTestPerson"},"type":"array"}
 	  },
 	  "type":"object"
-	},
-	"JsonschemaGoTestRole":{"type":"string"}
-  },
-  "properties":{
-	"chiefOfMorale":{"$ref":"#/definitions/JsonschemaGoTestPerson"},
-	"employees":{"items":{"$ref":"#/definitions/JsonschemaGoTestPerson"},"type":"array"}
-  },
-  "type":"object"
-}
-`), schema)
+	}`), schema)
 }
 
 func TestReflector_Reflect_inlineStruct(t *testing.T) {
@@ -222,6 +220,52 @@ func TestReflector_Reflect_rootNullable(t *testing.T) {
 }`), j, string(j))
 }
 
+func TestReflector_Reflect_structDefPtr(t *testing.T) {
+	type person struct {
+		Name string `json:"name"`
+	}
+
+	type org struct {
+		P1 *person `json:"p1,omitempty"`
+		P2 *person `json:"p2"`
+	}
+
+	reflector := jsonschema.Reflector{}
+	s, err := reflector.Reflect(org{})
+
+	require.NoError(t, err)
+
+	assertjson.EqualMarshal(t, []byte(`{
+	  "definitions":{
+		"JsonschemaGoTestPerson":{"properties":{"name":{"type":"string"}},"type":"object"}
+	  },
+	  "properties":{
+		"p1":{"$ref":"#/definitions/JsonschemaGoTestPerson"},
+		"p2":{"$ref":"#/definitions/JsonschemaGoTestPerson"}
+	  },
+	  "type":"object"
+	}`), s)
+
+	s, err = reflector.Reflect(org{}, func(rc *jsonschema.ReflectContext) {
+		rc.EnvelopNullability = true
+	})
+
+	require.NoError(t, err)
+
+	assertjson.EqualMarshal(t, []byte(`{
+	  "definitions":{
+		"JsonschemaGoTestPerson":{"properties":{"name":{"type":"string"}},"type":"object"}
+	  },
+	  "properties":{
+		"p1":{"$ref":"#/definitions/JsonschemaGoTestPerson"},
+		"p2":{
+		  "anyOf":[{"type":"null"},{"$ref":"#/definitions/JsonschemaGoTestPerson"}]
+		}
+	  },
+	  "type":"object"
+	}`), s)
+}
+
 func TestReflector_Reflect_collectDefinitions(t *testing.T) {
 	reflector := jsonschema.Reflector{}
 
@@ -232,51 +276,38 @@ func TestReflector_Reflect_collectDefinitions(t *testing.T) {
 	}))
 	require.NoError(t, err)
 
-	j, err := json.MarshalIndent(schema, "", " ")
-	require.NoError(t, err)
+	assertjson.EqualMarshal(t, []byte(`{
+	  "title":"Organization",
+	  "properties":{
+		"chiefOfMorale":{"$ref":"#/definitions/JsonschemaGoTestPerson"},
+		"employees":{"items":{"$ref":"#/definitions/JsonschemaGoTestPerson"},"type":"array"}
+	  },
+	  "type":"object"
+	}`), schema)
 
-	assertjson.Equal(t, []byte(`
-{
- "title": "Organization",
- "properties": {
-  "chiefOfMorale": {
-   "$ref": "#/definitions/JsonschemaGoTestPerson"
-  },
-  "employees": {
-   "items": {
-	"$ref": "#/definitions/JsonschemaGoTestPerson"
-   },
-   "type": "array"
-  }
- },
- "type": "object"
-}
-`), j, string(j))
-
-	assertjson.EqualMarshal(t, []byte(`
-{
-  "JsonschemaGoTestEnumed":{"enum":["foo","bar"],"type":"string"},
-  "JsonschemaGoTestPerson":{
-	"title":"Person","required":["lastName"],
-	"properties":{
-	  "birthDate":{"type":"string","format":"date"},
-	  "createdAt":{"type":"string","format":"date-time"},
-	  "date":{"type":"string","format":"date"},
-	  "deathDate":{"type":["null","string"],"format":"date"},
-	  "deletedAt":{"type":["null","string"],"format":"date-time"},
-	  "enumed":{"$ref":"#/definitions/JsonschemaGoTestEnumed"},
-	  "enumedPtr":{"$ref":"#/definitions/JsonschemaGoTestEnumed"},
-	  "firstName":{"type":"string"},"height":{"type":"integer"},
-	  "lastName":{"type":"string"},"meta":{},
-	  "role":{
-		"$ref":"#/definitions/JsonschemaGoTestRole",
-		"description":"The role of person."
-	  }
-	},
-	"type":"object"
-  },
-  "JsonschemaGoTestRole":{"type":"string"}
-}`), schemas)
+	assertjson.EqualMarshal(t, []byte(`{
+	  "JsonschemaGoTestEnumed":{"enum":["foo","bar"],"type":"string"},
+	  "JsonschemaGoTestPerson":{
+		"title":"Person","required":["lastName"],
+		"properties":{
+		  "birthDate":{"type":"string","format":"date"},
+		  "createdAt":{"type":"string","format":"date-time"},
+		  "date":{"type":"string","format":"date"},
+		  "deathDate":{"type":["null","string"],"format":"date"},
+		  "deletedAt":{"type":["null","string"],"format":"date-time"},
+		  "enumed":{"$ref":"#/definitions/JsonschemaGoTestEnumed"},
+		  "enumedPtr":{"$ref":"#/definitions/JsonschemaGoTestEnumed"},
+		  "firstName":{"type":"string"},"height":{"type":"integer"},
+		  "lastName":{"type":"string"},"meta":{},
+		  "role":{
+			"$ref":"#/definitions/JsonschemaGoTestRole",
+			"description":"The role of person."
+		  }
+		},
+		"type":"object"
+	  },
+	  "JsonschemaGoTestRole":{"type":"string"}
+	}`), schemas)
 }
 
 func TestReflector_Reflect_recursiveStruct(t *testing.T) {
@@ -289,11 +320,13 @@ func TestReflector_Reflect_recursiveStruct(t *testing.T) {
 	s, err := (&jsonschema.Reflector{}).Reflect(Rec{})
 	require.NoError(t, err)
 
-	j, err := json.Marshal(s)
-	require.NoError(t, err)
-
-	assertjson.Equal(t, []byte(`{"properties":{"parent":{"$ref":"#"},"siblings":{"items":{"$ref":"#"},"type":"array"},
-		"val":{"type":"string"}},"type":"object"}`), j, string(j))
+	assertjson.EqualMarshal(t, []byte(`{
+	  "properties":{
+		"parent":{"$ref":"#"},"siblings":{"items":{"$ref":"#"},"type":"array"},
+		"val":{"type":"string"}
+	  },
+	  "type":"object"
+	}`), s)
 }
 
 func TestReflector_Reflect_mapping(t *testing.T) {
@@ -350,34 +383,24 @@ func TestReflector_Reflect_map(t *testing.T) {
 	s, err := (&jsonschema.Reflector{}).Reflect(mapDateTime{}, jsonschema.RootRef)
 	require.NoError(t, err)
 
-	j, err := json.MarshalIndent(s, "", " ")
-	require.NoError(t, err)
-
-	assertjson.Equal(t, []byte(`{
-        	            	 "$ref": "#/definitions/JsonschemaGoTestMapDateTime",
-        	            	 "definitions": {
-        	            	  "JsonschemaGoTestMapDateTime": {
-        	            	   "properties": {
-        	            	    "items": {
-        	            	     "additionalProperties": {
-        	            	      "$ref": "#/definitions/JsonschemaGoTestSimpleDateTime"
-        	            	     },
-        	            	     "type": "object"
-        	            	    }
-        	            	   },
-        	            	   "type": "object"
-        	            	  },
-        	            	  "JsonschemaGoTestSimpleDateTime": {
-        	            	   "properties": {
-        	            	    "time": {
-        	            	     "type": "string",
-        	            	     "format": "date-time"
-        	            	    }
-        	            	   },
-        	            	   "type": "object"
-        	            	  }
-        	            	 }
-        	            	}`), j, string(j))
+	assertjson.EqualMarshal(t, []byte(`{
+	  "$ref":"#/definitions/JsonschemaGoTestMapDateTime",
+	  "definitions":{
+		"JsonschemaGoTestMapDateTime":{
+		  "properties":{
+			"items":{
+			  "additionalProperties":{"$ref":"#/definitions/JsonschemaGoTestSimpleDateTime"},
+			  "type":"object"
+			}
+		  },
+		  "type":"object"
+		},
+		"JsonschemaGoTestSimpleDateTime":{
+		  "properties":{"time":{"type":"string","format":"date-time"}},
+		  "type":"object"
+		}
+	  }
+	}`), s)
 }
 
 func TestReflector_Reflect_pointer_envelop(t *testing.T) {
@@ -404,95 +427,44 @@ func TestReflector_Reflect_pointer_envelop(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	j, err := json.MarshalIndent(s, "", " ")
-	require.NoError(t, err)
-
-	assertjson.Equal(t, []byte(`{
-        	            	 "definitions": {
-        	            	  "JsonschemaGoTestNamedMap": {
-        	            	   "additionalProperties": {
-        	            	    "$ref": "#/definitions/JsonschemaGoTestSt"
-        	            	   },
-        	            	   "type": "object"
-        	            	  },
-        	            	  "JsonschemaGoTestSt": {
-        	            	   "properties": {
-        	            	    "a": {
-        	            	     "type": "integer"
-        	            	    }
-        	            	   },
-        	            	   "type": "object"
-        	            	  }
-        	            	 },
-        	            	 "properties": {
-        	            	  "map": {
-        	            	   "minProperties": 2,
-        	            	   "additionalProperties": {
-        	            	    "$ref": "#/definitions/JsonschemaGoTestSt"
-        	            	   },
-        	            	   "type": [
-        	            	    "object",
-        	            	    "null"
-        	            	   ]
-        	            	  },
-        	            	  "mapOmitempty": {
-        	            	   "minProperties": 3,
-        	            	   "additionalProperties": {
-        	            	    "$ref": "#/definitions/JsonschemaGoTestSt"
-        	            	   },
-        	            	   "type": "object"
-        	            	  },
-        	            	  "namedMap": {
-        	            	   "minProperties": 5,
-        	            	   "anyOf": [
-        	            	    {
-        	            	     "type": "null"
-        	            	    },
-        	            	    {
-        	            	     "$ref": "#/definitions/JsonschemaGoTestNamedMap"
-        	            	    }
-        	            	   ]
-        	            	  },
-        	            	  "namedMapOmitempty": {
-        	            	   "$ref": "#/definitions/JsonschemaGoTestNamedMap",
-        	            	   "minProperties": 1
-        	            	  },
-        	            	  "ptr": {
-        	            	   "anyOf": [
-        	            	    {
-        	            	     "type": "null"
-        	            	    },
-        	            	    {
-        	            	     "$ref": "#/definitions/JsonschemaGoTestSt"
-        	            	    }
-        	            	   ]
-        	            	  },
-        	            	  "ptrOmitempty": {
-        	            	   "$ref": "#/definitions/JsonschemaGoTestSt"
-        	            	  },
-        	            	  "slice": {
-        	            	   "items": {
-        	            	    "$ref": "#/definitions/JsonschemaGoTestSt"
-        	            	   },
-        	            	   "minItems": 2,
-        	            	   "type": [
-        	            	    "array",
-        	            	    "null"
-        	            	   ]
-        	            	  },
-        	            	  "sliceOmitempty": {
-        	            	   "items": {
-        	            	    "$ref": "#/definitions/JsonschemaGoTestSt"
-        	            	   },
-        	            	   "minItems": 3,
-        	            	   "type": "array"
-        	            	  },
-        	            	  "val": {
-        	            	   "$ref": "#/definitions/JsonschemaGoTestSt"
-        	            	  }
-        	            	 },
-        	            	 "type": "object"
-        	            	}`), j, string(j))
+	assertjson.EqualMarshal(t, []byte(`{
+	  "definitions":{
+		"JsonschemaGoTestNamedMap":{
+		  "additionalProperties":{"$ref":"#/definitions/JsonschemaGoTestSt"},
+		  "type":"object"
+		},
+		"JsonschemaGoTestSt":{"properties":{"a":{"type":"integer"}},"type":"object"}
+	  },
+	  "properties":{
+		"map":{
+		  "minProperties":2,
+		  "additionalProperties":{"$ref":"#/definitions/JsonschemaGoTestSt"},
+		  "type":["object","null"]
+		},
+		"mapOmitempty":{
+		  "minProperties":3,
+		  "additionalProperties":{"$ref":"#/definitions/JsonschemaGoTestSt"},
+		  "type":"object"
+		},
+		"namedMap":{
+		  "minProperties":5,
+		  "anyOf":[{"type":"null"},{"$ref":"#/definitions/JsonschemaGoTestNamedMap"}]
+		},
+		"namedMapOmitempty":{"$ref":"#/definitions/JsonschemaGoTestNamedMap","minProperties":1},
+		"ptr":{"anyOf":[{"type":"null"},{"$ref":"#/definitions/JsonschemaGoTestSt"}]},
+		"ptrOmitempty":{"$ref":"#/definitions/JsonschemaGoTestSt"},
+		"slice":{
+		  "items":{"$ref":"#/definitions/JsonschemaGoTestSt"},"minItems":2,
+		  "type":["array","null"]
+		},
+		"sliceOmitempty":{
+		  "items":{"$ref":"#/definitions/JsonschemaGoTestSt"},"minItems":3,
+		  "type":"array"
+		},
+		"val":{"$ref":"#/definitions/JsonschemaGoTestSt"}
+	  },
+	  "type":"object"
+	}`), s)
 }
 
 func TestReflector_Reflect_pointer(t *testing.T) {
@@ -517,87 +489,41 @@ func TestReflector_Reflect_pointer(t *testing.T) {
 	s, err := (&jsonschema.Reflector{}).Reflect(Cont{})
 	require.NoError(t, err)
 
-	j, err := json.MarshalIndent(s, "", " ")
-	require.NoError(t, err)
-
-	assertjson.Equal(t, []byte(`{
-        	            	 "definitions": {
-        	            	  "JsonschemaGoTestNamedMap": {
-        	            	   "additionalProperties": {
-        	            	    "$ref": "#/definitions/JsonschemaGoTestSt"
-        	            	   },
-        	            	   "type": [
-        	            	    "object",
-        	            	    "null"
-        	            	   ]
-        	            	  },
-        	            	  "JsonschemaGoTestSt": {
-        	            	   "properties": {
-        	            	    "a": {
-        	            	     "type": "integer"
-        	            	    }
-        	            	   },
-        	            	   "type": [
-        	            	    "object",
-        	            	    "null"
-        	            	   ]
-        	            	  }
-        	            	 },
-        	            	 "properties": {
-        	            	  "map": {
-        	            	   "minProperties": 2,
-        	            	   "additionalProperties": {
-        	            	    "$ref": "#/definitions/JsonschemaGoTestSt"
-        	            	   },
-        	            	   "type": [
-        	            	    "object",
-        	            	    "null"
-        	            	   ]
-        	            	  },
-        	            	  "mapOmitempty": {
-        	            	   "minProperties": 3,
-        	            	   "additionalProperties": {
-        	            	    "$ref": "#/definitions/JsonschemaGoTestSt"
-        	            	   },
-        	            	   "type": "object"
-        	            	  },
-        	            	  "namedMap": {
-        	            	   "$ref": "#/definitions/JsonschemaGoTestNamedMap",
-        	            	   "minProperties": 5
-        	            	  },
-        	            	  "namedMapOmitempty": {
-        	            	   "$ref": "#/definitions/JsonschemaGoTestNamedMap",
-        	            	   "minProperties": 1
-        	            	  },
-        	            	  "ptr": {
-        	            	   "$ref": "#/definitions/JsonschemaGoTestSt"
-        	            	  },
-        	            	  "ptrOmitempty": {
-        	            	   "$ref": "#/definitions/JsonschemaGoTestSt"
-        	            	  },
-        	            	  "slice": {
-        	            	   "items": {
-        	            	    "$ref": "#/definitions/JsonschemaGoTestSt"
-        	            	   },
-        	            	   "minItems": 2,
-        	            	   "type": [
-        	            	    "array",
-        	            	    "null"
-        	            	   ]
-        	            	  },
-        	            	  "sliceOmitempty": {
-        	            	   "items": {
-        	            	    "$ref": "#/definitions/JsonschemaGoTestSt"
-        	            	   },
-        	            	   "minItems": 3,
-        	            	   "type": "array"
-        	            	  },
-        	            	  "val": {
-        	            	   "$ref": "#/definitions/JsonschemaGoTestSt"
-        	            	  }
-        	            	 },
-        	            	 "type": "object"
-        	            	}`), j, string(j))
+	assertjson.EqualMarshal(t, []byte(`{
+	  "definitions":{
+		"JsonschemaGoTestNamedMap":{
+		  "additionalProperties":{"$ref":"#/definitions/JsonschemaGoTestSt"},
+		  "type":"object"
+		},
+		"JsonschemaGoTestSt":{"properties":{"a":{"type":"integer"}},"type":"object"}
+	  },
+	  "properties":{
+		"map":{
+		  "minProperties":2,
+		  "additionalProperties":{"$ref":"#/definitions/JsonschemaGoTestSt"},
+		  "type":["object","null"]
+		},
+		"mapOmitempty":{
+		  "minProperties":3,
+		  "additionalProperties":{"$ref":"#/definitions/JsonschemaGoTestSt"},
+		  "type":"object"
+		},
+		"namedMap":{"$ref":"#/definitions/JsonschemaGoTestNamedMap","minProperties":5},
+		"namedMapOmitempty":{"$ref":"#/definitions/JsonschemaGoTestNamedMap","minProperties":1},
+		"ptr":{"$ref":"#/definitions/JsonschemaGoTestSt"},
+		"ptrOmitempty":{"$ref":"#/definitions/JsonschemaGoTestSt"},
+		"slice":{
+		  "items":{"$ref":"#/definitions/JsonschemaGoTestSt"},"minItems":2,
+		  "type":["array","null"]
+		},
+		"sliceOmitempty":{
+		  "items":{"$ref":"#/definitions/JsonschemaGoTestSt"},"minItems":3,
+		  "type":"array"
+		},
+		"val":{"$ref":"#/definitions/JsonschemaGoTestSt"}
+	  },
+	  "type":"object"
+	}`), s)
 }
 
 var (
