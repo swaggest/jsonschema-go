@@ -40,6 +40,35 @@ type InterceptTypeFunc func(reflect.Value, *Schema) (bool, error)
 // Pointer to parent Schema is available in propertySchema.Parent.
 type InterceptPropertyFunc func(name string, field reflect.StructField, propertySchema *Schema) error
 
+// InterceptNullabilityParams defines InterceptNullabilityFunc parameters.
+type InterceptNullabilityParams struct {
+	OrigSchema Schema
+	Schema     *Schema
+	Type       reflect.Type
+	OmitEmpty  bool
+	NullAdded  bool
+	RefDef     *Schema
+}
+
+// InterceptNullabilityFunc can intercept schema reflection to control or modify nullability state.
+// It is called after default nullability rules are applied.
+type InterceptNullabilityFunc func(params InterceptNullabilityParams)
+
+// InterceptNullability add hook to customize nullability.
+func InterceptNullability(f InterceptNullabilityFunc) func(reflectContext *ReflectContext) {
+	return func(rc *ReflectContext) {
+		if rc.InterceptNullability != nil {
+			prev := rc.InterceptNullability
+			rc.InterceptNullability = func(params InterceptNullabilityParams) {
+				prev(params)
+				f(params)
+			}
+		} else {
+			rc.InterceptNullability = f
+		}
+	}
+}
+
 // InterceptType adds hook to customize schema.
 func InterceptType(f InterceptTypeFunc) func(*ReflectContext) {
 	return func(rc *ReflectContext) {
@@ -175,8 +204,9 @@ type ReflectContext struct {
 	// InterceptType is called before and after type processing.
 	// So it may be called twice for the same type, first time with empty Schema and
 	// second time with fully processed schema.
-	InterceptType     InterceptTypeFunc
-	InterceptProperty InterceptPropertyFunc
+	InterceptType        InterceptTypeFunc
+	InterceptProperty    InterceptPropertyFunc
+	InterceptNullability InterceptNullabilityFunc
 
 	// SkipNonConstraints disables parsing of `default` and `example` field tags.
 	SkipNonConstraints bool
@@ -185,18 +215,18 @@ type ReflectContext struct {
 	SkipUnsupportedProperties bool
 
 	Path           []string
-	definitions    map[refl.TypeString]Schema // list of all definition objects
+	definitions    map[refl.TypeString]*Schema // list of all definition objects
 	definitionRefs map[refl.TypeString]Ref
 	typeCycles     map[refl.TypeString]bool
 	rootDefName    string
 }
 
-func (rc *ReflectContext) getDefinition(ref string) Schema {
+func (rc *ReflectContext) getDefinition(ref string) *Schema {
 	for ts, r := range rc.definitionRefs {
 		if r.Path+r.Name == ref {
 			return rc.definitions[ts]
 		}
 	}
 
-	return Schema{}
+	return &Schema{}
 }
