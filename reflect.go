@@ -214,6 +214,7 @@ func checkSchemaSetup(v reflect.Value, s *Schema) (bool, error) {
 //	CollectDefinitions
 //	DefinitionsPrefix
 //	PropertyNameTag
+//	InterceptNullability
 //	InterceptType
 //	InterceptProperty
 //	InlineRefs
@@ -966,7 +967,7 @@ func checkInlineValue(propertySchema *Schema, field reflect.StructField, tag str
 //   - Object without properties, it is a map, and it accepts `null` as a value.
 //   - Pointer type.
 func checkNullability(propertySchema *Schema, rc *ReflectContext, ft reflect.Type, omitEmpty bool) {
-	in := InterceptNullability{
+	in := InterceptNullabilityParams{
 		OrigSchema: *propertySchema,
 		Schema:     propertySchema,
 		Type:       ft,

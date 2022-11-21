@@ -1297,3 +1297,47 @@ func TestReflector_Reflect_uuid(t *testing.T) {
 	  "type":"object"
 	}`), s)
 }
+
+func TestInterceptNullability(t *testing.T) {
+	r := jsonschema.Reflector{}
+
+	s, err := r.Reflect(Org{}, jsonschema.InterceptNullability(func(params jsonschema.InterceptNullabilityParams) {
+		if params.Type.Kind() == reflect.Ptr {
+			params.Schema.AddType(jsonschema.Null)
+		}
+	}))
+
+	require.NoError(t, err)
+
+	assertjson.EqualMarshal(t, []byte(`{
+	  "title":"Organization",
+	  "definitions":{
+		"JsonschemaGoTestEnumed":{"enum":["foo","bar"],"type":"string"},
+		"JsonschemaGoTestPerson":{
+		  "title":"Person","required":["lastName"],
+		  "properties":{
+			"birthDate":{"type":"string","format":"date"},
+			"createdAt":{"type":"string","format":"date-time"},
+			"date":{"type":"string","format":"date"},
+			"deathDate":{"type":["null","string"],"format":"date"},
+			"deletedAt":{"type":["null","string"],"format":"date-time"},
+			"enumed":{"$ref":"#/definitions/JsonschemaGoTestEnumed"},
+			"enumedPtr":{"$ref":"#/definitions/JsonschemaGoTestEnumed"},
+			"firstName":{"type":"string"},"height":{"type":"integer"},
+			"lastName":{"type":"string"},"meta":{"type":"null"},
+			"role":{
+			  "$ref":"#/definitions/JsonschemaGoTestRole",
+			  "description":"The role of person."
+			}
+		  },
+		  "type":["object","null"]
+		},
+		"JsonschemaGoTestRole":{"type":"string"}
+	  },
+	  "properties":{
+		"chiefOfMorale":{"$ref":"#/definitions/JsonschemaGoTestPerson"},
+		"employees":{"items":{"$ref":"#/definitions/JsonschemaGoTestPerson"},"type":"array"}
+	  },
+	  "type":"object"
+	}`), s)
+}

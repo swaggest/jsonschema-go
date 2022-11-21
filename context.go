@@ -40,8 +40,8 @@ type InterceptTypeFunc func(reflect.Value, *Schema) (bool, error)
 // Pointer to parent Schema is available in propertySchema.Parent.
 type InterceptPropertyFunc func(name string, field reflect.StructField, propertySchema *Schema) error
 
-// InterceptNullability defines InterceptNullabilityFunc parameters.
-type InterceptNullability struct {
+// InterceptNullabilityParams defines InterceptNullabilityFunc parameters.
+type InterceptNullabilityParams struct {
 	OrigSchema Schema
 	Schema     *Schema
 	Type       reflect.Type
@@ -52,7 +52,22 @@ type InterceptNullability struct {
 
 // InterceptNullabilityFunc can intercept schema reflection to control or modify nullability state.
 // It is called after default nullability rules are applied.
-type InterceptNullabilityFunc func(params InterceptNullability)
+type InterceptNullabilityFunc func(params InterceptNullabilityParams)
+
+// InterceptNullability add hook to customize nullability.
+func InterceptNullability(f InterceptNullabilityFunc) func(reflectContext *ReflectContext) {
+	return func(rc *ReflectContext) {
+		if rc.InterceptNullability != nil {
+			prev := rc.InterceptNullability
+			rc.InterceptNullability = func(params InterceptNullabilityParams) {
+				prev(params)
+				f(params)
+			}
+		} else {
+			rc.InterceptNullability = f
+		}
+	}
+}
 
 // InterceptType adds hook to customize schema.
 func InterceptType(f InterceptTypeFunc) func(*ReflectContext) {
