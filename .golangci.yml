@@ -48,6 +48,8 @@ linters:
     - structcheck
     - varcheck
     - deadcode
+    - testableexamples
+    - dupword
 
 issues:
   exclude:
@@ -72,5 +74,6 @@ issues:
     - linters:
         - errcheck # Error checking omitted for brevity.
         - errchkjson
+        - gosec
       path: "example_"
 

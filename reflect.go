@@ -334,10 +334,10 @@ func (r *Reflector) reflectDefer(defName string, typeString refl.TypeString, rc 
 
 func (r *Reflector) reflect(i interface{}, rc *ReflectContext, keepType bool, parent *Schema) (schema Schema, err error) {
 	var (
-		typeString refl.TypeString
-		defName    string
 		t          = reflect.TypeOf(i)
 		v          = reflect.ValueOf(i)
+		typeString refl.TypeString
+		defName    string
 	)
 
 	defer func() {

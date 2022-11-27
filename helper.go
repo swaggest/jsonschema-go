@@ -2,6 +2,7 @@ package jsonschema
 
 import (
 	"encoding/json"
+	"fmt"
 	"reflect"
 )
 
@@ -72,7 +73,19 @@ type ElseExposer interface {
 
 // JSONSchema implements Exposer.
 func (s Schema) JSONSchema() (Schema, error) {
-	return s, nil
+	// Making a deep copy of Schema with JSON round trip to avoid unintentional sharing of pointer data.
+	j, err := json.Marshal(s)
+	if err != nil {
+		return Schema{}, fmt.Errorf("deepcopy marshal: %w", err)
+	}
+
+	var c Schema
+
+	if err := json.Unmarshal(j, &c); err != nil {
+		return Schema{}, fmt.Errorf("deepcopy unmarshal: %w", err)
+	}
+
+	return c, nil
 }
 
 // ToSchemaOrBool creates SchemaOrBool instance from Schema.
