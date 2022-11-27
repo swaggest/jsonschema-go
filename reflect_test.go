@@ -1341,3 +1341,32 @@ func TestInterceptNullability(t *testing.T) {
 	  "type":"object"
 	}`), s)
 }
+
+func TestReflector_Reflect_pointer_sharing(t *testing.T) {
+	type UUID [16]byte
+
+	r := jsonschema.Reflector{}
+
+	uuidDef := jsonschema.Schema{}
+	uuidDef.AddType(jsonschema.String)
+	uuidDef.WithFormat("uuid")
+
+	r.AddTypeMapping(UUID{}, uuidDef)
+	r.InlineDefinition(UUID{})
+
+	type StructWithNullable struct {
+		NullableID    *UUID `json:"nullable_id"`
+		NonNullableID UUID  `json:"non_nullable_id"`
+	}
+
+	s, err := r.Reflect(StructWithNullable{})
+	require.NoError(t, err)
+
+	assertjson.EqualMarshal(t, []byte(`{
+	  "properties":{
+		"non_nullable_id":{"type":"string","format":"uuid"},
+		"nullable_id":{"type":["string","null"],"format":"uuid"}
+	  },
+	  "type":"object"
+	}`), s)
+}
