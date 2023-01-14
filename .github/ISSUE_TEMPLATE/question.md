@@ -7,4 +7,4 @@ assignees: ''
 
 ---
 
-Ask in discussions https://github.com/swaggest/jsonschema-go/discussions/categories/q-a to make is more discoverable by other folks.
+Please use discussions https://github.com/swaggest/jsonschema-go/discussions/categories/q-a to make your question more discoverable by other folks.
