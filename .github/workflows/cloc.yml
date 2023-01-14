@@ -30,7 +30,7 @@ jobs:
           OUTPUT=$(cd pr && ../sccdiff -basedir ../base)
           echo "${OUTPUT}"
           OUTPUT="${OUTPUT//$'\n'/%0A}"
-          echo "diff::$OUTPUT" >> $GITHUB_OUTPUT
+          echo "diff=$OUTPUT" >> $GITHUB_OUTPUT
 
       - name: Comment Code Lines
         continue-on-error: true
