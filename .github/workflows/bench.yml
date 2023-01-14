@@ -64,7 +64,7 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ~/go/bin/benchstat
-          key: ${{ runner.os }}-benchstat-classic
+          key: ${{ runner.os }}-benchstat-legacy
 
       - name: Restore base benchmark result
         id: base-benchmark
@@ -77,22 +77,10 @@ jobs:
           # Use base sha for PR or new commit hash for master/main push in benchmark result key.
           key: ${{ runner.os }}-bench-${{ (github.event.pull_request.base.sha != github.event.after) && github.event.pull_request.base.sha || github.event.after }}
 
-      - name: Run benchmark for base code
-        if: env.RUN_BASE_BENCHMARK == 'on' && steps.base-benchmark.outputs.cache-hit != 'true' && (github.event.pull_request.base.sha != '' || github.event.inputs.old != '')
-        run: |
-          git fetch origin master ${{ github.event.pull_request.base.sha }}
-          HEAD=$(git rev-parse HEAD)
-          git reset --hard ${{ github.event.pull_request.base.sha }}
-          export REF_NAME=master
-          export BENCH_COUNT=5
-          make bench-run bench-stat
-          git reset --hard $HEAD
-
       - name: Benchmark
         id: bench
         run: |
           export REF_NAME=new
-          export BENCH_COUNT=5
           make bench
           OUTPUT=$(make bench-stat-diff)
           echo "${OUTPUT}"
@@ -100,6 +88,16 @@ jobs:
           OUTPUT=$(make bench-stat)
           echo "${OUTPUT}"
           echo "result<<EOF" >> $GITHUB_OUTPUT && echo "$OUTPUT" >> $GITHUB_OUTPUT && echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Run benchmark for base code
+        if: env.RUN_BASE_BENCHMARK == 'on' && steps.base-benchmark.outputs.cache-hit != 'true' && (github.event.pull_request.base.sha != '' || github.event.inputs.old != '')
+        run: |
+          git fetch origin master ${{ github.event.pull_request.base.sha }}
+          HEAD=$(git rev-parse HEAD)
+          git reset --hard ${{ github.event.pull_request.base.sha }}
+          export REF_NAME=master
+          make bench-run bench-stat
+          git reset --hard $HEAD
 
       - name: Comment Benchmark Result
         continue-on-error: true
