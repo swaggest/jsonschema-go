@@ -94,14 +94,12 @@ jobs:
           git fetch origin master ${{ github.event.pull_request.base.sha }}
           REP=$(./gocovdiff -cov unit.coverprofile -gha-annotations gha-unit.txt -delta-cov-file delta-cov-unit.txt -target-delta-cov ${TARGET_DELTA_COV})
           echo "${REP}"
-          REP="${REP//$'\n'/%0A}"
           cat gha-unit.txt
           DIFF=$(test -e unit-base.txt && ./gocovdiff -func-cov unit.txt -func-base-cov unit-base.txt || echo "Missing base coverage file")
-          DIFF="${DIFF//$'\n'/%0A}"
           TOTAL=$(cat delta-cov-unit.txt)
-          echo "rep=$REP" >> $GITHUB_OUTPUT
-          echo "diff=$DIFF" >> $GITHUB_OUTPUT
-          echo "total=$TOTAL" >> $GITHUB_OUTPUT
+          echo "rep<<EOF" >> $GITHUB_OUTPUT && echo "$REP" >> $GITHUB_OUTPUT && echo "EOF" >> $GITHUB_OUTPUT
+          echo "diff<<EOF" >> $GITHUB_OUTPUT && echo "$DIFF" >> $GITHUB_OUTPUT && echo "EOF" >> $GITHUB_OUTPUT
+          echo "total<<EOF" >> $GITHUB_OUTPUT && echo "$TOTAL" >> $GITHUB_OUTPUT && echo "EOF" >> $GITHUB_OUTPUT
 
       - name: Comment Test Coverage
         continue-on-error: true

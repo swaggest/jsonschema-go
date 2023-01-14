@@ -96,12 +96,10 @@ jobs:
           make bench
           OUTPUT=$(make bench-stat-diff)
           echo "${OUTPUT}"
-          #OUTPUT="${OUTPUT//$'\n'/%0A}"
-          echo "diff=$OUTPUT" >> $GITHUB_OUTPUT
+          echo "diff<<EOF" >> $GITHUB_OUTPUT && echo "$OUTPUT" >> $GITHUB_OUTPUT && echo "EOF" >> $GITHUB_OUTPUT
           OUTPUT=$(make bench-stat)
           echo "${OUTPUT}"
-          #OUTPUT="${OUTPUT//$'\n'/%0A}"
-          echo "result=$OUTPUT" >> $GITHUB_OUTPUT
+          echo "result<<EOF" >> $GITHUB_OUTPUT && echo "$OUTPUT" >> $GITHUB_OUTPUT && echo "EOF" >> $GITHUB_OUTPUT
 
       - name: Comment Benchmark Result
         continue-on-error: true

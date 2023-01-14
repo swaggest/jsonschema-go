@@ -29,10 +29,7 @@ jobs:
           [ "$sccdiff_hash" == "ae8a07b687bd3dba60861584efe724351aa7ff63" ] || (echo "::error::unexpected hash for sccdiff, possible tampering: $sccdiff_hash" && exit 1)
           OUTPUT=$(cd pr && ../sccdiff -basedir ../base)
           echo "${OUTPUT}"
-          #OUTPUT="${OUTPUT//$'\n'/%0A}"
-          echo "diff<<EOF" > $GITHUB_OUTPUT
-          echo "$OUTPUT" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+          echo "diff<<EOF" >> $GITHUB_OUTPUT && echo "$OUTPUT" >> $GITHUB_OUTPUT && echo "EOF" >> $GITHUB_OUTPUT
 
       - name: Comment Code Lines
         continue-on-error: true
