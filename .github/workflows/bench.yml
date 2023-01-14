@@ -109,7 +109,7 @@ jobs:
           echo "${OUTPUT}"
           echo "result<<EOF" >> $GITHUB_OUTPUT && echo "$OUTPUT" >> $GITHUB_OUTPUT && echo "EOF" >> $GITHUB_OUTPUT
 
-      - name: Comment Benchmark Result
+      - name: Comment benchmark result
         continue-on-error: true
         uses: marocchino/sticky-pull-request-comment@v2
         with:

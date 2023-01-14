@@ -43,7 +43,7 @@ jobs:
           OUTPUT=$(gorelease 2>&1 || exit 0)
           echo "${OUTPUT}"
           echo "report<<EOF" >> $GITHUB_OUTPUT && echo "$OUTPUT" >> $GITHUB_OUTPUT && echo "EOF" >> $GITHUB_OUTPUT
-      - name: Comment Report
+      - name: Comment report
         continue-on-error: true
         uses: marocchino/sticky-pull-request-comment@v2
         with:
