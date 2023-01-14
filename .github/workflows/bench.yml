@@ -77,8 +77,7 @@ jobs:
           # Use base sha for PR or new commit hash for master/main push in benchmark result key.
           key: ${{ runner.os }}-bench-${{ (github.event.pull_request.base.sha != github.event.after) && github.event.pull_request.base.sha || github.event.after }}
 
-      - name: Benchmark
-        id: bench
+      - name: Run benchmark
         run: |
           export REF_NAME=new
           make bench
@@ -98,6 +97,17 @@ jobs:
           export REF_NAME=master
           make bench-run bench-stat
           git reset --hard $HEAD
+
+      - name: Benchmark stats
+        id: bench
+        run: |
+          export REF_NAME=new
+          OUTPUT=$(make bench-stat-diff)
+          echo "${OUTPUT}"
+          echo "diff<<EOF" >> $GITHUB_OUTPUT && echo "$OUTPUT" >> $GITHUB_OUTPUT && echo "EOF" >> $GITHUB_OUTPUT
+          OUTPUT=$(make bench-stat)
+          echo "${OUTPUT}"
+          echo "result<<EOF" >> $GITHUB_OUTPUT && echo "$OUTPUT" >> $GITHUB_OUTPUT && echo "EOF" >> $GITHUB_OUTPUT
 
       - name: Comment Benchmark Result
         continue-on-error: true
