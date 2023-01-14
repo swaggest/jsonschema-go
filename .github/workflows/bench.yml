@@ -97,11 +97,11 @@ jobs:
           OUTPUT=$(make bench-stat-diff)
           echo "${OUTPUT}"
           OUTPUT="${OUTPUT//$'\n'/%0A}"
-          echo "::set-output name=diff::$OUTPUT"
+          echo "diff::$OUTPUT" >> $GITHUB_OUTPUT
           OUTPUT=$(make bench-stat)
           echo "${OUTPUT}"
           OUTPUT="${OUTPUT//$'\n'/%0A}"
-          echo "::set-output name=result::$OUTPUT"
+          echo "result::$OUTPUT" >> $GITHUB_OUTPUT
 
       - name: Comment Benchmark Result
         continue-on-error: true
