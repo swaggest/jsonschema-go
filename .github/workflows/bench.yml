@@ -64,7 +64,7 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ~/go/bin/benchstat
-          key: ${{ runner.os }}-benchstat
+          key: ${{ runner.os }}-benchstat-classic
 
       - name: Restore base benchmark result
         id: base-benchmark
