@@ -1147,6 +1147,13 @@ func TestAllOf(t *testing.T) {
 
 type withTextMarshaler int
 
+func (w withTextMarshaler) PrepareJSONSchema(schema *jsonschema.Schema) error {
+	schema.Type = nil
+	schema.AddType(jsonschema.String)
+
+	return nil
+}
+
 func (w *withTextMarshaler) UnmarshalText(_ []byte) error {
 	*w = 1
 
@@ -1369,4 +1376,31 @@ func TestReflector_Reflect_pointer_sharing(t *testing.T) {
 	  },
 	  "type":"object"
 	}`), s)
+}
+
+type tt struct{}
+
+func (t *tt) UnmarshalText(text []byte) error {
+	return nil
+}
+
+func (t tt) PrepareJSONSchema(schema *jsonschema.Schema) error {
+	schema.Type = nil
+	schema.AddType(jsonschema.Number)
+
+	return nil
+}
+
+func (t tt) MarshalText() (text []byte, err error) {
+	return []byte("foo"), nil
+}
+
+func TestReflector_Reflect_issue64(t *testing.T) {
+	r := jsonschema.Reflector{}
+	s, err := r.Reflect(tt{})
+	require.NoError(t, err)
+	j, err := json.Marshal(s)
+	require.NoError(t, err)
+
+	assert.Equal(t, `{"type":"number"}`, string(j))
 }
