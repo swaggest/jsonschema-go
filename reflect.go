@@ -401,6 +401,11 @@ func (r *Reflector) reflect(i interface{}, rc *ReflectContext, keepType bool, pa
 		return schema, nil
 	}
 
+	if (t.Implements(typeOfTextUnmarshaler) || reflect.PtrTo(t).Implements(typeOfTextUnmarshaler)) &&
+		(t.Implements(typeOfTextMarshaler) || reflect.PtrTo(t).Implements(typeOfTextMarshaler)) {
+		schema.AddType(String)
+	}
+
 	if rc.InterceptType != nil {
 		if ret, err := rc.InterceptType(v, &schema); err != nil || ret {
 			return schema, err
@@ -562,13 +567,6 @@ func (r *Reflector) isWellKnownType(t reflect.Type, schema *Schema) bool {
 	if t == typeOfDate {
 		schema.AddType(String)
 		schema.WithFormat("date")
-
-		return true
-	}
-
-	if (t.Implements(typeOfTextUnmarshaler) || reflect.PtrTo(t).Implements(typeOfTextUnmarshaler)) &&
-		(t.Implements(typeOfTextMarshaler) || reflect.PtrTo(t).Implements(typeOfTextMarshaler)) {
-		schema.AddType(String)
 
 		return true
 	}
