@@ -837,18 +837,16 @@ func (r *Reflector) walkProperties(v reflect.Value, parent *Schema, rc *ReflectC
 
 		checkNullability(&propertySchema, rc, ft, omitEmpty)
 
-		if propertySchema.Type != nil && propertySchema.Type.SimpleTypes != nil {
-			if !rc.SkipNonConstraints {
-				err = checkInlineValue(&propertySchema, field, "default", propertySchema.WithDefault)
-				if err != nil {
-					return fmt.Errorf("%s: %w", strings.Join(append(rc.Path[1:], field.Name), "."), err)
-				}
-			}
-
-			err = checkInlineValue(&propertySchema, field, "const", propertySchema.WithConst)
+		if !rc.SkipNonConstraints {
+			err = checkInlineValue(&propertySchema, field, "default", propertySchema.WithDefault)
 			if err != nil {
-				return err
+				return fmt.Errorf("%s: %w", strings.Join(append(rc.Path[1:], field.Name), "."), err)
 			}
+		}
+
+		err = checkInlineValue(&propertySchema, field, "const", propertySchema.WithConst)
+		if err != nil {
+			return err
 		}
 
 		if err := refl.PopulateFieldsFromTags(&propertySchema, field.Tag); err != nil {
@@ -900,14 +898,17 @@ func (r *Reflector) walkProperties(v reflect.Value, parent *Schema, rc *ReflectC
 func checkInlineValue(propertySchema *Schema, field reflect.StructField, tag string, setter func(interface{}) *Schema) error {
 	var val interface{}
 
-	t := *propertySchema.Type.SimpleTypes
+	var t SimpleType
+	if propertySchema.Type != nil && propertySchema.Type.SimpleTypes != nil {
+		t = *propertySchema.Type.SimpleTypes
+	}
 
-	switch t {
+	switch t { //nolint:exhaustive // Covered by default case.
 	case Integer:
 		var v *int64
 
 		if err := refl.ReadIntPtrTag(field.Tag, tag, &v); err != nil {
-			return err
+			return fmt.Errorf("parsing %s for %s: %w", tag, t, err)
 		}
 
 		if v != nil {
@@ -917,7 +918,7 @@ func checkInlineValue(propertySchema *Schema, field reflect.StructField, tag str
 		var v *float64
 
 		if err := refl.ReadFloatPtrTag(field.Tag, tag, &v); err != nil {
-			return err
+			return fmt.Errorf("parsing %s for %s: %w", tag, t, err)
 		}
 
 		if v != nil {
@@ -937,14 +938,39 @@ func checkInlineValue(propertySchema *Schema, field reflect.StructField, tag str
 		var v *bool
 
 		if err := refl.ReadBoolPtrTag(field.Tag, tag, &v); err != nil {
-			return err
+			return fmt.Errorf("parsing %s for %s: %w", tag, t, err)
 		}
 
 		if v != nil {
 			val = *v
 		}
+	case Null:
+		// No default for type null.
 
-	case Array, Null, Object:
+	default:
+		var v string
+
+		refl.ReadStringTag(field.Tag, tag, &v)
+
+		if v == "" {
+			break
+		}
+
+		err := json.Unmarshal([]byte(v), &val)
+		if err == nil {
+			break
+		}
+
+		if strings.HasPrefix(v, "[") && strings.HasSuffix(v, "]") &&
+			propertySchema.Items != nil &&
+			propertySchema.Items.SchemaOrBool != nil &&
+			propertySchema.Items.SchemaOrBool.TypeObject.HasType(String) {
+			val = strings.Split(v[1:len(v)-1], ",")
+
+			break
+		}
+
+		return fmt.Errorf("parsing %s as JSON: %w", tag, err)
 	}
 
 	if val != nil {

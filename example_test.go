@@ -476,3 +476,42 @@ func ExampleAllOf() {
 	// }
 	// Simple schema: {"allOf":[{"type":"integer"},{"type":"boolean"}]}
 }
+
+func ExampleReflector_Reflect_default() {
+	type MyStruct struct {
+		A []string       `json:"a" default:"[A,B,C]"` // For an array of strings, comma-separated values in square brackets can be used.
+		B []int          `json:"b" default:"[1,2,3]"` // Other non-scalar values are parsed as JSON without type checking.
+		C []string       `json:"c" default:"[\"C\",\"B\",\"A\"]"`
+		D int            `json:"d" default:"123"` // Scalar values are parsed according to their type.
+		E string         `json:"e" default:"abc"`
+		F map[string]int `json:"f" default:"{\"foo\":1,\"bar\":2}"`
+	}
+
+	type Invalid struct {
+		I []int `json:"i" default:"[C,B,A]"` // Value with invalid JSON is ignored for types other than []string (and equivalent).
+	}
+
+	r := jsonschema.Reflector{}
+	s, _ := r.Reflect(MyStruct{})
+	_, err := r.Reflect(Invalid{})
+
+	j, _ := assertjson.MarshalIndentCompact(s, "", " ", 80)
+
+	fmt.Println("MyStruct:", string(j))
+	fmt.Println("Invalid error:", err.Error())
+	// Output:
+	// MyStruct: {
+	//  "properties":{
+	//   "a":{"default":["A","B","C"],"items":{"type":"string"},"type":["array","null"]},
+	//   "b":{"default":[1,2,3],"items":{"type":"integer"},"type":["array","null"]},
+	//   "c":{"default":["C","B","A"],"items":{"type":"string"},"type":["array","null"]},
+	//   "d":{"default":123,"type":"integer"},"e":{"default":"abc","type":"string"},
+	//   "f":{
+	//    "default":{"bar":2,"foo":1},"additionalProperties":{"type":"integer"},
+	//    "type":["object","null"]
+	//   }
+	//  },
+	//  "type":"object"
+	// }
+	// Invalid error: I: parsing default as JSON: invalid character 'C' looking for beginning of value
+}
