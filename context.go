@@ -23,9 +23,10 @@ func DefinitionsPrefix(prefix string) func(*ReflectContext) {
 }
 
 // PropertyNameTag sets up which field tag to use for property name, default "json".
-func PropertyNameTag(tag string) func(*ReflectContext) {
+func PropertyNameTag(tag string, additional ...string) func(*ReflectContext) {
 	return func(rc *ReflectContext) {
 		rc.PropertyNameTag = tag
+		rc.PropertyNameAdditionalTags = additional
 	}
 }
 
@@ -178,6 +179,10 @@ type ReflectContext struct {
 
 	// PropertyNameTag enables property naming from a field tag, e.g. `header:"first_name"`.
 	PropertyNameTag string
+
+	// PropertyNameAdditionalTags enables property naming from first available of multiple tags
+	// if PropertyNameTag was not found.
+	PropertyNameAdditionalTags []string
 
 	// PropertyNameMapping enables property name mapping from a struct field name, e.g. "FirstName":"first_name".
 	// Only applicable to top-level properties (including embedded).

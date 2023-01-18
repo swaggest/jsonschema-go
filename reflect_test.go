@@ -1404,3 +1404,21 @@ func TestReflector_Reflect_issue64(t *testing.T) {
 
 	assert.Equal(t, `{"type":"number"}`, string(j))
 }
+
+func TestPropertyNameTag(t *testing.T) {
+	r := jsonschema.Reflector{}
+
+	type MyStruct struct {
+		A string `query:"a"`
+		B int    `query:"b" form:"bf"`
+		C bool   `form:"cf" json:"cj"`
+	}
+
+	s, err := r.Reflect(MyStruct{}, jsonschema.PropertyNameTag("query", "form", "json"))
+	require.NoError(t, err)
+
+	assertjson.EqualMarshal(t, []byte(`{
+	  "properties":{"a":{"type":"string"},"b":{"type":"integer"},"cf":{"type":"boolean"}},
+	  "type":"object"
+	}`), s)
+}
