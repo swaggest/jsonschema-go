@@ -735,6 +735,26 @@ func (r *Reflector) fieldVal(fv reflect.Value, ft reflect.Type) interface{} {
 	return fieldVal
 }
 
+func (r *Reflector) propertyTag(rc *ReflectContext, field reflect.StructField) (string, bool) {
+	if rc.PropertyNameMapping != nil {
+		if tag, tagFound := rc.PropertyNameMapping[field.Name]; tagFound {
+			return tag, true
+		}
+	}
+
+	if tag, tagFound := field.Tag.Lookup(rc.PropertyNameTag); tagFound {
+		return tag, true
+	}
+
+	for _, t := range rc.PropertyNameAdditionalTags {
+		if tag, tagFound := field.Tag.Lookup(t); tagFound {
+			return tag, true
+		}
+	}
+
+	return "", false
+}
+
 func (r *Reflector) walkProperties(v reflect.Value, parent *Schema, rc *ReflectContext) error {
 	t := v.Type()
 	if t.Kind() == reflect.Ptr {
@@ -749,17 +769,7 @@ func (r *Reflector) walkProperties(v reflect.Value, parent *Schema, rc *ReflectC
 
 	for i := 0; i < t.NumField(); i++ {
 		field := t.Field(i)
-
-		var (
-			tag      string
-			tagFound bool
-		)
-
-		if rc.PropertyNameMapping != nil {
-			tag, tagFound = rc.PropertyNameMapping[field.Name]
-		} else {
-			tag, tagFound = field.Tag.Lookup(rc.PropertyNameTag)
-		}
+		tag, tagFound := r.propertyTag(rc, field)
 
 		// Skip explicitly discarded field.
 		if tag == "-" {
