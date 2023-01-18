@@ -659,6 +659,10 @@ func (r *Reflector) kindSwitch(t reflect.Type, v reflect.Value, schema *Schema, 
 		if itemValue == nil && elemType != typeOfEmptyInterface {
 			itemValue = reflect.New(elemType).Interface()
 		}
+		
+		if v.Len() > 0 {
+			itemValue = v.Index(0).Interface()
+		}
 
 		itemsSchema, err := r.reflect(itemValue, rc, false, schema)
 		if err != nil {
