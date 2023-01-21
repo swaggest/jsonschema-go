@@ -690,11 +690,13 @@ func (r *Reflector) kindSwitch(t reflect.Type, v reflect.Value, schema *Schema, 
 			v = v.Elem()
 		}
 
-		rng := v.MapRange()
-		for rng.Next() {
-			itemValue = rng.Value().Interface()
+		if v.Kind() == reflect.Map {
+			rng := v.MapRange()
+			for rng.Next() {
+				itemValue = rng.Value().Interface()
 
-			break
+				break
+			}
 		}
 
 		additionalPropertiesSchema, err := r.reflect(itemValue, rc, false, schema)
