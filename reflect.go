@@ -420,7 +420,7 @@ func (r *Reflector) reflect(i interface{}, rc *ReflectContext, keepType bool, pa
 		return schema, nil
 	}
 
-	if t.PkgPath() != "" && len(rc.Path) > 1 && defName != "" {
+	if t.PkgPath() != "" && len(rc.Path) > 1 && defName != "" && !r.inlineDefinition[typeString] {
 		rc.typeCycles[typeString] = true
 	}
 
@@ -659,8 +659,12 @@ func (r *Reflector) kindSwitch(t reflect.Type, v reflect.Value, schema *Schema, 
 		if itemValue == nil && elemType != typeOfEmptyInterface {
 			itemValue = reflect.New(elemType).Interface()
 		}
-		
-		if v.Len() > 0 {
+
+		for v.Kind() == reflect.Ptr {
+			v = v.Elem()
+		}
+
+		if (v.Kind() == reflect.Slice || v.Kind() == reflect.Array) && v.Len() > 0 {
 			itemValue = v.Index(0).Interface()
 		}
 
@@ -680,6 +684,17 @@ func (r *Reflector) kindSwitch(t reflect.Type, v reflect.Value, schema *Schema, 
 
 		if itemValue == nil && elemType != typeOfEmptyInterface {
 			itemValue = reflect.New(elemType).Interface()
+		}
+
+		for v.Kind() == reflect.Ptr {
+			v = v.Elem()
+		}
+
+		rng := v.MapRange()
+		for rng.Next() {
+			itemValue = rng.Value().Interface()
+
+			break
 		}
 
 		additionalPropertiesSchema, err := r.reflect(itemValue, rc, false, schema)

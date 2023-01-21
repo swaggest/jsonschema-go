@@ -1422,3 +1422,48 @@ func TestPropertyNameTag(t *testing.T) {
 	  "type":"object"
 	}`), s)
 }
+
+type myString string
+
+func (m myString) PrepareJSONSchema(schema *jsonschema.Schema) error {
+	schema.WithTitle(string(m))
+
+	return nil
+}
+
+func TestReflector_Reflect_value_propagation(t *testing.T) {
+	r := jsonschema.Reflector{}
+	r.InlineDefinition(myString(""))
+
+	type myStruct struct {
+		A []myString          `json:"a"`
+		B map[string]myString `json:"b"`
+		C myString            `json:"c"`
+		D struct {
+			E myString `json:"e"`
+		} `json:"d"`
+	}
+
+	v := myStruct{}
+	v.A = []myString{"aaa"}
+	v.B = map[string]myString{"foo": "bbb"}
+	v.C = "ccc"
+	v.D.E = "eee"
+
+	s, err := r.Reflect(v)
+	require.NoError(t, err)
+
+	// Values from reflected sample may be used in schema.
+	assertjson.EqualMarshal(t, []byte(`{
+	  "properties":{
+		"a":{"items":{"title":"aaa","type":"string"},"type":["array","null"]},
+		"b":{
+		  "additionalProperties":{"title":"bbb","type":"string"},
+		  "type":["object","null"]
+		},
+		"c":{"title":"ccc","type":"string"},
+		"d":{"properties":{"e":{"title":"eee","type":"string"}},"type":"object"}
+	  },
+	  "type":"object"
+	}`), s)
+}
