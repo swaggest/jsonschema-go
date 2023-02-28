@@ -20,6 +20,7 @@ linters-settings:
 linters:
   enable-all: true
   disable:
+    - musttag
     - containedctx
     - goerr113
     - funlen
