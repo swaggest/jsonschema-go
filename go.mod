@@ -3,8 +3,8 @@ module github.com/swaggest/jsonschema-go
 go 1.17
 
 require (
-	github.com/bool64/dev v0.2.24
-	github.com/stretchr/testify v1.8.1
+	github.com/bool64/dev v0.2.25
+	github.com/stretchr/testify v1.8.2
 	github.com/swaggest/assertjson v1.7.0
 	github.com/swaggest/refl v1.1.0
 	github.com/yudai/gojsondiff v1.0.0
@@ -19,7 +19,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/sergi/go-diff v1.2.0 // indirect
 	github.com/yudai/golcs v0.0.0-20170316035057-ecda9a501e82 // indirect
-	golang.org/x/net v0.0.0-20220805013720-a33c5aa5df48 // indirect
-	golang.org/x/sys v0.0.0-20220804214406-8e32c043e418 // indirect
+	golang.org/x/net v0.7.0 // indirect
+	golang.org/x/sys v0.5.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
