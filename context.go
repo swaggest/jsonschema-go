@@ -33,13 +33,27 @@ func PropertyNameTag(tag string, additional ...string) func(*ReflectContext) {
 // InterceptTypeFunc can intercept type reflection to control or modify schema.
 //
 // True bool result demands no further processing for the Schema.
-type InterceptTypeFunc func(reflect.Value, *Schema) (bool, error)
+type InterceptTypeFunc func(reflect.Value, *Schema) (stop bool, err error)
 
 // InterceptPropertyFunc can intercept field reflection to control or modify schema.
 //
 // Return ErrSkipProperty to avoid adding this property to parent Schema.Properties.
 // Pointer to parent Schema is available in propertySchema.Parent.
 type InterceptPropertyFunc func(name string, field reflect.StructField, propertySchema *Schema) error
+
+// InterceptPropFunc can intercept field reflection to control or modify schema.
+//
+// Return ErrSkipProperty to avoid adding this property to parent Schema.Properties.
+// Pointer to parent Schema is available in propertySchema.Parent.
+type InterceptPropFunc func(params InterceptPropertyParams)
+
+type InterceptPropertyParams struct {
+	_              func() // No copy.
+	Path           []string
+	Name           string
+	Field          reflect.StructField
+	PropertySchema *Schema
+}
 
 // InterceptNullabilityParams defines InterceptNullabilityFunc parameters.
 type InterceptNullabilityParams struct {
@@ -91,6 +105,24 @@ func InterceptType(f InterceptTypeFunc) func(*ReflectContext) {
 
 // InterceptProperty adds hook to customize property schema.
 func InterceptProperty(f InterceptPropertyFunc) func(*ReflectContext) {
+	return func(rc *ReflectContext) {
+		if rc.InterceptProperty != nil {
+			prev := rc.InterceptProperty
+			rc.InterceptProperty = func(name string, field reflect.StructField, propertySchema *Schema) error {
+				err := prev(name, field, propertySchema)
+				if err != nil {
+					return err
+				}
+
+				return f(name, field, propertySchema)
+			}
+		} else {
+			rc.InterceptProperty = f
+		}
+	}
+}
+
+func InterceptProp(f InterceptPropFunc) func(reflectContext *ReflectContext) {
 	return func(rc *ReflectContext) {
 		if rc.InterceptProperty != nil {
 			prev := rc.InterceptProperty
@@ -209,8 +241,14 @@ type ReflectContext struct {
 	// InterceptType is called before and after type processing.
 	// So it may be called twice for the same type, first time with empty Schema and
 	// second time with fully processed schema.
-	InterceptType        InterceptTypeFunc
-	InterceptProperty    InterceptPropertyFunc
+	InterceptType InterceptTypeFunc
+
+	InterceptSchema InterceptTypeFunc
+
+	// Deprecated: Use InterceptProp.
+	InterceptProperty InterceptPropertyFunc
+
+	InterceptProp        InterceptPropFunc
 	InterceptNullability InterceptNullabilityFunc
 
 	// SkipNonConstraints disables parsing of `default` and `example` field tags.
