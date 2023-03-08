@@ -33,22 +33,37 @@ func PropertyNameTag(tag string, additional ...string) func(*ReflectContext) {
 // InterceptTypeFunc can intercept type reflection to control or modify schema.
 //
 // True bool result demands no further processing for the Schema.
+//
+// Deprecated: use InterceptSchemaFunc.
 type InterceptTypeFunc func(reflect.Value, *Schema) (stop bool, err error)
+
+// InterceptSchemaFunc can intercept type reflection to control or modify schema.
+//
+// True bool result demands no further processing for the Schema.
+type InterceptSchemaFunc func(reflect.Value, *Schema) (stop bool, err error)
+
+type InterceptSchemaParams struct {
+	Value     reflect.Value
+	Schema    *Schema
+	Processed bool
+}
 
 // InterceptPropertyFunc can intercept field reflection to control or modify schema.
 //
 // Return ErrSkipProperty to avoid adding this property to parent Schema.Properties.
 // Pointer to parent Schema is available in propertySchema.Parent.
+//
+// Deprecated: use InterceptPropFunc.
 type InterceptPropertyFunc func(name string, field reflect.StructField, propertySchema *Schema) error
 
 // InterceptPropFunc can intercept field reflection to control or modify schema.
 //
 // Return ErrSkipProperty to avoid adding this property to parent Schema.Properties.
 // Pointer to parent Schema is available in propertySchema.Parent.
-type InterceptPropFunc func(params InterceptPropertyParams)
+type InterceptPropFunc func(params InterceptPropParams) error
 
-type InterceptPropertyParams struct {
-	_              func() // No copy.
+type InterceptPropParams struct {
+	_              func() // No cast to 3rd party struct?
 	Path           []string
 	Name           string
 	Field          reflect.StructField
@@ -104,38 +119,28 @@ func InterceptType(f InterceptTypeFunc) func(*ReflectContext) {
 }
 
 // InterceptProperty adds hook to customize property schema.
+//
+// Deprecated: use InterceptProp.
 func InterceptProperty(f InterceptPropertyFunc) func(*ReflectContext) {
-	return func(rc *ReflectContext) {
-		if rc.InterceptProperty != nil {
-			prev := rc.InterceptProperty
-			rc.InterceptProperty = func(name string, field reflect.StructField, propertySchema *Schema) error {
-				err := prev(name, field, propertySchema)
-				if err != nil {
-					return err
-				}
-
-				return f(name, field, propertySchema)
-			}
-		} else {
-			rc.InterceptProperty = f
-		}
-	}
+	return InterceptProp(func(params InterceptPropParams) error {
+		return f(params.Name, params.Field, params.PropertySchema)
+	})
 }
 
 func InterceptProp(f InterceptPropFunc) func(reflectContext *ReflectContext) {
 	return func(rc *ReflectContext) {
-		if rc.InterceptProperty != nil {
-			prev := rc.InterceptProperty
-			rc.InterceptProperty = func(name string, field reflect.StructField, propertySchema *Schema) error {
-				err := prev(name, field, propertySchema)
+		if rc.interceptProp != nil {
+			prev := rc.interceptProp
+			rc.interceptProp = func(params InterceptPropParams) error {
+				err := prev(params)
 				if err != nil {
 					return err
 				}
 
-				return f(name, field, propertySchema)
+				return f(params)
 			}
 		} else {
-			rc.InterceptProperty = f
+			rc.interceptProp = f
 		}
 	}
 }
@@ -241,14 +246,19 @@ type ReflectContext struct {
 	// InterceptType is called before and after type processing.
 	// So it may be called twice for the same type, first time with empty Schema and
 	// second time with fully processed schema.
+	//
+	// Deprecated: use InterceptSchema.
 	InterceptType InterceptTypeFunc
 
-	InterceptSchema InterceptTypeFunc
+	// interceptSchema is called before and after type Schema processing.
+	// So it may be called twice for the same type, first time with empty Schema and
+	// second time with fully processed schema.
+	interceptSchema InterceptTypeFunc
 
-	// Deprecated: Use InterceptProp.
+	// Deprecated: Use interceptProp.
 	InterceptProperty InterceptPropertyFunc
 
-	InterceptProp        InterceptPropFunc
+	interceptProp        InterceptPropFunc
 	InterceptNullability InterceptNullabilityFunc
 
 	// SkipNonConstraints disables parsing of `default` and `example` field tags.
