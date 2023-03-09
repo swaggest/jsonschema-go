@@ -118,7 +118,10 @@ func (r *Reflector) InterceptDefName(f func(t reflect.Type, defaultDefName strin
 	})
 }
 
-func checkSchemaSetup(v reflect.Value, s *Schema) (bool, error) {
+func checkSchemaSetup(params InterceptSchemaParams) (bool, error) {
+	v := params.Value
+	s := params.Schema
+
 	vi := v.Interface()
 	if v.Kind() == reflect.Ptr && v.IsNil() {
 		vi = reflect.New(v.Type().Elem()).Interface()
@@ -240,7 +243,7 @@ func (r *Reflector) Reflect(i interface{}, options ...func(rc *ReflectContext)) 
 	rc.Path = []string{"#"}
 	rc.typeCycles = make(map[refl.TypeString]bool)
 
-	InterceptType(checkSchemaSetup)(&rc)
+	InterceptSchema(checkSchemaSetup)(&rc)
 
 	for _, option := range r.DefaultOptions {
 		option(&rc)
@@ -249,6 +252,8 @@ func (r *Reflector) Reflect(i interface{}, options ...func(rc *ReflectContext)) 
 	for _, option := range options {
 		option(&rc)
 	}
+
+	rc.deprecatedFallback()
 
 	schema, err := r.reflect(i, &rc, false, nil)
 	if err == nil && len(rc.definitions) > 0 {
@@ -404,6 +409,16 @@ func (r *Reflector) reflect(i interface{}, rc *ReflectContext, keepType bool, pa
 		}
 	}
 
+	if rc.interceptSchema != nil {
+		if ret, err := rc.interceptSchema(InterceptSchemaParams{
+			Value:     v,
+			Schema:    &schema,
+			Processed: false,
+		}); err != nil || ret {
+			return schema, err
+		}
+	}
+
 	if r.isWellKnownType(t, &schema) {
 		return schema, nil
 	}
@@ -411,12 +426,6 @@ func (r *Reflector) reflect(i interface{}, rc *ReflectContext, keepType bool, pa
 	if (t.Implements(typeOfTextUnmarshaler) || reflect.PtrTo(t).Implements(typeOfTextUnmarshaler)) &&
 		(t.Implements(typeOfTextMarshaler) || reflect.PtrTo(t).Implements(typeOfTextMarshaler)) {
 		schema.AddType(String)
-	}
-
-	if rc.InterceptType != nil {
-		if ret, err := rc.InterceptType(v, &schema); err != nil || ret {
-			return schema, err
-		}
 	}
 
 	if ref, ok := rc.definitionRefs[typeString]; ok && defName != "" {
@@ -447,8 +456,12 @@ func (r *Reflector) reflect(i interface{}, rc *ReflectContext, keepType bool, pa
 		return schema, err
 	}
 
-	if rc.InterceptType != nil {
-		if ret, err := rc.InterceptType(v, &schema); err != nil || ret {
+	if rc.interceptSchema != nil {
+		if ret, err := rc.interceptSchema(InterceptSchemaParams{
+			Value:     v,
+			Schema:    &schema,
+			Processed: true,
+		}); err != nil || ret {
 			return schema, err
 		}
 	}
@@ -914,8 +927,13 @@ func (r *Reflector) walkProperties(v reflect.Value, parent *Schema, rc *ReflectC
 			propertySchema.Type = nil
 		}
 
-		if rc.InterceptProperty != nil {
-			if err := rc.InterceptProperty(propName, field, &propertySchema); err != nil {
+		if rc.interceptProp != nil {
+			if err := rc.interceptProp(InterceptPropParams{
+				Path:           rc.Path,
+				Name:           propName,
+				Field:          field,
+				PropertySchema: &propertySchema,
+			}); err != nil {
 				if errors.Is(err, ErrSkipProperty) {
 					continue
 				}
