@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"path"
 	"reflect"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -350,8 +351,8 @@ func (r *Reflector) reflect(i interface{}, rc *ReflectContext, keepType bool, pa
 		if err != nil {
 			return
 		}
-
-		schema = r.reflectDefer(defName, typeString, rc, schema, keepType)
+		m := regexp.MustCompile(`\W`)
+		schema = r.reflectDefer(m.ReplaceAllString(defName, "_"), typeString, rc, schema, keepType)
 	}()
 
 	if t == nil || t == typeOfEmptyInterface {
