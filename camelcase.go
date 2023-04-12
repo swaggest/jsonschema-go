@@ -27,6 +27,10 @@ func toCamel(s string) string {
 			n += string(v)
 		}
 
+		if v == '[' || v == ']' {
+			n += string(v)
+		}
+
 		if v >= 'a' && v <= 'z' {
 			if capNext {
 				n += strings.ToUpper(string(v))
@@ -35,7 +39,7 @@ func toCamel(s string) string {
 			}
 		}
 
-		if v == '_' || v == ' ' || v == '-' || v == '.' {
+		if v == '_' || v == ' ' || v == '-' || v == '.' || v == '[' || v == ']' || v == '·' {
 			capNext = true
 		} else {
 			capNext = false
