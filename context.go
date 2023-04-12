@@ -130,6 +130,8 @@ func StripDefinitionNamePrefix(prefix ...string) func(rc *ReflectContext) {
 		rc.DefName = func(t reflect.Type, defaultDefName string) string {
 			for _, p := range prefix {
 				s := strings.TrimPrefix(defaultDefName, p)
+				s = strings.ReplaceAll(s, "["+p, "[")
+
 				if s != defaultDefName {
 					return s
 				}

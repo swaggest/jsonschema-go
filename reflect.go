@@ -66,9 +66,15 @@ type Ref struct {
 	Name string
 }
 
+var defNameEscaper = strings.NewReplacer(
+	"~", "~0",
+	"/", "~1",
+	"%", "%25",
+)
+
 // Schema creates schema instance from reference.
 func (r Ref) Schema() Schema {
-	s := r.Path + r.Name
+	s := r.Path + defNameEscaper.Replace(r.Name)
 
 	return Schema{
 		Ref: &s,
@@ -351,8 +357,8 @@ func (r *Reflector) reflect(i interface{}, rc *ReflectContext, keepType bool, pa
 		if err != nil {
 			return
 		}
-		m := regexp.MustCompile(`\W`)
-		schema = r.reflectDefer(m.ReplaceAllString(defName, "_"), typeString, rc, schema, keepType)
+
+		schema = r.reflectDefer(defName, typeString, rc, schema, keepType)
 	}()
 
 	if t == nil || t == typeOfEmptyInterface {
@@ -575,6 +581,8 @@ func (r *Reflector) isWellKnownType(t reflect.Type, schema *Schema) bool {
 	return false
 }
 
+var baseNameRegex = regexp.MustCompile(`\[(.+\/)*([^\/]+)·\d+\]`)
+
 func (r *Reflector) defName(rc *ReflectContext, t reflect.Type) string {
 	if t.PkgPath() == "" || t == typeOfTime || t == typeOfJSONRawMsg || t == typeOfDate {
 		return ""
@@ -596,10 +604,13 @@ func (r *Reflector) defName(rc *ReflectContext, t reflect.Type) string {
 	try := 1
 
 	for {
+		tn := t.Name()
+		tn = baseNameRegex.ReplaceAllString(tn, "[$2]")
+
 		if t.PkgPath() == "main" {
-			defName = toCamel(strings.Title(t.Name()))
+			defName = toCamel(strings.Title(tn))
 		} else {
-			defName = toCamel(path.Base(t.PkgPath())) + strings.Title(t.Name())
+			defName = toCamel(path.Base(t.PkgPath()) + strings.Title(tn))
 		}
 
 		if rc.DefName != nil {
