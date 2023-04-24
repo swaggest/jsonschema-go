@@ -89,16 +89,18 @@ func TestReflector_Reflect_namedInterface(t *testing.T) {
 	}
 
 	reflector := jsonschema.Reflector{}
-	schema, err := reflector.Reflect(s{}, jsonschema.InterceptType(func(v reflect.Value, s *jsonschema.Schema) (bool, error) {
-		if _, ok := v.Interface().(*multipart.File); ok {
-			s.AddType(jsonschema.String)
-			s.WithFormat("binary")
+	schema, err := reflector.Reflect(s{}, jsonschema.InterceptSchema(
+		func(params jsonschema.InterceptSchemaParams) (stop bool, err error) {
+			if _, ok := params.Value.Interface().(*multipart.File); ok {
+				params.Schema.AddType(jsonschema.String)
+				params.Schema.WithFormat("binary")
 
-			return true, nil
-		}
+				return true, nil
+			}
 
-		return false, nil
-	}))
+			return false, nil
+		},
+	))
 	require.NoError(t, err)
 
 	assertjson.EqualMarshal(t, []byte(`{
@@ -1463,6 +1465,47 @@ func TestReflector_Reflect_value_propagation(t *testing.T) {
 		},
 		"c":{"title":"ccc","type":"string"},
 		"d":{"properties":{"e":{"title":"eee","type":"string"}},"type":"object"}
+	  },
+	  "type":"object"
+	}`), s)
+}
+
+func TestReflector_Reflect_skipProperty(t *testing.T) {
+	type TimeEntry struct {
+		Foo string `json:"foo"`
+	}
+
+	type SomeStruct struct {
+		ActivityID   int    `json:"activityID" db:"activity_id" required:"true"`
+		ProjectID    int    `json:"projectID" db:"project_id" required:"true"`
+		Name         string `json:"name" db:"name" required:"true"`
+		Description  string `json:"description" db:"description" required:"true"`
+		IsProductive bool   `json:"isProductive" db:"is_productive" required:"true"`
+
+		TimeEntries *[]TimeEntry `json:"timeEntries" db:"time_entries" openapi-go:"ignore"`
+		// xo fields
+		_exists, _deleted bool
+	}
+
+	reflector := jsonschema.Reflector{}
+	reflector.DefaultOptions = append(reflector.DefaultOptions, jsonschema.InterceptProp(func(params jsonschema.InterceptPropParams) error {
+		if params.Field.Tag.Get("openapi-go") == "ignore" {
+			return jsonschema.ErrSkipProperty
+		}
+
+		return nil
+	}))
+
+	st := SomeStruct{}
+
+	s, err := reflector.Reflect(st)
+	require.NoError(t, err)
+	assertjson.EqualMarshal(t, []byte(`{
+	  "required":["activityID","projectID","name","description","isProductive"],
+	  "properties":{
+		"activityID":{"type":"integer"},"description":{"type":"string"},
+		"isProductive":{"type":"boolean"},"name":{"type":"string"},
+		"projectID":{"type":"integer"}
 	  },
 	  "type":"object"
 	}`), s)

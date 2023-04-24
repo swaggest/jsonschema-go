@@ -165,8 +165,8 @@ Additional centralized configuration is available with
 * [`CollectDefinitions`](https://pkg.go.dev/github.com/swaggest/jsonschema-go#CollectDefinitions) disables definitions storage in schema and calls user function instead.
 * [`DefinitionsPrefix`](https://pkg.go.dev/github.com/swaggest/jsonschema-go#DefinitionsPrefix) sets path prefix for definitions.
 * [`PropertyNameTag`](https://pkg.go.dev/github.com/swaggest/jsonschema-go#PropertyNameTag) allows using field tags other than `json`.
-* [`InterceptType`](https://pkg.go.dev/github.com/swaggest/jsonschema-go#InterceptType) called for every type during schema reflection.
-* [`InterceptProperty`](https://pkg.go.dev/github.com/swaggest/jsonschema-go#InterceptProperty) called for every property during schema reflection.
+* [`InterceptSchema`](https://pkg.go.dev/github.com/swaggest/jsonschema-go#InterceptSchema) called for every type during schema reflection.
+* [`InterceptProp`](https://pkg.go.dev/github.com/swaggest/jsonschema-go#InterceptProp) called for every property during schema reflection.
 * [`InlineRefs`](https://pkg.go.dev/github.com/swaggest/jsonschema-go#InlineRefs) tries to inline all references (instead of creating definitions).
 * [`RootNullable`](https://pkg.go.dev/github.com/swaggest/jsonschema-go#RootNullable) enables nullability of root schema.
 * [`RootRef`](https://pkg.go.dev/github.com/swaggest/jsonschema-go#RootRef) converts root schema to definition reference.
