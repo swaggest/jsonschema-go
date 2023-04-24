@@ -43,8 +43,10 @@ type InterceptTypeFunc func(reflect.Value, *Schema) (stop bool, err error)
 type InterceptSchemaFunc func(params InterceptSchemaParams) (stop bool, err error)
 
 // InterceptSchemaParams defines InterceptSchemaFunc parameters.
+//
+// Interceptor in invoked two times, before and after default schema processing.
+// If InterceptSchemaFunc returns true or fails, further processing and second invocation are skipped.
 type InterceptSchemaParams struct {
-	_         func() // No cast to 3rd party struct?
 	Value     reflect.Value
 	Schema    *Schema
 	Processed bool
@@ -65,12 +67,15 @@ type InterceptPropertyFunc func(name string, field reflect.StructField, property
 type InterceptPropFunc func(params InterceptPropParams) error
 
 // InterceptPropParams defines InterceptPropFunc parameters.
+//
+// Interceptor in invoked two times, before and after default property schema processing.
+// If InterceptPropFunc fails, further processing and second invocation are skipped.
 type InterceptPropParams struct {
-	_              func() // No cast to 3rd party struct?
 	Path           []string
 	Name           string
 	Field          reflect.StructField
 	PropertySchema *Schema
+	Processed      bool
 }
 
 // InterceptNullabilityParams defines InterceptNullabilityFunc parameters.
@@ -135,6 +140,10 @@ func InterceptSchema(f InterceptSchemaFunc) func(*ReflectContext) {
 // Deprecated: use InterceptProp.
 func InterceptProperty(f InterceptPropertyFunc) func(*ReflectContext) {
 	return InterceptProp(func(params InterceptPropParams) error {
+		if !params.Processed {
+			return nil
+		}
+
 		return f(params.Name, params.Field, params.PropertySchema)
 	})
 }
@@ -251,8 +260,13 @@ type ReflectContext struct {
 	// EnvelopNullability enables `anyOf` enveloping of "type":"null" instead of injecting into definition.
 	EnvelopNullability bool
 
-	InlineRefs   bool
-	RootRef      bool
+	// InlineRefs tries to inline all types without making references.
+	InlineRefs bool
+
+	// RootRef exposes root schema as reference.
+	RootRef bool
+
+	// RootNullable enables nullability (by pointer) for root schema, disabled by default.
 	RootNullable bool
 
 	// SkipEmbeddedMapsSlices disables shortcutting into embedded maps and slices.
@@ -314,6 +328,10 @@ func (rc *ReflectContext) deprecatedFallback() {
 		f := rc.InterceptProperty
 
 		InterceptProp(func(params InterceptPropParams) error {
+			if !params.Processed {
+				return nil
+			}
+
 			return f(params.Name, params.Field, params.PropertySchema)
 		})
 

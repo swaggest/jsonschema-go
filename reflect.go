@@ -880,6 +880,22 @@ func (r *Reflector) walkProperties(v reflect.Value, parent *Schema, rc *ReflectC
 
 		rc.Path = append(rc.Path, propName)
 
+		if rc.interceptProp != nil {
+			if err := rc.interceptProp(InterceptPropParams{
+				Path:  rc.Path,
+				Name:  propName,
+				Field: field,
+			}); err != nil {
+				if errors.Is(err, ErrSkipProperty) {
+					rc.Path = rc.Path[:len(rc.Path)-1]
+
+					continue
+				}
+
+				return err
+			}
+		}
+
 		propertySchema, err := r.reflect(fieldVal, rc, true, parent)
 		if err != nil {
 			if errors.Is(err, ErrSkipProperty) {
@@ -933,6 +949,7 @@ func (r *Reflector) walkProperties(v reflect.Value, parent *Schema, rc *ReflectC
 				Name:           propName,
 				Field:          field,
 				PropertySchema: &propertySchema,
+				Processed:      true,
 			}); err != nil {
 				if errors.Is(err, ErrSkipProperty) {
 					continue

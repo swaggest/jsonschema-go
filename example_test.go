@@ -312,7 +312,7 @@ func ExamplePropertyNameMapping() {
 	// }
 }
 
-func ExampleInterceptProperty() {
+func ExampleInterceptProp() {
 	reflector := jsonschema.Reflector{}
 
 	type Test struct {
@@ -323,21 +323,25 @@ func ExampleInterceptProperty() {
 
 	s, err := reflector.Reflect(new(Test),
 		// PropertyNameMapping allows configuring property names without field tag.
-		jsonschema.InterceptProperty(func(name string, field reflect.StructField, propertySchema *jsonschema.Schema) error {
-			switch name {
-			// You can alter reflected schema by updating propertySchema.
-			case "id":
-				propertySchema.WithDescription("This is ID.")
-				// You can access schema that holds the property.
-				propertySchema.Parent.WithDescription("Schema with ID.")
+		jsonschema.InterceptProp(
+			func(params jsonschema.InterceptPropParams) error {
+				switch params.Name {
+				// You can alter reflected schema by updating propertySchema.
+				case "id":
+					if params.Processed {
+						params.PropertySchema.WithDescription("This is ID.")
+						// You can access schema that holds the property.
+						params.PropertySchema.Parent.WithDescription("Schema with ID.")
+					}
 
-			// Or you can entirely remove property from parent schema with a sentinel error.
-			case "skipped":
-				return jsonschema.ErrSkipProperty
-			}
+				// Or you can entirely remove property from parent schema with a sentinel error.
+				case "skipped":
+					return jsonschema.ErrSkipProperty
+				}
 
-			return nil
-		}),
+				return nil
+			},
+		),
 	)
 	if err != nil {
 		panic(err)
