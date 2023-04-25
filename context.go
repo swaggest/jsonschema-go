@@ -47,6 +47,7 @@ type InterceptSchemaFunc func(params InterceptSchemaParams) (stop bool, err erro
 // Interceptor in invoked two times, before and after default schema processing.
 // If InterceptSchemaFunc returns true or fails, further processing and second invocation are skipped.
 type InterceptSchemaParams struct {
+	Context   *ReflectContext
 	Value     reflect.Value
 	Schema    *Schema
 	Processed bool
@@ -71,6 +72,7 @@ type InterceptPropFunc func(params InterceptPropParams) error
 // Interceptor in invoked two times, before and after default property schema processing.
 // If InterceptPropFunc fails, further processing and second invocation are skipped.
 type InterceptPropParams struct {
+	Context        *ReflectContext
 	Path           []string
 	Name           string
 	Field          reflect.StructField
@@ -80,6 +82,7 @@ type InterceptPropParams struct {
 
 // InterceptNullabilityParams defines InterceptNullabilityFunc parameters.
 type InterceptNullabilityParams struct {
+	Context    *ReflectContext
 	OrigSchema Schema
 	Schema     *Schema
 	Type       reflect.Type
