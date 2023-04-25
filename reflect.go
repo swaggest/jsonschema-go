@@ -411,6 +411,7 @@ func (r *Reflector) reflect(i interface{}, rc *ReflectContext, keepType bool, pa
 
 	if rc.interceptSchema != nil {
 		if ret, err := rc.interceptSchema(InterceptSchemaParams{
+			Context:   rc,
 			Value:     v,
 			Schema:    &schema,
 			Processed: false,
@@ -458,6 +459,7 @@ func (r *Reflector) reflect(i interface{}, rc *ReflectContext, keepType bool, pa
 
 	if rc.interceptSchema != nil {
 		if ret, err := rc.interceptSchema(InterceptSchemaParams{
+			Context:   rc,
 			Value:     v,
 			Schema:    &schema,
 			Processed: true,
@@ -882,9 +884,10 @@ func (r *Reflector) walkProperties(v reflect.Value, parent *Schema, rc *ReflectC
 
 		if rc.interceptProp != nil {
 			if err := rc.interceptProp(InterceptPropParams{
-				Path:  rc.Path,
-				Name:  propName,
-				Field: field,
+				Context: rc,
+				Path:    rc.Path,
+				Name:    propName,
+				Field:   field,
 			}); err != nil {
 				if errors.Is(err, ErrSkipProperty) {
 					rc.Path = rc.Path[:len(rc.Path)-1]
@@ -945,6 +948,7 @@ func (r *Reflector) walkProperties(v reflect.Value, parent *Schema, rc *ReflectC
 
 		if rc.interceptProp != nil {
 			if err := rc.interceptProp(InterceptPropParams{
+				Context:        rc,
 				Path:           rc.Path,
 				Name:           propName,
 				Field:          field,
@@ -1070,6 +1074,7 @@ func checkInlineValue(propertySchema *Schema, field reflect.StructField, tag str
 //   - Pointer type.
 func checkNullability(propertySchema *Schema, rc *ReflectContext, ft reflect.Type, omitEmpty bool) {
 	in := InterceptNullabilityParams{
+		Context:    rc,
 		OrigSchema: *propertySchema,
 		Schema:     propertySchema,
 		Type:       ft,

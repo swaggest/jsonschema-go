@@ -91,6 +91,8 @@ func TestReflector_Reflect_namedInterface(t *testing.T) {
 	reflector := jsonschema.Reflector{}
 	schema, err := reflector.Reflect(s{}, jsonschema.InterceptSchema(
 		func(params jsonschema.InterceptSchemaParams) (stop bool, err error) {
+			assert.NotNil(t, params.Context)
+
 			if _, ok := params.Value.Interface().(*multipart.File); ok {
 				params.Schema.AddType(jsonschema.String)
 				params.Schema.WithFormat("binary")
@@ -700,7 +702,7 @@ func (n nullFloat) PrepareJSONSchema(schema *jsonschema.Schema) error {
 	return nil
 }
 
-func TestInterceptType(t *testing.T) {
+func TestPreparer(t *testing.T) {
 	r := jsonschema.Reflector{}
 
 	s, err := r.Reflect(nullFloat{})
@@ -1311,6 +1313,8 @@ func TestInterceptNullability(t *testing.T) {
 	r := jsonschema.Reflector{}
 
 	s, err := r.Reflect(Org{}, jsonschema.InterceptNullability(func(params jsonschema.InterceptNullabilityParams) {
+		assert.NotNil(t, params.Context)
+
 		if params.Type.Kind() == reflect.Ptr {
 			params.Schema.AddType(jsonschema.Null)
 		}
@@ -1489,6 +1493,8 @@ func TestReflector_Reflect_skipProperty(t *testing.T) {
 
 	reflector := jsonschema.Reflector{}
 	reflector.DefaultOptions = append(reflector.DefaultOptions, jsonschema.InterceptProp(func(params jsonschema.InterceptPropParams) error {
+		assert.NotNil(t, params.Context)
+
 		if params.Field.Tag.Get("openapi-go") == "ignore" {
 			return jsonschema.ErrSkipProperty
 		}
