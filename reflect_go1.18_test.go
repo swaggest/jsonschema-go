@@ -4,6 +4,7 @@
 package jsonschema_test
 
 import (
+	"net/netip"
 	"testing"
 	"time"
 
@@ -77,6 +78,28 @@ func TestReflector_Reflect_generic(t *testing.T) {
 		},
 		"foo":{
 		  "$ref":"#/definitions/JsonschemaGoTestAPIResponse[JsonschemaGoTestHelloOutput]"
+		}
+	  },
+	  "type":"object"
+	}`), s)
+}
+
+func TestReflector_Reflect_fieldTags(t *testing.T) {
+	type My struct {
+		Prefix netip.Prefix `json:"prefix" required:"true" example:"192.168.0.0/24" description:"Prefix in CIDR notation" format:"cidr"`
+	}
+
+	reflector := jsonschema.Reflector{}
+
+	s, err := reflector.Reflect(My{})
+	require.NoError(t, err)
+	assertjson.EqualMarshal(t, []byte(`{
+	  "required":["prefix"],
+	  "properties":{
+		"prefix":{
+		  "type":"string",
+		  "description":"Prefix in CIDR notation","examples":["192.168.0.0/24"],
+		  "format":"cidr"
 		}
 	  },
 	  "type":"object"

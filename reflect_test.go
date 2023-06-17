@@ -133,14 +133,10 @@ func TestReflector_Reflect(t *testing.T) {
 			"enumedPtr":{"$ref":"#/definitions/JsonschemaGoTestEnumed"},
 			"firstName":{"type":"string"},"height":{"type":"integer"},
 			"lastName":{"type":"string"},"meta":{},
-			"role":{
-			  "$ref":"#/definitions/JsonschemaGoTestRole",
-			  "description":"The role of person."
-			}
+			"role":{"description":"The role of person.","type":"string"}
 		  },
 		  "type":"object"
-		},
-		"JsonschemaGoTestRole":{"type":"string"}
+		}
 	  },
 	  "properties":{
 		"chiefOfMorale":{"$ref":"#/definitions/JsonschemaGoTestPerson"},
@@ -303,14 +299,10 @@ func TestReflector_Reflect_collectDefinitions(t *testing.T) {
 		  "enumedPtr":{"$ref":"#/definitions/JsonschemaGoTestEnumed"},
 		  "firstName":{"type":"string"},"height":{"type":"integer"},
 		  "lastName":{"type":"string"},"meta":{},
-		  "role":{
-			"$ref":"#/definitions/JsonschemaGoTestRole",
-			"description":"The role of person."
-		  }
+		  "role":{"description":"The role of person.","type":"string"}
 		},
 		"type":"object"
-	  },
-	  "JsonschemaGoTestRole":{"type":"string"}
+	  }
 	}`), schemas)
 }
 
@@ -710,7 +702,7 @@ func TestPreparer(t *testing.T) {
 	assertjson.EqualMarshal(t, []byte(`{"type":["null", "number"]}`), s)
 }
 
-func TestReflector_Reflect_Ref(t *testing.T) {
+func TestReflector_Reflect_inclineScalar(t *testing.T) {
 	type Symbol string
 
 	type topTracesInput struct {
@@ -721,12 +713,8 @@ func TestReflector_Reflect_Ref(t *testing.T) {
 	s, err := r.Reflect(topTracesInput{})
 	assert.NoError(t, err)
 	assertjson.EqualMarshal(t, []byte(`{
-	  "definitions":{"JsonschemaGoTestSymbol":{"type":"string"}},
 	  "properties":{
-		"rootSymbol":{
-		  "$ref":"#/definitions/JsonschemaGoTestSymbol","default":"main()",
-		  "examples":["my_func"],"minLength":5
-		}
+		"rootSymbol":{"default":"main()","examples":["my_func"],"minLength":5,"type":"string"}
 	  },
 	  "type":"object"
 	}`), s)
@@ -850,14 +838,13 @@ func TestReflector_Reflect_sub_schema(t *testing.T) {
 			"enumedPtr":{"$ref":"#/definitions/Enumed"},
 			"firstName":{"type":"string"},"height":{"type":"integer"},
 			"lastName":{"type":"string"},"meta":{},
-			"role":{"$ref":"#/definitions/Role","description":"The role of person."}
+			"role":{"description":"The role of person.","type":"string"}
 		  },
 		  "type":"object"
-		},
-		"Role":{"type":"string"}
+		}
 	  },
 	  "properties":{"foo":{"type":"string"}},"type":"object",
-	  "if":{"$ref":"#/definitions/Entity"},"then":{"$ref":"#/definitions/Role"},
+	  "if":{"$ref":"#/definitions/Entity"},"then":{"type":"string"},
 	  "else":{"$ref":"#/definitions/Person"},
 	  "allOf":[{"type":"number"},{"type":"integer"}],
 	  "anyOf":[{"type":"string"},{"type":"integer"}],
@@ -1187,15 +1174,9 @@ func TestReflector_Reflect_defaultTextMarshaler(t *testing.T) {
 	  "$ref":"#/definitions/JsonschemaGoTestTest",
 	  "definitions":{
 		"JsonschemaGoTestTest":{
-		  "properties":{
-			"foo":{
-			  "$ref":"#/definitions/JsonschemaGoTestWithTextMarshaler",
-			  "default":"bar","examples":["baz"]
-			}
-		  },
+		  "properties":{"foo":{"default":"bar","examples":["baz"],"type":"string"}},
 		  "type":"object"
-		},
-		"JsonschemaGoTestWithTextMarshaler":{"type":"string"}
+		}
 	  }
 	}`), s)
 }
@@ -1222,14 +1203,9 @@ func TestReflector_Reflect_skipNonConstraints(t *testing.T) {
 	  "$ref":"#/definitions/JsonschemaGoTestTest",
 	  "definitions":{
 		"JsonschemaGoTestTest":{
-		  "properties":{
-			"du":{"$ref":"#/definitions/TimeDuration"},
-			"foo":{"$ref":"#/definitions/JsonschemaGoTestWithTextMarshaler"}
-		  },
+		  "properties":{"du":{"type":"integer"},"foo":{"type":"string"}},
 		  "type":"object"
-		},
-		"JsonschemaGoTestWithTextMarshaler":{"type":"string"},
-		"TimeDuration":{"type":"integer"}
+		}
 	  }
 	}`), s)
 }
@@ -1338,14 +1314,10 @@ func TestInterceptNullability(t *testing.T) {
 			"enumedPtr":{"$ref":"#/definitions/JsonschemaGoTestEnumed"},
 			"firstName":{"type":"string"},"height":{"type":"integer"},
 			"lastName":{"type":"string"},"meta":{"type":"null"},
-			"role":{
-			  "$ref":"#/definitions/JsonschemaGoTestRole",
-			  "description":"The role of person."
-			}
+			"role":{"description":"The role of person.","type":"string"}
 		  },
 		  "type":["object","null"]
-		},
-		"JsonschemaGoTestRole":{"type":"string"}
+		}
 	  },
 	  "properties":{
 		"chiefOfMorale":{"$ref":"#/definitions/JsonschemaGoTestPerson"},
@@ -1515,4 +1487,60 @@ func TestReflector_Reflect_skipProperty(t *testing.T) {
 	  },
 	  "type":"object"
 	}`), s)
+}
+
+func TestReflector_Reflect_example(t *testing.T) {
+	reflector := jsonschema.Reflector{}
+
+	// Create custom schema mapping for 3rd party type.
+	uuidDef := jsonschema.Schema{}
+	uuidDef.AddType(jsonschema.String)
+	uuidDef.WithFormat("uuid")
+	uuidDef.WithExamples("248df4b7-aa70-47b8-a036-33ac447e668d")
+
+	// Map 3rd party type with your own schema.
+	reflector.AddTypeMapping(UUID{}, uuidDef)
+
+	// Map the type that does not expose schema information to a type with schema information.
+	reflector.AddTypeMapping(new(WeirdResp), new(Resp))
+
+	// Modify default definition names to better match your packages structure.
+	reflector.InterceptDefName(func(t reflect.Type, defaultDefName string) string {
+		return strings.TrimPrefix(defaultDefName, "JsonschemaGoTest")
+	})
+
+	// Create schema from Go value.
+	schema, err := reflector.Reflect(new(Resp))
+	require.NoError(t, err)
+
+	assertjson.EqualMarshal(t, []byte(`{
+	  "title":"Sample Response","description":"This is a sample response.",
+	  "definitions":{
+		"NamedAnything":{},
+		"UUID":{
+		  "examples":["248df4b7-aa70-47b8-a036-33ac447e668d"],"type":"string",
+		  "format":"uuid"
+		}
+	  },
+	  "properties":{
+		"arrayOfAnything":{"items":{},"type":"array"},
+		"arrayOfNamedAnything":{"items":{"$ref":"#/definitions/NamedAnything"},"type":"array"},
+		"field1":{"type":"integer"},"field2":{"type":"string"},
+		"info":{
+		  "required":["foo"],
+		  "properties":{
+			"bar":{"description":"This is Bar.","type":"number"},
+			"foo":{"default":"baz","pattern":"\\d+","type":"string"}
+		  },
+		  "type":"object"
+		},
+		"map":{"additionalProperties":{"type":"integer"},"type":"object"},
+		"mapOfAnything":{"additionalProperties":{},"type":"object"},
+		"nullableWhatever":{},"parent":{"$ref":"#"},
+		"recursiveArray":{"items":{"$ref":"#"},"type":"array"},
+		"recursiveStructArray":{"items":{"$ref":"#"},"type":"array"},
+		"uuid":{"$ref":"#/definitions/UUID"},"whatever":{}
+	  },
+	  "type":"object","x-foo":"bar"
+	}`), schema)
 }

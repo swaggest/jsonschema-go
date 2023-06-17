@@ -324,6 +324,11 @@ func (r *Reflector) reflectDefer(defName string, typeString refl.TypeString, rc 
 		return ref.Schema()
 	}
 
+	// Inlining trivial scalar schemas.
+	if schema.IsTrivial() && schema.Type != nil && !schema.HasType(Object) && !schema.HasType(Array) {
+		return schema
+	}
+
 	if rc.definitions == nil {
 		rc.definitions = make(map[refl.TypeString]*Schema, 1)
 		rc.definitionRefs = make(map[refl.TypeString]Ref, 1)
