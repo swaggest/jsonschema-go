@@ -1544,3 +1544,41 @@ func TestReflector_Reflect_example(t *testing.T) {
 	  "type":"object","x-foo":"bar"
 	}`), schema)
 }
+
+func TestReflector_Reflect_inlineRefs_typeCycle(t *testing.T) {
+	type Data struct {
+		ID   string `json:"id,omitempty"`
+		Name string `json:"name,omitempty"`
+	}
+
+	type ExampleEvent struct {
+		ID          string `json:"id,omitempty"`
+		NewData     Data   `json:"new_data"`
+		CurrentData Data   `json:"current_data"`
+		OldData     Data   `json:"old_data"`
+	}
+
+	ref := jsonschema.Reflector{}
+
+	gen, err := ref.Reflect(&ExampleEvent{}, jsonschema.InlineRefs)
+
+	assert.NoError(t, err)
+	assertjson.EqMarshal(t, `{
+	  "properties":{
+		"current_data":{
+		  "properties":{"id":{"type":"string"},"name":{"type":"string"}},
+		  "type":"object"
+		},
+		"id":{"type":"string"},
+		"new_data":{
+		  "properties":{"id":{"type":"string"},"name":{"type":"string"}},
+		  "type":"object"
+		},
+		"old_data":{
+		  "properties":{"id":{"type":"string"},"name":{"type":"string"}},
+		  "type":"object"
+		}
+	  },
+	  "type":"object"
+	}`, gen)
+}

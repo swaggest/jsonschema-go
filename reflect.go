@@ -438,7 +438,7 @@ func (r *Reflector) reflect(i interface{}, rc *ReflectContext, keepType bool, pa
 		return ref.Schema(), nil
 	}
 
-	if rc.typeCycles[typeString] {
+	if rc.typeCycles[typeString] && !rc.InlineRefs {
 		return schema, nil
 	}
 
