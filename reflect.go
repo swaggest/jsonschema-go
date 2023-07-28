@@ -829,7 +829,10 @@ func (r *Reflector) walkProperties(v reflect.Value, parent *Schema, rc *ReflectC
 			continue
 		}
 
-		if tag == "" && field.Anonymous && field.Type.Kind() == reflect.Struct {
+		deepIndirect := refl.DeepIndirect(field.Type)
+
+		if tag == "" && field.Anonymous &&
+			(field.Type.Kind() == reflect.Struct || deepIndirect.Kind() == reflect.Struct) {
 			if err := r.walkProperties(v.Field(i), parent, rc); err != nil {
 				return err
 			}
