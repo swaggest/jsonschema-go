@@ -1582,3 +1582,34 @@ func TestReflector_Reflect_inlineRefs_typeCycle(t *testing.T) {
 	  "type":"object"
 	}`, gen)
 }
+
+func TestReflector_Reflect_deeplyEmbedded(t *testing.T) {
+	r := jsonschema.Reflector{}
+
+	type Embed struct {
+		Foo string `json:"foo" minLength:"5"`
+		Bar int    `json:"bar" minimum:"3"`
+	}
+
+	type DeeplyEmbedded struct {
+		Embed
+	}
+
+	type My struct {
+		*DeeplyEmbedded
+
+		Baz float64 `json:"baz" title:"Bazzz."`
+	}
+
+	s, err := r.Reflect(My{})
+	require.NoError(t, err)
+
+	assertjson.EqMarshal(t, `{
+	  "properties":{
+		"bar":{"minimum":3,"type":"integer"},
+		"baz":{"title":"Bazzz.","type":"number"},
+		"foo":{"minLength":5,"type":"string"}
+	  },
+	  "type":"object"
+	}`, s)
+}
