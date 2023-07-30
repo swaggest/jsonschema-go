@@ -113,9 +113,7 @@ func (r *Reflector) InlineDefinition(sample interface{}) {
 
 // InterceptDefName allows modifying reflected definition names.
 func (r *Reflector) InterceptDefName(f func(t reflect.Type, defaultDefName string) string) {
-	r.DefaultOptions = append(r.DefaultOptions, func(rc *ReflectContext) {
-		rc.DefName = f
-	})
+	r.DefaultOptions = append(r.DefaultOptions, InterceptDefName(f))
 }
 
 func checkSchemaSetup(params InterceptSchemaParams) (bool, error) {
@@ -221,20 +219,21 @@ func checkSchemaSetup(params InterceptSchemaParams) (bool, error) {
 //
 // Available options:
 //
-//	CollectDefinitions
-//	DefinitionsPrefix
-//	PropertyNameTag
-//	InterceptNullability
-//	InterceptType
-//	InterceptProperty
-//	InlineRefs
-//	RootNullable
-//	RootRef
-//	StripDefinitionNamePrefix
-//	PropertyNameMapping
-//	ProcessWithoutTags
-//	SkipEmbeddedMapsSlices
-//	SkipUnsupportedProperties
+//		CollectDefinitions
+//		DefinitionsPrefix
+//		PropertyNameTag
+//		InterceptNullability
+//		InterceptType
+//		InterceptProperty
+//	 	InterceptDefName
+//		InlineRefs
+//		RootNullable
+//		RootRef
+//		StripDefinitionNamePrefix
+//		PropertyNameMapping
+//		ProcessWithoutTags
+//		SkipEmbeddedMapsSlices
+//		SkipUnsupportedProperties
 func (r *Reflector) Reflect(i interface{}, options ...func(rc *ReflectContext)) (Schema, error) {
 	rc := ReflectContext{}
 	rc.Context = context.Background()
