@@ -112,6 +112,8 @@ func (r *Reflector) InlineDefinition(sample interface{}) {
 }
 
 // InterceptDefName allows modifying reflected definition names.
+//
+// Deprecated: add jsonschema.InterceptDefName to DefaultOptions.
 func (r *Reflector) InterceptDefName(f func(t reflect.Type, defaultDefName string) string) {
 	r.DefaultOptions = append(r.DefaultOptions, InterceptDefName(f))
 }
