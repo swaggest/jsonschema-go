@@ -342,9 +342,11 @@ func TestReflector_Reflect_mapping(t *testing.T) {
 
 	rf := jsonschema.Reflector{}
 	rf.AddTypeMapping(simpleTestReplacement{}, "")
-	rf.InterceptDefName(func(t reflect.Type, defaultDefName string) string {
-		return strings.TrimPrefix(defaultDefName, "JsonschemaGoTest")
-	})
+	rf.DefaultOptions = append(rf.DefaultOptions, jsonschema.InterceptDefName(
+		func(t reflect.Type, defaultDefName string) string {
+			return strings.TrimPrefix(defaultDefName, "JsonschemaGoTest")
+		},
+	))
 
 	s, err := rf.Reflect(testWrapParams{}, jsonschema.RootRef)
 	require.NoError(t, err)
@@ -1505,9 +1507,11 @@ func TestReflector_Reflect_example(t *testing.T) {
 	reflector.AddTypeMapping(new(WeirdResp), new(Resp))
 
 	// Modify default definition names to better match your packages structure.
-	reflector.InterceptDefName(func(t reflect.Type, defaultDefName string) string {
-		return strings.TrimPrefix(defaultDefName, "JsonschemaGoTest")
-	})
+	reflector.DefaultOptions = append(reflector.DefaultOptions, jsonschema.InterceptDefName(
+		func(t reflect.Type, defaultDefName string) string {
+			return strings.TrimPrefix(defaultDefName, "JsonschemaGoTest")
+		},
+	))
 
 	// Create schema from Go value.
 	schema, err := reflector.Reflect(new(Resp))

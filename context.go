@@ -170,6 +170,22 @@ func InterceptProp(f InterceptPropFunc) func(reflectContext *ReflectContext) {
 	}
 }
 
+// InterceptDefName allows modifying reflected definition names.
+func InterceptDefName(f func(t reflect.Type, defaultDefName string) string) func(reflectContext *ReflectContext) {
+	return func(rc *ReflectContext) {
+		if rc.DefName != nil {
+			prev := rc.DefName
+			rc.DefName = func(t reflect.Type, defaultDefName string) string {
+				defaultDefName = prev(t, defaultDefName)
+
+				return f(t, defaultDefName)
+			}
+		} else {
+			rc.DefName = f
+		}
+	}
+}
+
 // InlineRefs prevents references.
 func InlineRefs(rc *ReflectContext) {
 	rc.InlineRefs = true

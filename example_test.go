@@ -181,9 +181,11 @@ func ExampleReflector_Reflect() {
 	reflector.AddTypeMapping(new(WeirdResp), new(Resp))
 
 	// Modify default definition names to better match your packages structure.
-	reflector.InterceptDefName(func(t reflect.Type, defaultDefName string) string {
-		return strings.TrimPrefix(defaultDefName, "JsonschemaGoTest")
-	})
+	reflector.DefaultOptions = append(reflector.DefaultOptions, jsonschema.InterceptDefName(
+		func(t reflect.Type, defaultDefName string) string {
+			return strings.TrimPrefix(defaultDefName, "JsonschemaGoTest")
+		},
+	))
 
 	// Create schema from Go value.
 	schema, err := reflector.Reflect(new(Resp))
