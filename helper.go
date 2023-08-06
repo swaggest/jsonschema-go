@@ -201,7 +201,7 @@ func (s Schema) IsTrivial(refResolvers ...func(string) (SchemaOrBool, bool)) boo
 		return false
 	}
 
-	if s.Items != nil && (len(s.Items.SchemaArray) > 0 || !s.Items.SchemaOrBool.IsTrivial(refResolvers...)) {
+	if s.Items != nil && (len(s.Items.SchemaArray) > 0 || (s.Items.SchemaOrBool != nil && !s.Items.SchemaOrBool.IsTrivial(refResolvers...))) {
 		return false
 	}
 
