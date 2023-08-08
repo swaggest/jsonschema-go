@@ -350,13 +350,36 @@ func (r *Reflector) reflectDefer(defName string, typeString refl.TypeString, rc 
 	return s
 }
 
+func (r *Reflector) checkTitle(v reflect.Value, s *Struct, schema *Schema) {
+	if vd, ok := v.Interface().(Described); ok {
+		schema.WithDescription(vd.Description())
+	}
+
+	if s != nil && s.Description != nil {
+		schema.WithDescription(*s.Description)
+	}
+
+	if vt, ok := v.Interface().(Titled); ok {
+		schema.WithTitle(vt.Title())
+	}
+
+	if s != nil && s.Title != nil {
+		schema.WithTitle(*s.Title)
+	}
+}
+
 func (r *Reflector) reflect(i interface{}, rc *ReflectContext, keepType bool, parent *Schema) (schema Schema, err error) {
 	var (
 		t          = reflect.TypeOf(i)
 		v          = reflect.ValueOf(i)
+		s          *Struct
 		typeString refl.TypeString
 		defName    string
 	)
+
+	if st, ok := i.(Struct); ok {
+		s = &st
+	}
 
 	defer func() {
 		rc.Path = rc.Path[:len(rc.Path)-1]
@@ -379,7 +402,7 @@ func (r *Reflector) reflect(i interface{}, rc *ReflectContext, keepType bool, pa
 	schema.ReflectType = t
 	schema.Parent = parent
 
-	if t.Kind() == reflect.Ptr && t.Elem() != typeOfJSONRawMsg {
+	if (t.Kind() == reflect.Ptr && t.Elem() != typeOfJSONRawMsg) || (s != nil && s.Nullable) {
 		schema.AddType(Null)
 	}
 
@@ -393,6 +416,10 @@ func (r *Reflector) reflect(i interface{}, rc *ReflectContext, keepType bool, pa
 
 	typeString = refl.GoType(t)
 	defName = r.defName(rc, t)
+
+	if s != nil {
+		defName, typeString = s.names()
+	}
 
 	if mappedTo, found := r.typesMap[t]; found {
 		t = refl.DeepIndirect(reflect.TypeOf(mappedTo))
@@ -447,15 +474,9 @@ func (r *Reflector) reflect(i interface{}, rc *ReflectContext, keepType bool, pa
 		rc.typeCycles[typeString] = true
 	}
 
-	if vd, ok := v.Interface().(Described); ok {
-		schema.WithDescription(vd.Description())
-	}
+	r.checkTitle(v, s, &schema)
 
-	if vt, ok := v.Interface().(Titled); ok {
-		schema.WithTitle(vt.Title())
-	}
-
-	if err = r.applySubSchemas(v, rc, &schema); err != nil {
+	if err := r.applySubSchemas(v, rc, &schema); err != nil {
 		return schema, err
 	}
 
@@ -809,7 +830,7 @@ func (r *Reflector) propertyTag(rc *ReflectContext, field reflect.StructField) (
 	return "", false
 }
 
-func (r *Reflector) walkProperties(v reflect.Value, parent *Schema, rc *ReflectContext) error {
+func (r *Reflector) makeFields(v reflect.Value) ([]reflect.StructField, []reflect.Value) {
 	t := v.Type()
 	if t.Kind() == reflect.Ptr {
 		t = t.Elem()
@@ -821,8 +842,35 @@ func (r *Reflector) walkProperties(v reflect.Value, parent *Schema, rc *ReflectC
 		}
 	}
 
-	for i := 0; i < t.NumField(); i++ {
-		field := t.Field(i)
+	var (
+		fields []reflect.StructField
+		values []reflect.Value
+	)
+
+	if s, ok := v.Interface().(Struct); ok {
+		for _, f := range s.Fields {
+			field := reflect.StructField{}
+			field.Name = f.Name
+			field.Tag = f.Tag
+			field.Type = reflect.TypeOf(f.Value)
+
+			fields = append(fields, field)
+			values = append(values, reflect.ValueOf(f.Value))
+		}
+	} else {
+		for i := 0; i < t.NumField(); i++ {
+			fields = append(fields, t.Field(i))
+			values = append(values, v.Field(i))
+		}
+	}
+
+	return fields, values
+}
+
+func (r *Reflector) walkProperties(v reflect.Value, parent *Schema, rc *ReflectContext) error {
+	fields, values := r.makeFields(v)
+
+	for i, field := range fields {
 		tag, tagFound := r.propertyTag(rc, field)
 
 		// Skip explicitly discarded field.
@@ -834,7 +882,7 @@ func (r *Reflector) walkProperties(v reflect.Value, parent *Schema, rc *ReflectC
 
 		if tag == "" && field.Anonymous &&
 			(field.Type.Kind() == reflect.Struct || deepIndirect.Kind() == reflect.Struct) {
-			if err := r.walkProperties(v.Field(i), parent, rc); err != nil {
+			if err := r.walkProperties(values[i], parent, rc); err != nil {
 				return err
 			}
 
@@ -886,8 +934,8 @@ func (r *Reflector) walkProperties(v reflect.Value, parent *Schema, rc *ReflectC
 			parent.Required = append(parent.Required, propName)
 		}
 
-		ft := t.Field(i).Type
-		fieldVal := r.fieldVal(v.Field(i), ft)
+		ft := field.Type
+		fieldVal := r.fieldVal(values[i], ft)
 
 		rc.Path = append(rc.Path, propName)
 
