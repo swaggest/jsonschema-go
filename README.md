@@ -179,7 +179,7 @@ Additional centralized configuration is available with
 Sometimes it is impossible to define a static Go `struct`, for example when fields are only known at runtime.
 Yet, you may need to include such fields in JSON schema reflection pipeline.
 
-For any reflected value, standalone or nested, you define a virtual structure that would be treated as a native Go struct.
+For any reflected value, standalone or nested, you can define a virtual structure that would be treated as a native Go struct.
 
 ```go
 s := jsonschema.Struct{}
