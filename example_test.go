@@ -521,3 +521,59 @@ func ExampleReflector_Reflect_default() {
 	// }
 	// Invalid error: I: parsing default as JSON: invalid character 'C' looking for beginning of value
 }
+
+func ExampleReflector_Reflect_virtualStruct() {
+	s := jsonschema.Struct{}
+	s.SetTitle("Test title")
+	s.SetDescription("Test description")
+	s.DefName = "TestStruct"
+	s.Nullable = true
+
+	s.Fields = append(s.Fields, jsonschema.Field{
+		Name:  "Foo",
+		Value: "abc",
+		Tag:   `json:"foo" minLength:"3"`,
+	})
+
+	r := jsonschema.Reflector{}
+	schema, _ := r.Reflect(s)
+	j, _ := assertjson.MarshalIndentCompact(schema, "", " ", 80)
+
+	fmt.Println("Standalone:", string(j))
+
+	type MyStruct struct {
+		jsonschema.Struct // Can be embedded.
+
+		Bar int `json:"bar"`
+
+		Nested jsonschema.Struct `json:"nested"` // Can be nested.
+	}
+
+	ms := MyStruct{}
+	ms.Nested = s
+	ms.Struct = s
+
+	schema, _ = r.Reflect(ms)
+	j, _ = assertjson.MarshalIndentCompact(schema, "", " ", 80)
+
+	fmt.Println("Nested:", string(j))
+
+	// Output:
+	// Standalone: {
+	//  "title":"Test title","description":"Test description",
+	//  "properties":{"foo":{"minLength":3,"type":"string"}},"type":"object"
+	// }
+	// Nested: {
+	//  "definitions":{
+	//   "TestStruct":{
+	//    "title":"Test title","description":"Test description",
+	//    "properties":{"foo":{"minLength":3,"type":"string"}},"type":"object"
+	//   }
+	//  },
+	//  "properties":{
+	//   "bar":{"type":"integer"},"foo":{"minLength":3,"type":"string"},
+	//   "nested":{"$ref":"#/definitions/TestStruct"}
+	//  },
+	//  "type":"object"
+	// }
+}

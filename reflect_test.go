@@ -648,6 +648,7 @@ func TestReflector_Reflect_propertyNameMapping(t *testing.T) {
 		Name             string `minLength:"10"`
 		UntaggedUnmapped int
 		unexported       int
+		unexportedStruct jsonschema.Struct
 	}
 
 	s, err := reflector.Reflect(new(Test),

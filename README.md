@@ -173,3 +173,66 @@ Additional centralized configuration is available with
 * [`StripDefinitionNamePrefix`](https://pkg.go.dev/github.com/swaggest/jsonschema-go#StripDefinitionNamePrefix) strips prefix from definition name.
 * [`PropertyNameMapping`](https://pkg.go.dev/github.com/swaggest/jsonschema-go#PropertyNameMapping) explicit name mapping instead field tags.
 * [`ProcessWithoutTags`](https://pkg.go.dev/github.com/swaggest/jsonschema-go#ProcessWithoutTags) enables processing fields without any tags specified.
+
+### Virtual structure
+
+Sometimes it is impossible to define a static Go `struct`, for example when fields are only known at runtime.
+Yet, you may need to include such fields in JSON schema reflection pipeline.
+
+For any reflected value, standalone or nested, you define a virtual structure that would be treated as a native Go struct.
+
+```go
+s := jsonschema.Struct{}
+s.SetTitle("Test title")
+s.SetDescription("Test description")
+s.DefName = "TestStruct"
+s.Nullable = true
+
+s.Fields = append(s.Fields, jsonschema.Field{
+    Name:  "Foo",
+    Value: "abc",
+    Tag:   `json:"foo" minLength:"3"`,
+})
+
+r := jsonschema.Reflector{}
+schema, _ := r.Reflect(s)
+j, _ := assertjson.MarshalIndentCompact(schema, "", " ", 80)
+
+fmt.Println("Standalone:", string(j))
+
+type MyStruct struct {
+    jsonschema.Struct // Can be embedded.
+
+    Bar int `json:"bar"`
+
+    Nested jsonschema.Struct `json:"nested"` // Can be nested.
+}
+
+ms := MyStruct{}
+ms.Nested = s
+ms.Struct = s
+
+schema, _ = r.Reflect(ms)
+j, _ = assertjson.MarshalIndentCompact(schema, "", " ", 80)
+
+fmt.Println("Nested:", string(j))
+
+// Output:
+// Standalone: {
+//  "title":"Test title","description":"Test description",
+//  "properties":{"foo":{"minLength":3,"type":"string"}},"type":"object"
+// }
+// Nested: {
+//  "definitions":{
+//   "TestStruct":{
+//    "title":"Test title","description":"Test description",
+//    "properties":{"foo":{"minLength":3,"type":"string"}},"type":"object"
+//   }
+//  },
+//  "properties":{
+//   "bar":{"type":"integer"},"foo":{"minLength":3,"type":"string"},
+//   "nested":{"$ref":"#/definitions/TestStruct"}
+//  },
+//  "type":"object"
+// }
+```
