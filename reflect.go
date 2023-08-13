@@ -847,17 +847,25 @@ func (r *Reflector) makeFields(v reflect.Value) ([]reflect.StructField, []reflec
 		values []reflect.Value
 	)
 
-	if s, ok := v.Interface().(Struct); ok {
-		for _, f := range s.Fields {
-			field := reflect.StructField{}
-			field.Name = f.Name
-			field.Tag = f.Tag
-			field.Type = reflect.TypeOf(f.Value)
+	isVirtualStruct := false
 
-			fields = append(fields, field)
-			values = append(values, reflect.ValueOf(f.Value))
+	if v.CanInterface() {
+		if s, ok := v.Interface().(Struct); ok {
+			isVirtualStruct = true
+
+			for _, f := range s.Fields {
+				field := reflect.StructField{}
+				field.Name = f.Name
+				field.Tag = f.Tag
+				field.Type = reflect.TypeOf(f.Value)
+
+				fields = append(fields, field)
+				values = append(values, reflect.ValueOf(f.Value))
+			}
 		}
-	} else {
+	}
+
+	if !isVirtualStruct {
 		for i := 0; i < t.NumField(); i++ {
 			fields = append(fields, t.Field(i))
 			values = append(values, v.Field(i))
