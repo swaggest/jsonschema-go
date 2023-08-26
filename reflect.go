@@ -377,8 +377,8 @@ func (r *Reflector) reflect(i interface{}, rc *ReflectContext, keepType bool, pa
 		defName    string
 	)
 
-	if st, ok := i.(Struct); ok {
-		s = &st
+	if st, ok := i.(withStruct); ok {
+		s = st.structPtr()
 	}
 
 	defer func() {
@@ -421,7 +421,7 @@ func (r *Reflector) reflect(i interface{}, rc *ReflectContext, keepType bool, pa
 		defName, typeString = s.names()
 	}
 
-	if mappedTo, found := r.typesMap[t]; found {
+	if mappedTo, found := r.typesMap[t]; found && s == nil {
 		t = refl.DeepIndirect(reflect.TypeOf(mappedTo))
 		v = reflect.ValueOf(mappedTo)
 

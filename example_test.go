@@ -564,15 +564,10 @@ func ExampleReflector_Reflect_virtualStruct() {
 	//  "properties":{"foo":{"minLength":3,"type":"string"}},"type":"object"
 	// }
 	// Nested: {
-	//  "definitions":{
-	//   "TestStruct":{
-	//    "title":"Test title","description":"Test description",
-	//    "properties":{"foo":{"minLength":3,"type":"string"}},"type":"object"
-	//   }
-	//  },
+	//  "title":"Test title","description":"Test description",
 	//  "properties":{
 	//   "bar":{"type":"integer"},"foo":{"minLength":3,"type":"string"},
-	//   "nested":{"$ref":"#/definitions/TestStruct"}
+	//   "nested":{"$ref":"#"}
 	//  },
 	//  "type":"object"
 	// }
