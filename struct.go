@@ -38,7 +38,15 @@ func (s *Struct) SetDescription(description string) {
 	s.Description = &description
 }
 
-func (s *Struct) names() (string, refl.TypeString) {
+type withStruct interface {
+	structPtr() *Struct
+}
+
+func (s Struct) structPtr() *Struct {
+	return &s
+}
+
+func (s Struct) names() (string, refl.TypeString) {
 	defName := s.DefName
 
 	if defName == "" {
