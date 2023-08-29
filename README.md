@@ -46,6 +46,7 @@ func main() {
 	}
 
 	fmt.Println(string(j))
+
 	// Output:
 	// {
 	//  "title": "My Struct",
@@ -132,10 +133,10 @@ ReflectContext.UnnamedFieldWithTag option and add matching name tags to structur
 
 ```go
 type MyObj struct {
-   BoundedNumber int `query:"boundedNumber" minimum:"-100" maximum:"100"`
-   SpecialString string `json:"specialString" pattern:"^[a-z]{4}$" minLength:"4" maxLength:"4"`
-   // These parent schema tags would only be applied to `query` schema reflection (not for `json`).
-   _ struct{} `query:"_" additionalProperties:"false" description:"MyObj is my object."`
+	BoundedNumber int `query:"boundedNumber" minimum:"-100" maximum:"100"`
+	SpecialString string `json:"specialString" pattern:"^[a-z]{4}$" minLength:"4" maxLength:"4"`
+	// These parent schema tags would only be applied to `query` schema reflection (not for `json`).
+	_ struct{} `query:"_" additionalProperties:"false" description:"MyObj is my object."`
 }
 ```
 
