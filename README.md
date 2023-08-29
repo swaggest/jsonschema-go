@@ -16,50 +16,60 @@ This library provides Go structures to marshal/unmarshal and reflect [JSON Schem
 [Documentation](https://pkg.go.dev/github.com/swaggest/jsonschema-go#Reflector.Reflect).
 
 ```go
+package main
+
+import (
+	"encoding/json"
+	"fmt"
+	"log"
+
+	"github.com/swaggest/jsonschema-go"
+)
+
 type MyStruct struct {
-    Amount float64  `json:"amount" minimum:"10.5" example:"20.6" required:"true"`
-    Abc    string   `json:"abc" pattern:"[abc]"`
-    _      struct{} `additionalProperties:"false"`                   // Tags of unnamed field are applied to parent schema.
-    _      struct{} `title:"My Struct" description:"Holds my data."` // Multiple unnamed fields can be used.
+	Amount float64  `json:"amount" minimum:"10.5" example:"20.6" required:"true"`
+	Abc    string   `json:"abc" pattern:"[abc]"`
+	_      struct{} `additionalProperties:"false"`                   // Tags of unnamed field are applied to parent schema.
+	_      struct{} `title:"My Struct" description:"Holds my data."` // Multiple unnamed fields can be used.
 }
 
-reflector := jsonschema.Reflector{}
+func main() {
+	reflector := jsonschema.Reflector{}
+	schema, err := reflector.Reflect(MyStruct{})
+	if err != nil {
+		log.Fatal(err)
+	}
 
-schema, err := reflector.Reflect(MyStruct{})
-if err != nil {
-    log.Fatal(err)
+	j, err := json.MarshalIndent(schema, "", " ")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Println(string(j))
+	// Output:
+	// {
+	//  "title": "My Struct",
+	//  "description": "Holds my data.",
+	//  "required": [
+	//   "amount"
+	//  ],
+	//  "additionalProperties": false,
+	//  "properties": {
+	//   "abc": {
+	//    "pattern": "[abc]",
+	//    "type": "string"
+	//   },
+	//   "amount": {
+	//    "examples": [
+	//     20.6
+	//    ],
+	//    "minimum": 10.5,
+	//    "type": "number"
+	//   }
+	//  },
+	//  "type": "object"
+	// }
 }
-
-j, err := json.MarshalIndent(schema, "", " ")
-if err != nil {
-    log.Fatal(err)
-}
-
-fmt.Println(string(j))
-
-// Output:
-// {
-//  "title": "My Struct",
-//  "description": "Holds my data.",
-//  "required": [
-//   "amount"
-//  ],
-//  "additionalProperties": false,
-//  "properties": {
-//   "abc": {
-//    "pattern": "[abc]",
-//    "type": "string"
-//   },
-//   "amount": {
-//    "examples": [
-//     20.6
-//    ],
-//    "minimum": 10.5,
-//    "type": "number"
-//   }
-//  },
-//  "type": "object"
-// }
 ```
 
 ## Customization
@@ -71,8 +81,8 @@ It works well for the majority of cases, but if it does not there are rich custo
 
 ```go
 type MyObj struct {
-   BoundedNumber int `query:"boundedNumber" minimum:"-100" maximum:"100"`
-   SpecialString string `json:"specialString" pattern:"^[a-z]{4}$" minLength:"4" maxLength:"4"`
+	BoundedNumber int `query:"boundedNumber" minimum:"-100" maximum:"100"`
+	SpecialString string `json:"specialString" pattern:"^[a-z]{4}$" minLength:"4" maxLength:"4"`
 }
 ```
 
@@ -111,9 +121,9 @@ Unnamed fields can be used to configure parent schema:
 
 ```go
 type MyObj struct {
-   BoundedNumber int `query:"boundedNumber" minimum:"-100" maximum:"100"`
-   SpecialString string `json:"specialString" pattern:"^[a-z]{4}$" minLength:"4" maxLength:"4"`
-   _             struct{} `additionalProperties:"false" description:"MyObj is my object."`
+	BoundedNumber int `query:"boundedNumber" minimum:"-100" maximum:"100"`
+	SpecialString string `json:"specialString" pattern:"^[a-z]{4}$" minLength:"4" maxLength:"4"`
+	_             struct{} `additionalProperties:"false" description:"MyObj is my object."`
 }
 ```
 
@@ -182,57 +192,70 @@ Yet, you may need to include such fields in JSON schema reflection pipeline.
 For any reflected value, standalone or nested, you can define a virtual structure that would be treated as a native Go struct.
 
 ```go
-s := jsonschema.Struct{}
-s.SetTitle("Test title")
-s.SetDescription("Test description")
-s.DefName = "TestStruct"
-s.Nullable = true
+package main
 
-s.Fields = append(s.Fields, jsonschema.Field{
-    Name:  "Foo",
-    Value: "abc",
-    Tag:   `json:"foo" minLength:"3"`,
-})
+import (
+	"fmt"
 
-r := jsonschema.Reflector{}
-schema, _ := r.Reflect(s)
-j, _ := assertjson.MarshalIndentCompact(schema, "", " ", 80)
+	"github.com/swaggest/assertjson"
+	"github.com/swaggest/jsonschema-go"
+)
 
-fmt.Println("Standalone:", string(j))
+func main() {
+	s := jsonschema.Struct{}
+	s.SetTitle("Test title")
+	s.SetDescription("Test description")
+	s.DefName = "TestStruct"
+	s.Nullable = true
 
-type MyStruct struct {
-    jsonschema.Struct // Can be embedded.
+	s.Fields = append(s.Fields, jsonschema.Field{
+		Name:  "Foo",
+		Value: "abc",
+		Tag:   `json:"foo" minLength:"3"`,
+	})
 
-    Bar int `json:"bar"`
+	r := jsonschema.Reflector{}
+	schema, _ := r.Reflect(s)
+	j, _ := assertjson.MarshalIndentCompact(schema, "", " ", 80)
 
-    Nested jsonschema.Struct `json:"nested"` // Can be nested.
+	fmt.Println("Standalone:", string(j))
+
+	// Output:
+	// Standalone: {
+	//  "title":"Test title","description":"Test description",
+	//  "properties":{"foo":{"minLength":3,"type":"string"}},"type":"object"
+	// }
+
+	type MyStruct struct {
+		jsonschema.Struct // Can be embedded.
+
+		Bar int `json:"bar"`
+
+		Nested jsonschema.Struct `json:"nested"` // Can be nested.
+	}
+
+	ms := MyStruct{}
+	ms.Nested = s
+	ms.Struct = s
+
+	schema, _ = r.Reflect(ms)
+	j, _ = assertjson.MarshalIndentCompact(schema, "", " ", 80)
+
+	fmt.Println("Nested:", string(j))
+
+	// Output:
+	// Nested: {
+	//  "definitions":{
+	//   "TestStruct":{
+	//    "title":"Test title","description":"Test description",
+	//    "properties":{"foo":{"minLength":3,"type":"string"}},"type":"object"
+	//   }
+	//  },
+	//  "properties":{
+	//   "bar":{"type":"integer"},"foo":{"minLength":3,"type":"string"},
+	//   "nested":{"$ref":"#/definitions/TestStruct"}
+	//  },
+	//  "type":"object"
+	// }
 }
-
-ms := MyStruct{}
-ms.Nested = s
-ms.Struct = s
-
-schema, _ = r.Reflect(ms)
-j, _ = assertjson.MarshalIndentCompact(schema, "", " ", 80)
-
-fmt.Println("Nested:", string(j))
-
-// Output:
-// Standalone: {
-//  "title":"Test title","description":"Test description",
-//  "properties":{"foo":{"minLength":3,"type":"string"}},"type":"object"
-// }
-// Nested: {
-//  "definitions":{
-//   "TestStruct":{
-//    "title":"Test title","description":"Test description",
-//    "properties":{"foo":{"minLength":3,"type":"string"}},"type":"object"
-//   }
-//  },
-//  "properties":{
-//   "bar":{"type":"integer"},"foo":{"minLength":3,"type":"string"},
-//   "nested":{"$ref":"#/definitions/TestStruct"}
-//  },
-//  "type":"object"
-// }
 ```
