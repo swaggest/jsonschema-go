@@ -403,7 +403,7 @@ func (r *Reflector) reflect(i interface{}, rc *ReflectContext, keepType bool, pa
 	schema.Parent = parent
 
 	if (t.Kind() == reflect.Ptr && t.Elem() != typeOfJSONRawMsg) || (s != nil && s.Nullable) {
-		schema.AddType(Null)
+		//schema.AddType(Null)
 	}
 
 	t = refl.DeepIndirect(t)
@@ -930,11 +930,17 @@ func (r *Reflector) walkProperties(v reflect.Value, parent *Schema, rc *ReflectC
 		omitEmpty := strings.Contains(tag, ",omitempty")
 		required := false
 
+		var nullable *bool
+
 		if propName == "" {
 			propName = field.Name
 		}
 
 		if err := refl.ReadBoolTag(field.Tag, "required", &required); err != nil {
+			return err
+		}
+
+		if err := refl.ReadBoolPtrTag(field.Tag, "nullable", &nullable); err != nil {
 			return err
 		}
 
@@ -973,7 +979,7 @@ func (r *Reflector) walkProperties(v reflect.Value, parent *Schema, rc *ReflectC
 			return err
 		}
 
-		checkNullability(&propertySchema, rc, ft, omitEmpty)
+		checkNullability(&propertySchema, rc, ft, omitEmpty, nullable)
 
 		if !rc.SkipNonConstraints {
 			err = checkInlineValue(&propertySchema, field, "default", propertySchema.WithDefault)
@@ -1137,7 +1143,7 @@ func checkInlineValue(propertySchema *Schema, field reflect.StructField, tag str
 //   - Array, slice accepts `null` as a value.
 //   - Object without properties, it is a map, and it accepts `null` as a value.
 //   - Pointer type.
-func checkNullability(propertySchema *Schema, rc *ReflectContext, ft reflect.Type, omitEmpty bool) {
+func checkNullability(propertySchema *Schema, rc *ReflectContext, ft reflect.Type, omitEmpty bool, nullable *bool) {
 	in := InterceptNullabilityParams{
 		Context:    rc,
 		OrigSchema: *propertySchema,
@@ -1151,6 +1157,16 @@ func checkNullability(propertySchema *Schema, rc *ReflectContext, ft reflect.Typ
 			rc.InterceptNullability(in)
 		}
 	}()
+
+	if nullable != nil {
+		if *nullable {
+			propertySchema.AddType(Null)
+
+			in.NullAdded = true
+		}
+
+		return
+	}
 
 	if omitEmpty {
 		return
