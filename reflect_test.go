@@ -1361,7 +1361,7 @@ func TestReflector_Reflect_pointer_sharing(t *testing.T) {
 
 type tt struct{}
 
-func (t *tt) UnmarshalText(text []byte) error {
+func (t *tt) UnmarshalText(_ []byte) error {
 	return nil
 }
 
