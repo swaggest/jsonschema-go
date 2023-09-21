@@ -194,6 +194,8 @@ func checkSchemaSetup(params InterceptSchemaParams) (bool, error) {
 //   - `uniqueItems`, https://json-schema.org/draft-04/json-schema-validation.html#rfc.section.5.3.4
 //   - `enum`, tag value must be a JSON or comma-separated list of strings,
 //     https://json-schema.org/draft-04/json-schema-validation.html#rfc.section.5.5.1
+//   - `required`, boolean, marks property as required
+//   - `nullable`, boolean, overrides nullability of a property
 //
 // Unnamed fields can be used to configure parent schema:
 //
