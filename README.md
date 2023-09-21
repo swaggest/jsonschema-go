@@ -106,6 +106,7 @@ These tags can be used:
 * [`uniqueItems`](https://json-schema.org/draft-04/json-schema-validation.html#rfc.section.5.3.4), boolean
 * [`enum`](https://json-schema.org/draft-04/json-schema-validation.html#rfc.section.5.5.1), tag value must be a JSON or comma-separated list of strings
 * `required`, boolean, marks property as required
+* `nullable`, boolean, overrides nullability of the property
 
 Unnamed fields can be used to configure parent schema:
 
