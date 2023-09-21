@@ -403,7 +403,7 @@ func (r *Reflector) reflect(i interface{}, rc *ReflectContext, keepType bool, pa
 	schema.Parent = parent
 
 	if (t.Kind() == reflect.Ptr && t.Elem() != typeOfJSONRawMsg) || (s != nil && s.Nullable) {
-		//schema.AddType(Null)
+		schema.AddType(Null)
 	}
 
 	t = refl.DeepIndirect(t)
@@ -1163,6 +1163,10 @@ func checkNullability(propertySchema *Schema, rc *ReflectContext, ft reflect.Typ
 			propertySchema.AddType(Null)
 
 			in.NullAdded = true
+		} else if propertySchema.Ref == nil && propertySchema.HasType(Null) {
+			propertySchema.RemoveType(Null)
+
+			in.NullAdded = false
 		}
 
 		return

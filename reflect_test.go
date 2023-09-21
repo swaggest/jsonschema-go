@@ -1673,7 +1673,8 @@ func TestReflector_Reflect_nullable(t *testing.T) {
 		"l3":{"items":{"type":"string"},"type":"array"},
 		"m1":{"additionalProperties":{"type":"integer"},"type":["object","null"]},
 		"m2":{"additionalProperties":{"type":"integer"},"type":"object"},
-		"s1":{"type":["string","null"]},"s2":{"type":"string"}
+		"s1":{"type":["string","null"]},
+		"s2":{"type":"string"}
 	  },
 	  "type":"object"
 	}`, s)
