@@ -107,6 +107,40 @@ func (i SimpleType) ToSchemaOrBool() SchemaOrBool {
 	}
 }
 
+// RemoveType removes simple type from Schema.
+//
+// If there is no type, no change is made.
+func (s *Schema) RemoveType(t SimpleType) {
+	if s.Type == nil {
+		return
+	}
+
+	if s.Type.SimpleTypes != nil {
+		if *s.Type.SimpleTypes == t {
+			s.Type = nil
+		}
+
+		return
+	}
+
+	if len(s.Type.SliceOfSimpleTypeValues) > 0 {
+		var tt []SimpleType
+
+		for _, st := range s.Type.SliceOfSimpleTypeValues {
+			if st != t {
+				tt = append(tt, st)
+			}
+		}
+
+		if len(tt) == 1 {
+			s.Type.SimpleTypes = &tt[0]
+			s.Type.SliceOfSimpleTypeValues = nil
+		} else {
+			s.Type.SliceOfSimpleTypeValues = tt
+		}
+	}
+}
+
 // AddType adds simple type to Schema.
 //
 // If type is already there it is ignored.

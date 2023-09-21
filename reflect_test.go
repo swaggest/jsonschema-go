@@ -1361,7 +1361,7 @@ func TestReflector_Reflect_pointer_sharing(t *testing.T) {
 
 type tt struct{}
 
-func (t *tt) UnmarshalText(text []byte) error {
+func (t *tt) UnmarshalText(_ []byte) error {
 	return nil
 }
 
@@ -1645,6 +1645,36 @@ func TestReflector_Reflect_deeplyEmbeddedUnexported(t *testing.T) {
 		"bar":{"minimum":3,"type":"integer"},
 		"baz":{"title":"Bazzz.","type":"number"},
 		"foo":{"minLength":5,"type":"string"}
+	  },
+	  "type":"object"
+	}`, s)
+}
+
+func TestReflector_Reflect_nullable(t *testing.T) {
+	r := jsonschema.Reflector{}
+
+	type My struct {
+		List1 []string       `json:"l1"`
+		List2 []int          `json:"l2"`
+		List3 []string       `json:"l3" nullable:"false"`
+		S1    string         `json:"s1" nullable:"true"`
+		S2    *string        `json:"s2" nullable:"false"`
+		Map1  map[string]int `json:"m1"`
+		Map2  map[string]int `json:"m2" nullable:"false"`
+	}
+
+	s, err := r.Reflect(My{})
+	require.NoError(t, err)
+
+	assertjson.EqMarshal(t, `{
+	  "properties":{
+		"l1":{"items":{"type":"string"},"type":["array","null"]},
+		"l2":{"items":{"type":"integer"},"type":["array","null"]},
+		"l3":{"items":{"type":"string"},"type":"array"},
+		"m1":{"additionalProperties":{"type":"integer"},"type":["object","null"]},
+		"m2":{"additionalProperties":{"type":"integer"},"type":"object"},
+		"s1":{"type":["string","null"]},
+		"s2":{"type":"string"}
 	  },
 	  "type":"object"
 	}`, s)
