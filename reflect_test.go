@@ -1679,3 +1679,48 @@ func TestReflector_Reflect_nullable(t *testing.T) {
 	  "type":"object"
 	}`, s)
 }
+
+func TestReflector_Reflect_customTags(t *testing.T) {
+	r := jsonschema.Reflector{}
+
+	type My struct {
+		Foo string `json:"foo" validate:"required" description:"This is foo."`
+	}
+
+	type Parent struct {
+		MySlice []*My `json:"my,omitempty" validate:"required" description:"The required array."`
+	}
+
+	s, err := r.Reflect(Parent{}, jsonschema.InterceptProp(func(params jsonschema.InterceptPropParams) error {
+		if !params.Processed {
+			return nil
+		}
+
+		if v, ok := params.Field.Tag.Lookup("validate"); ok {
+			if strings.Contains(v, "required") {
+				params.ParentSchema.Required = append(params.ParentSchema.Required, params.Name)
+			}
+		}
+
+		return nil
+	}))
+	require.NoError(t, err)
+
+	assertjson.EqMarshal(t, `{
+	  "required":["my"],
+	  "definitions":{
+		"JsonschemaGoTestMy":{
+		  "required":["foo"],
+		  "properties":{"foo":{"description":"This is foo.","type":"string"}},
+		  "type":"object"
+		}
+	  },
+	  "properties":{
+		"my":{
+		  "description":"The required array.",
+		  "items":{"$ref":"#/definitions/JsonschemaGoTestMy"},"type":"array"
+		}
+	  },
+	  "type":"object"
+	}`, s)
+}

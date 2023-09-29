@@ -77,6 +77,7 @@ type InterceptPropParams struct {
 	Name           string
 	Field          reflect.StructField
 	PropertySchema *Schema
+	ParentSchema   *Schema
 	Processed      bool
 }
 
