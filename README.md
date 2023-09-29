@@ -237,3 +237,36 @@ fmt.Println("Nested:", string(j))
 //  "type":"object"
 // }
 ```
+
+### Custom Tags For Schema Definitions
+
+If you're using additional libraries for validation, like for example 
+[`go-playground/validator`](https://github.com/go-playground/validator), you may want to infer validation rules into 
+documented JSON schema.
+
+```go
+type My struct {
+    Foo *string `json:"foo" validate:"required"`
+}
+```
+
+Normally, `validate:"required"` is not recognized, and you'd need to add `required:"true"` to have the rule exported to 
+JSON schema.
+
+However, it is possible to extend reflection with custom processing with `InterceptProp` option.
+
+```go
+s, err := r.Reflect(My{}, jsonschema.InterceptProp(func(params jsonschema.InterceptPropParams) error {
+    if !params.Processed {
+        return nil
+    }
+
+    if v, ok := params.Field.Tag.Lookup("validate"); ok {
+        if strings.Contains(v, "required") {
+            params.ParentSchema.Required = append(params.ParentSchema.Required, params.Name)
+        }
+    }
+
+    return nil
+}))
+```
