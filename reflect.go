@@ -86,7 +86,7 @@ type Reflector struct {
 	DefaultOptions   []func(*ReflectContext)
 	typesMap         map[reflect.Type]interface{}
 	inlineDefinition map[refl.TypeString]bool
-	defNames         map[reflect.Type]string
+	defNameTypes     map[string]reflect.Type
 }
 
 // AddTypeMapping creates substitution link between types of src and dst when reflecting JSON Schema.
@@ -636,14 +636,11 @@ func (r *Reflector) defName(rc *ReflectContext, t reflect.Type) string {
 		return ""
 	}
 
-	if r.defNames == nil {
-		r.defNames = map[reflect.Type]string{}
+	if r.defNameTypes == nil {
+		r.defNameTypes = map[string]reflect.Type{}
 	}
 
-	defName, found := r.defNames[t]
-	if found {
-		return defName
-	}
+	var defName string
 
 	try := 1
 
@@ -667,7 +664,7 @@ func (r *Reflector) defName(rc *ReflectContext, t reflect.Type) string {
 
 		conflict := false
 
-		for tt, dn := range r.defNames {
+		for dn, tt := range r.defNameTypes {
 			if dn == defName && tt != t {
 				conflict = true
 
@@ -676,7 +673,7 @@ func (r *Reflector) defName(rc *ReflectContext, t reflect.Type) string {
 		}
 
 		if !conflict {
-			r.defNames[t] = defName
+			r.defNameTypes[defName] = t
 
 			return defName
 		}
