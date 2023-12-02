@@ -1787,3 +1787,43 @@ func TestReflector_Reflect_selfReference(t *testing.T) {
 	  "type":"object"
 	}`, s)
 }
+
+func TestReflector_Reflect_multipleTags(t *testing.T) {
+	type GetReq struct {
+		InQuery1 int     `query:"in_query1" required:"true" description:"Query parameter." json:"q1"`
+		InQuery3 int     `query:"in_query3" required:"true" description:"Query parameter." json:"q3"`
+		InPath   int     `path:"in_path" json:"p"`
+		InCookie string  `cookie:"in_cookie" deprecated:"true" json:"c"`
+		InHeader float64 `header:"in_header" json:"h"`
+	}
+
+	r := jsonschema.Reflector{}
+
+	s, err := r.Reflect(GetReq{}, jsonschema.PropertyNameTag("query"))
+	require.NoError(t, err)
+	assertjson.EqMarshal(t, `{
+	  "required":["in_query1","in_query3"],
+	  "properties":{
+		"in_query1":{"description":"Query parameter.","type":"integer"},
+		"in_query3":{"description":"Query parameter.","type":"integer"}
+	  },
+	  "type":"object"
+	}`, s)
+
+	s, err = r.Reflect(GetReq{}, jsonschema.PropertyNameTag("path"))
+	require.NoError(t, err)
+	assertjson.EqMarshal(t, `{"properties":{"in_path":{"type":"integer"}},"type":"object"}`, s)
+
+	s, err = r.Reflect(GetReq{}, jsonschema.PropertyNameTag("json"))
+	require.NoError(t, err)
+	assertjson.EqMarshal(t, `{
+	  "required":["q1","q3"],
+	  "properties":{
+		"c":{"type":"string","deprecated":true},"h":{"type":"number"},
+		"p":{"type":"integer"},
+		"q1":{"description":"Query parameter.","type":"integer"},
+		"q3":{"description":"Query parameter.","type":"integer"}
+	  },
+	  "type":"object"
+	}`, s)
+}
