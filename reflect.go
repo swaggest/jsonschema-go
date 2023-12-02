@@ -940,7 +940,7 @@ func (r *Reflector) walkProperties(v reflect.Value, parent *Schema, rc *ReflectC
 		}
 
 		// Skip the field if tag is not set.
-		if !rc.ProcessWithoutTags && !tagFound && field.Tag == "" {
+		if !rc.ProcessWithoutTags && !tagFound {
 			continue
 		}
 
