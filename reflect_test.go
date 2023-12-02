@@ -1724,3 +1724,52 @@ func TestReflector_Reflect_customTags(t *testing.T) {
 	  "type":"object"
 	}`, s)
 }
+
+func TestReflector_Reflect_customTime(t *testing.T) {
+	type MyTime time.Time
+	type MyPtrTime *time.Time
+
+	type MyStruct struct {
+		T1 MyTime     `json:"t1"`
+		T2 *MyTime    `json:"t2"`
+		T3 *MyPtrTime `json:"t3"`
+	}
+
+	r := jsonschema.Reflector{}
+	s, err := r.Reflect(MyStruct{})
+
+	require.NoError(t, err)
+	assertjson.EqMarshal(t, `{
+	  "definitions":{"JsonschemaGoTestMyTime":{"type":"object"}},
+	  "properties":{
+		"t1":{"$ref":"#/definitions/JsonschemaGoTestMyTime"},
+		"t2":{"$ref":"#/definitions/JsonschemaGoTestMyTime"},
+		"t3":{"type":["null","string"],"format":"date-time"}
+	  },
+	  "type":"object"
+	}`, s)
+}
+
+func TestReflector_Reflect_selfReference(t *testing.T) {
+	type SubEntity struct {
+		Self *SubEntity `json:"self"`
+	}
+	type Req struct {
+		SubEntity *SubEntity `json:"subentity"`
+	}
+
+	r := jsonschema.Reflector{}
+	s, err := r.Reflect(Req{})
+
+	require.NoError(t, err)
+	assertjson.EqMarshal(t, `{
+	  "definitions":{
+		"JsonschemaGoTestSubEntity":{
+		  "properties":{"self":{"$ref":"#/definitions/JsonschemaGoTestSubEntity"}},
+		  "type":"object"
+		}
+	  },
+	  "properties":{"subentity":{"$ref":"#/definitions/JsonschemaGoTestSubEntity"}},
+	  "type":"object"
+	}`, s)
+}

@@ -469,6 +469,12 @@ func (r *Reflector) reflect(i interface{}, rc *ReflectContext, keepType bool, pa
 	}
 
 	if rc.typeCycles[typeString] && !rc.InlineRefs {
+		if defName != "" {
+			ref := Ref{Path: rc.DefinitionsPrefix, Name: defName}
+
+			return ref.Schema(), nil
+		}
+
 		return schema, nil
 	}
 
@@ -831,7 +837,7 @@ func (r *Reflector) propertyTag(rc *ReflectContext, field reflect.StructField) (
 
 func (r *Reflector) makeFields(v reflect.Value) ([]reflect.StructField, []reflect.Value) {
 	t := v.Type()
-	if t.Kind() == reflect.Ptr {
+	for t.Kind() == reflect.Ptr {
 		t = t.Elem()
 
 		if refl.IsZero(v) {
@@ -915,7 +921,7 @@ func (r *Reflector) walkProperties(v reflect.Value, parent *Schema, rc *ReflectC
 		}
 
 		// Skip the field if tag is not set.
-		if !rc.ProcessWithoutTags && !tagFound {
+		if !rc.ProcessWithoutTags && !tagFound && field.Tag == "" {
 			continue
 		}
 
