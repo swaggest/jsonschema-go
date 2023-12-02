@@ -542,6 +542,14 @@ func (ISOWeek) JSONSchemaBytes() ([]byte, error) {
 	}`), nil
 }
 
+// ISOWeek is an ISO week.
+type PtrRawSchema string
+
+// JSONSchemaBytes returns JSON Schema definition.
+func (*PtrRawSchema) JSONSchemaBytes() ([]byte, error) {
+	return []byte(`{"type": "string","examples": ["foo"]}`), nil
+}
+
 type ISOCountry string
 
 // JSONSchemaBytes returns JSON Schema definition.
@@ -558,50 +566,54 @@ func (ISOCountry) JSONSchema() (jsonschema.Schema, error) {
 	return s, nil
 }
 
+type PtrSchema string
+
+// JSONSchemaBytes returns JSON Schema definition.
+func (*PtrSchema) JSONSchema() (jsonschema.Schema, error) {
+	s := jsonschema.Schema{}
+
+	s.AddType(jsonschema.String)
+	s.WithExamples("bar")
+
+	return s, nil
+}
+
 func TestExposer(t *testing.T) {
 	type Some struct {
-		Week    ISOWeek    `json:"week"`
-		Country ISOCountry `json:"country" deprecated:"true"`
+		Week       ISOWeek       `json:"week"`
+		PtrWeek    *ISOWeek      `json:"ptr_week"`
+		Raw        PtrRawSchema  `json:"raw"`
+		PtrRaw     *PtrRawSchema `json:"ptr_raw"`
+		Country    ISOCountry    `json:"country" deprecated:"true"`
+		PtrCountry ISOCountry    `json:"ptr_country" deprecated:"true"`
+		PtrExp     PtrSchema     `json:"ptr_exp"`
 	}
 
 	s, err := (&jsonschema.Reflector{}).Reflect(Some{})
 	require.NoError(t, err)
 
-	j, err := json.MarshalIndent(s, "", " ")
-	require.NoError(t, err)
-
-	assertjson.Equal(t, []byte(`{
-        	            	 "definitions": {
-        	            	  "JsonschemaGoTestISOCountry": {
-        	            	   "description": "ISO Country",
-        	            	   "examples": [
-        	            	    "US"
-        	            	   ],
-        	            	   "maxLength": 2,
-        	            	   "minLength": 2,
-        	            	   "pattern": "^[a-zA-Z]{2}$",
-        	            	   "type": "string"
-        	            	  },
-        	            	  "JsonschemaGoTestISOWeek": {
-        	            	   "description": "ISO Week",
-        	            	   "examples": [
-        	            	    "2018-W43"
-        	            	   ],
-        	            	   "pattern": "^[0-9]{4}-W(0[1-9]|[1-4][0-9]|5[0-3])$",
-        	            	   "type": "string"
-        	            	  }
-        	            	 },
-        	            	 "properties": {
-        	            	  "country": {
-        	            	   "$ref": "#/definitions/JsonschemaGoTestISOCountry",
-        	            	   "deprecated": true
-        	            	  },
-        	            	  "week": {
-        	            	   "$ref": "#/definitions/JsonschemaGoTestISOWeek"
-        	            	  }
-        	            	 },
-        	            	 "type": "object"
-        	            	}`), j, string(j))
+	assertjson.EqMarshal(t, `{
+	  "definitions":{
+		"JsonschemaGoTestISOCountry":{
+		  "description":"ISO Country","examples":["US"],"maxLength":2,"minLength":2,
+		  "pattern":"^[a-zA-Z]{2}$","type":"string"
+		},
+		"JsonschemaGoTestISOWeek":{
+		  "description":"ISO Week","examples":["2018-W43"],
+		  "pattern":"^[0-9]{4}-W(0[1-9]|[1-4][0-9]|5[0-3])$","type":"string"
+		}
+	  },
+	  "properties":{
+		"country":{"$ref":"#/definitions/JsonschemaGoTestISOCountry","deprecated":true},
+		"ptr_country":{"$ref":"#/definitions/JsonschemaGoTestISOCountry","deprecated":true},
+		"ptr_exp":{"examples":["bar"],"type":"string"},
+		"ptr_raw":{"examples":["foo"],"type":["string","null"]},
+		"ptr_week":{"$ref":"#/definitions/JsonschemaGoTestISOWeek"},
+		"raw":{"examples":["foo"],"type":"string"},
+		"week":{"$ref":"#/definitions/JsonschemaGoTestISOWeek"}
+	  },
+	  "type":"object"
+	}`, s)
 }
 
 type Identity struct {
