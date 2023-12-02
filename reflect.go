@@ -244,7 +244,7 @@ func (r *Reflector) Reflect(i interface{}, options ...func(rc *ReflectContext)) 
 	rc.DefinitionsPrefix = "#/definitions/"
 	rc.PropertyNameTag = "json"
 	rc.Path = []string{"#"}
-	rc.typeCycles = make(map[refl.TypeString]bool)
+	rc.typeCycles = make(map[refl.TypeString]*Schema)
 
 	InterceptSchema(checkSchemaSetup)(&rc)
 
@@ -468,18 +468,12 @@ func (r *Reflector) reflect(i interface{}, rc *ReflectContext, keepType bool, pa
 		return ref.Schema(), nil
 	}
 
-	if rc.typeCycles[typeString] && !rc.InlineRefs {
-		if defName != "" {
-			ref := Ref{Path: rc.DefinitionsPrefix, Name: defName}
-
-			return ref.Schema(), nil
-		}
-
-		return schema, nil
+	if rc.typeCycles[typeString] != nil && !rc.InlineRefs {
+		return *rc.typeCycles[typeString], nil
 	}
 
 	if t.PkgPath() != "" && len(rc.Path) > 1 && defName != "" && !r.inlineDefinition[typeString] {
-		rc.typeCycles[typeString] = true
+		rc.typeCycles[typeString] = &schema
 	}
 
 	r.checkTitle(v, s, &schema)

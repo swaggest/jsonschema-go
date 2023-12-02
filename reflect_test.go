@@ -817,7 +817,7 @@ func TestReflector_Reflect_sub_schema(t *testing.T) {
 	s, err := r.Reflect(WithSubSchemas{}, jsonschema.StripDefinitionNamePrefix("JsonschemaGoTest"))
 	assert.NoError(t, err)
 
-	assertjson.EqualMarshal(t, []byte(`{
+	assertjson.EqMarshal(t, `{
 	  "definitions":{
 		"Entity":{
 		  "properties":{
@@ -856,7 +856,7 @@ func TestReflector_Reflect_sub_schema(t *testing.T) {
 		{"type":"string"}
 	  ],
 	  "not":{"$ref":"#/definitions/Person"}
-	}`), s)
+	}`, s)
 }
 
 func TestReflector_Reflect_jsonEmptyName(t *testing.T) {
@@ -1727,6 +1727,7 @@ func TestReflector_Reflect_customTags(t *testing.T) {
 
 func TestReflector_Reflect_customTime(t *testing.T) {
 	type MyTime time.Time
+
 	type MyPtrTime *time.Time
 
 	type MyStruct struct {
@@ -1754,6 +1755,7 @@ func TestReflector_Reflect_selfReference(t *testing.T) {
 	type SubEntity struct {
 		Self *SubEntity `json:"self"`
 	}
+
 	type Req struct {
 		SubEntity *SubEntity `json:"subentity"`
 	}

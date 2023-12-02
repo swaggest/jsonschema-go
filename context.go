@@ -319,7 +319,7 @@ type ReflectContext struct {
 	Path           []string
 	definitions    map[refl.TypeString]*Schema // list of all definition objects
 	definitionRefs map[refl.TypeString]Ref
-	typeCycles     map[refl.TypeString]bool
+	typeCycles     map[refl.TypeString]*Schema
 	rootDefName    string
 }
 
