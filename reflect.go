@@ -127,10 +127,24 @@ func checkSchemaSetup(params InterceptSchemaParams) (bool, error) {
 		vi = reflect.New(v.Type().Elem()).Interface()
 	}
 
+	vpi := reflect.New(v.Type()).Interface()
+
 	reflectEnum(s, "", vi)
 
-	if exposer, ok := v.Interface().(Exposer); ok {
-		schema, err := exposer.JSONSchema()
+	var e Exposer
+
+	if exposer, ok := vi.(Exposer); ok {
+		e = exposer
+	}
+
+	if exposer, ok := vi.(Exposer); ok {
+		e = exposer
+	} else if exposer, ok := vpi.(Exposer); ok {
+		e = exposer
+	}
+
+	if e != nil {
+		schema, err := e.JSONSchema()
 		if err != nil {
 			return true, err
 		}
@@ -140,8 +154,17 @@ func checkSchemaSetup(params InterceptSchemaParams) (bool, error) {
 		return true, nil
 	}
 
-	if exposer, ok := v.Interface().(RawExposer); ok {
-		schemaBytes, err := exposer.JSONSchemaBytes()
+	var re RawExposer
+
+	// Checking if RawExposer is defined on a current value.
+	if exposer, ok := vi.(RawExposer); ok {
+		re = exposer
+	} else if exposer, ok := vpi.(RawExposer); ok { // Checking if RawExposer is defined on a pointer to current value.
+		re = exposer
+	}
+
+	if re != nil {
+		schemaBytes, err := re.JSONSchemaBytes()
 		if err != nil {
 			return true, err
 		}
