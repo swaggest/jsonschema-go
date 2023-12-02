@@ -244,7 +244,7 @@ func (r *Reflector) Reflect(i interface{}, options ...func(rc *ReflectContext)) 
 	rc.DefinitionsPrefix = "#/definitions/"
 	rc.PropertyNameTag = "json"
 	rc.Path = []string{"#"}
-	rc.typeCycles = make(map[refl.TypeString]bool)
+	rc.typeCycles = make(map[refl.TypeString]*Schema)
 
 	InterceptSchema(checkSchemaSetup)(&rc)
 
@@ -468,12 +468,12 @@ func (r *Reflector) reflect(i interface{}, rc *ReflectContext, keepType bool, pa
 		return ref.Schema(), nil
 	}
 
-	if rc.typeCycles[typeString] && !rc.InlineRefs {
-		return schema, nil
+	if rc.typeCycles[typeString] != nil && !rc.InlineRefs {
+		return *rc.typeCycles[typeString], nil
 	}
 
 	if t.PkgPath() != "" && len(rc.Path) > 1 && defName != "" && !r.inlineDefinition[typeString] {
-		rc.typeCycles[typeString] = true
+		rc.typeCycles[typeString] = &schema
 	}
 
 	r.checkTitle(v, s, &schema)
@@ -831,7 +831,7 @@ func (r *Reflector) propertyTag(rc *ReflectContext, field reflect.StructField) (
 
 func (r *Reflector) makeFields(v reflect.Value) ([]reflect.StructField, []reflect.Value) {
 	t := v.Type()
-	if t.Kind() == reflect.Ptr {
+	for t.Kind() == reflect.Ptr {
 		t = t.Elem()
 
 		if refl.IsZero(v) {
@@ -915,7 +915,7 @@ func (r *Reflector) walkProperties(v reflect.Value, parent *Schema, rc *ReflectC
 		}
 
 		// Skip the field if tag is not set.
-		if !rc.ProcessWithoutTags && !tagFound {
+		if !rc.ProcessWithoutTags && !tagFound && field.Tag == "" {
 			continue
 		}
 
