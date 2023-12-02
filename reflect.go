@@ -444,18 +444,20 @@ func (r *Reflector) reflect(i interface{}, rc *ReflectContext, keepType bool, pa
 		}
 	}
 
+	sp := &schema
+
 	if rc.interceptSchema != nil {
 		if ret, err := rc.interceptSchema(InterceptSchemaParams{
 			Context:   rc,
 			Value:     v,
-			Schema:    &schema,
+			Schema:    sp,
 			Processed: false,
 		}); err != nil || ret {
 			return schema, err
 		}
 	}
 
-	if r.isWellKnownType(t, &schema) {
+	if r.isWellKnownType(t, sp) {
 		return schema, nil
 	}
 
@@ -473,16 +475,16 @@ func (r *Reflector) reflect(i interface{}, rc *ReflectContext, keepType bool, pa
 	}
 
 	if t.PkgPath() != "" && len(rc.Path) > 1 && defName != "" && !r.inlineDefinition[typeString] {
-		rc.typeCycles[typeString] = &schema
+		rc.typeCycles[typeString] = sp
 	}
 
-	r.checkTitle(v, s, &schema)
+	r.checkTitle(v, s, sp)
 
-	if err := r.applySubSchemas(v, rc, &schema); err != nil {
+	if err := r.applySubSchemas(v, rc, sp); err != nil {
 		return schema, err
 	}
 
-	if err = r.kindSwitch(t, v, &schema, rc); err != nil {
+	if err = r.kindSwitch(t, v, sp, rc); err != nil {
 		return schema, err
 	}
 
@@ -490,7 +492,7 @@ func (r *Reflector) reflect(i interface{}, rc *ReflectContext, keepType bool, pa
 		if ret, err := rc.interceptSchema(InterceptSchemaParams{
 			Context:   rc,
 			Value:     v,
-			Schema:    &schema,
+			Schema:    sp,
 			Processed: true,
 		}); err != nil || ret {
 			return schema, err
@@ -498,7 +500,7 @@ func (r *Reflector) reflect(i interface{}, rc *ReflectContext, keepType bool, pa
 	}
 
 	if preparer, ok := v.Interface().(Preparer); ok {
-		err := preparer.PrepareJSONSchema(&schema)
+		err := preparer.PrepareJSONSchema(sp)
 
 		return schema, err
 	}
