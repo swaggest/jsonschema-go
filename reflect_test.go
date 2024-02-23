@@ -343,7 +343,7 @@ func TestReflector_Reflect_mapping(t *testing.T) {
 	rf := jsonschema.Reflector{}
 	rf.AddTypeMapping(simpleTestReplacement{}, "")
 	rf.DefaultOptions = append(rf.DefaultOptions, jsonschema.InterceptDefName(
-		func(t reflect.Type, defaultDefName string) string {
+		func(_ reflect.Type, defaultDefName string) string {
 			return strings.TrimPrefix(defaultDefName, "JsonschemaGoTest")
 		},
 	))
@@ -713,7 +713,7 @@ func TestPreparer(t *testing.T) {
 	r := jsonschema.Reflector{}
 
 	s, err := r.Reflect(nullFloat{})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assertjson.EqualMarshal(t, []byte(`{"type":["null", "number"]}`), s)
 }
 
@@ -726,7 +726,7 @@ func TestReflector_Reflect_inclineScalar(t *testing.T) {
 
 	r := jsonschema.Reflector{}
 	s, err := r.Reflect(topTracesInput{})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assertjson.EqualMarshal(t, []byte(`{
 	  "properties":{
 		"rootSymbol":{"default":"main()","examples":["my_func"],"minLength":5,"type":"string"}
@@ -745,7 +745,7 @@ func TestReflector_Reflect_MapOfOptionals(t *testing.T) {
 
 	r := jsonschema.Reflector{}
 	s, err := r.Reflect(Optionals{})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assertjson.EqualMarshal(t, []byte(`{
 	  "properties":{
 		"map":{
@@ -768,7 +768,7 @@ func TestReflector_Reflect_InlineValue(t *testing.T) {
 
 	r := jsonschema.Reflector{}
 	s, err := r.Reflect(InlineValues{})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	assertjson.EqualMarshal(t, []byte(`{
 	  "properties":{
@@ -827,7 +827,7 @@ func TestReflector_Reflect_sub_schema(t *testing.T) {
 	r := jsonschema.Reflector{}
 
 	s, err := r.Reflect(WithSubSchemas{}, jsonschema.StripDefinitionNamePrefix("JsonschemaGoTest"))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	assertjson.EqMarshal(t, `{
 	  "definitions":{
@@ -881,7 +881,7 @@ func TestReflector_Reflect_jsonEmptyName(t *testing.T) {
 	r := jsonschema.Reflector{}
 
 	s, err := r.Reflect(Test{})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	assertjson.EqualMarshal(t, []byte(`{
 	  "properties":{"Bar":{"type":"integer"},"Foo":{"type":"string"}},
@@ -900,7 +900,7 @@ func TestReflector_Reflect_processWithoutTags_true(t *testing.T) {
 	r := jsonschema.Reflector{}
 
 	s, err := r.Reflect(Test{}, jsonschema.ProcessWithoutTags)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	assertjson.EqualMarshal(t, []byte(`{
 	  "properties":{"Bar":{"type":"integer"},"Foo":{"type":"string"},"baz":{"type":"boolean"}},
@@ -921,7 +921,7 @@ func TestReflector_Reflect_processWithoutTags_tolerateUnknownTypes(t *testing.T)
 	r := jsonschema.Reflector{}
 
 	s, err := r.Reflect(Test{}, jsonschema.ProcessWithoutTags, jsonschema.SkipUnsupportedProperties)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	assertjson.EqualMarshal(t, []byte(`{
 	  "properties":{"Bar":{"type":"integer"},"Foo":{"type":"string"},"baz":{"type":"boolean"}},
@@ -940,7 +940,7 @@ func TestReflector_Reflect_processWithoutTags_false(t *testing.T) {
 	r := jsonschema.Reflector{}
 
 	s, err := r.Reflect(Test{})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	assertjson.EqualMarshal(t, []byte(`{
 	  "properties":{"baz":{"type":"boolean"}},
@@ -961,7 +961,7 @@ func TestReflector_Reflect_parentTags(t *testing.T) {
 	r := jsonschema.Reflector{}
 
 	s, err := r.Reflect(Test{})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	assertjson.EqualMarshal(t, []byte(`{
 	  "title":"Test","description":"This is a test.","additionalProperties":false,
@@ -972,7 +972,7 @@ func TestReflector_Reflect_parentTags(t *testing.T) {
 	_, err = r.Reflect(struct {
 		_ string `additionalProperties:"abc"`
 	}{})
-	assert.EqualError(t, err, "failed to parse bool value abc in tag additionalProperties: strconv.ParseBool: parsing \"abc\": invalid syntax")
+	require.EqualError(t, err, "failed to parse bool value abc in tag additionalProperties: strconv.ParseBool: parsing \"abc\": invalid syntax")
 
 	_, err = r.Reflect(struct {
 		_ string `minProperties:"abc"`
@@ -996,7 +996,7 @@ func TestReflector_Reflect_parentTagsFiltered(t *testing.T) {
 		rc.UnnamedFieldWithTag = true
 		rc.PropertyNameTag = "json"
 	})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// No parent schema update for json, as tag is missing in unnamed field.
 	assertjson.EqualMarshal(t, []byte(`{"properties":{"foo":{"type":"string"}},"type":"object"}`), s)
@@ -1005,7 +1005,7 @@ func TestReflector_Reflect_parentTagsFiltered(t *testing.T) {
 		rc.UnnamedFieldWithTag = true
 		rc.PropertyNameTag = "query"
 	})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Parent schema is updated for query, as tag is present in unnamed field.
 	assertjson.EqualMarshal(t, []byte(`{
@@ -1017,12 +1017,12 @@ func TestReflector_Reflect_parentTagsFiltered(t *testing.T) {
 	_, err = r.Reflect(struct {
 		_ string `additionalProperties:"abc"`
 	}{})
-	assert.EqualError(t, err, "failed to parse bool value abc in tag additionalProperties: strconv.ParseBool: parsing \"abc\": invalid syntax")
+	require.EqualError(t, err, "failed to parse bool value abc in tag additionalProperties: strconv.ParseBool: parsing \"abc\": invalid syntax")
 
 	_, err = r.Reflect(struct {
 		_ string `minProperties:"abc"`
 	}{})
-	assert.EqualError(t, err, "failed to parse int value abc in tag minProperties: strconv.ParseInt: parsing \"abc\": invalid syntax")
+	require.EqualError(t, err, "failed to parse int value abc in tag minProperties: strconv.ParseInt: parsing \"abc\": invalid syntax")
 }
 
 func TestReflector_Reflect_context(t *testing.T) {
@@ -1521,7 +1521,7 @@ func TestReflector_Reflect_example(t *testing.T) {
 
 	// Modify default definition names to better match your packages structure.
 	reflector.DefaultOptions = append(reflector.DefaultOptions, jsonschema.InterceptDefName(
-		func(t reflect.Type, defaultDefName string) string {
+		func(_ reflect.Type, defaultDefName string) string {
 			return strings.TrimPrefix(defaultDefName, "JsonschemaGoTest")
 		},
 	))
@@ -1579,7 +1579,7 @@ func TestReflector_Reflect_inlineRefs_typeCycle(t *testing.T) {
 
 	gen, err := ref.Reflect(&ExampleEvent{}, jsonschema.InlineRefs)
 
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assertjson.EqMarshal(t, `{
 	  "properties":{
 		"current_data":{
