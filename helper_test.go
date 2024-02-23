@@ -96,7 +96,7 @@ func TestSchema_IsTrivial(t *testing.T) {
 		t.Run(s.name, func(t *testing.T) {
 			var schema jsonschema.SchemaOrBool
 
-			assert.NoError(t, json.Unmarshal([]byte(s.schema), &schema))
+			require.NoError(t, json.Unmarshal([]byte(s.schema), &schema))
 			assert.Equal(t, s.isTrivial, schema.IsTrivial())
 		})
 	}

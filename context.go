@@ -206,7 +206,7 @@ func RootRef(rc *ReflectContext) {
 // and removes first encountered.
 func StripDefinitionNamePrefix(prefix ...string) func(rc *ReflectContext) {
 	return func(rc *ReflectContext) {
-		rc.DefName = func(t reflect.Type, defaultDefName string) string {
+		rc.DefName = func(_ reflect.Type, defaultDefName string) string {
 			for _, p := range prefix {
 				s := strings.TrimPrefix(defaultDefName, p)
 				s = strings.ReplaceAll(s, "["+p, "[")

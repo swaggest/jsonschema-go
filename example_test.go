@@ -182,7 +182,7 @@ func ExampleReflector_Reflect() {
 
 	// Modify default definition names to better match your packages structure.
 	reflector.DefaultOptions = append(reflector.DefaultOptions, jsonschema.InterceptDefName(
-		func(t reflect.Type, defaultDefName string) string {
+		func(_ reflect.Type, defaultDefName string) string {
 			return strings.TrimPrefix(defaultDefName, "JsonschemaGoTest")
 		},
 	))

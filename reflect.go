@@ -813,7 +813,7 @@ func (r *Reflector) kindSwitch(t reflect.Type, v reflect.Value, schema *Schema, 
 func MakePropertyNameMapping(v interface{}, tagName string) map[string]string {
 	res := make(map[string]string)
 
-	refl.WalkTaggedFields(reflect.ValueOf(v), func(v reflect.Value, sf reflect.StructField, tag string) {
+	refl.WalkTaggedFields(reflect.ValueOf(v), func(_ reflect.Value, sf reflect.StructField, tag string) {
 		res[sf.Name] = tag
 	}, tagName)
 
