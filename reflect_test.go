@@ -1827,3 +1827,38 @@ func TestReflector_Reflect_multipleTags(t *testing.T) {
 	  "type":"object"
 	}`, s)
 }
+
+func TestReflector_Reflect_embedded(t *testing.T) {
+	type A struct {
+		FieldA int `json:"field_a"`
+	}
+
+	type C struct {
+		jsonschema.EmbedReferencer
+		FieldC int `json:"field_c"`
+	}
+
+	type B struct {
+		A      `refer:"true"`
+		FieldB int `json:"field_b"`
+		C
+	}
+
+	r := jsonschema.Reflector{}
+
+	s, err := r.Reflect(B{}, jsonschema.InterceptProp(func(params jsonschema.InterceptPropParams) error {
+		return nil
+	}))
+	require.NoError(t, err)
+	assertjson.EqMarshal(t, `{
+	  "definitions":{
+		"JsonschemaGoTestA":{"properties":{"field_a":{"type":"integer"}},"type":"object"},
+		"JsonschemaGoTestC":{"properties":{"field_c":{"type":"integer"}},"type":"object"}
+	  },
+	  "properties":{"field_b":{"type":"integer"}},"type":"object",
+	  "allOf":[
+		{"$ref":"#/definitions/JsonschemaGoTestA"},
+		{"$ref":"#/definitions/JsonschemaGoTestC"}
+	  ]
+	}`, s)
+}

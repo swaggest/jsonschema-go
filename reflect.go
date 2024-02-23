@@ -24,6 +24,7 @@ var (
 	typeOfTextMarshaler   = reflect.TypeOf((*encoding.TextMarshaler)(nil)).Elem()
 	typeOfEmptyInterface  = reflect.TypeOf((*interface{})(nil)).Elem()
 	typeOfSchemaInliner   = reflect.TypeOf((*SchemaInliner)(nil)).Elem()
+	typeOfEmbedReferencer = reflect.TypeOf((*EmbedReferencer)(nil)).Elem()
 )
 
 const (
@@ -45,6 +46,11 @@ type IgnoreTypeName interface {
 // SchemaInliner is a marker interface to inline schema without creating a definition.
 type SchemaInliner interface {
 	InlineJSONSchema()
+}
+
+// EmbedReferencer is a marker interface to enable reference to embedded struct type.
+type EmbedReferencer interface {
+	ReferEmbedded()
 }
 
 // IgnoreTypeName instructs reflector to keep original type name during mapping.
@@ -261,6 +267,10 @@ func checkSchemaSetup(params InterceptSchemaParams) (bool, error) {
 //		ProcessWithoutTags
 //		SkipEmbeddedMapsSlices
 //		SkipUnsupportedProperties
+//
+// Fields from embedded structures are processed as if they were defined in the root structure.
+// Alternatively, if embedded structure has a field tag `refer:"true"` or implements EmbedReferencer,
+// its reference will be added to `allOf` of the parent schema.
 func (r *Reflector) Reflect(i interface{}, options ...func(rc *ReflectContext)) (Schema, error) {
 	rc := ReflectContext{}
 	rc.Context = context.Background()
@@ -914,7 +924,18 @@ func (r *Reflector) walkProperties(v reflect.Value, parent *Schema, rc *ReflectC
 
 		if tag == "" && field.Anonymous &&
 			(field.Type.Kind() == reflect.Struct || deepIndirect.Kind() == reflect.Struct) {
-			if err := r.walkProperties(values[i], parent, rc); err != nil {
+
+			forceReference := (field.Type.Implements(typeOfEmbedReferencer) && field.Tag.Get("refer") == "") ||
+				field.Tag.Get("refer") == "true"
+
+			if forceReference {
+				rc.Path = append(rc.Path, "")
+				if s, err := r.reflect(values[i].Interface(), rc, false, parent); err != nil {
+					return err
+				} else {
+					parent.AllOf = append(parent.AllOf, s.ToSchemaOrBool())
+				}
+			} else if err := r.walkProperties(values[i], parent, rc); err != nil {
 				return err
 			}
 
