@@ -924,17 +924,18 @@ func (r *Reflector) walkProperties(v reflect.Value, parent *Schema, rc *ReflectC
 
 		if tag == "" && field.Anonymous &&
 			(field.Type.Kind() == reflect.Struct || deepIndirect.Kind() == reflect.Struct) {
-
 			forceReference := (field.Type.Implements(typeOfEmbedReferencer) && field.Tag.Get("refer") == "") ||
 				field.Tag.Get("refer") == "true"
 
 			if forceReference {
 				rc.Path = append(rc.Path, "")
-				if s, err := r.reflect(values[i].Interface(), rc, false, parent); err != nil {
+
+				s, err := r.reflect(values[i].Interface(), rc, false, parent)
+				if err != nil {
 					return err
-				} else {
-					parent.AllOf = append(parent.AllOf, s.ToSchemaOrBool())
 				}
+
+				parent.AllOf = append(parent.AllOf, s.ToSchemaOrBool())
 			} else if err := r.walkProperties(values[i], parent, rc); err != nil {
 				return err
 			}

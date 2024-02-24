@@ -1846,9 +1846,7 @@ func TestReflector_Reflect_embedded(t *testing.T) {
 
 	r := jsonschema.Reflector{}
 
-	s, err := r.Reflect(B{}, jsonschema.InterceptProp(func(params jsonschema.InterceptPropParams) error {
-		return nil
-	}))
+	s, err := r.Reflect(B{})
 	require.NoError(t, err)
 	assertjson.EqMarshal(t, `{
 	  "definitions":{
