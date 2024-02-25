@@ -1860,3 +1860,26 @@ func TestReflector_Reflect_embedded(t *testing.T) {
 	  ]
 	}`, s)
 }
+
+func (*UUID) UnmarshalText(_ []byte) error {
+	return nil
+}
+
+func (UUID) MarshalText() (text []byte, err error) {
+	return []byte("248df4b7-aa70-47b8-a036-33ac447e668d"), nil
+}
+
+func TestReflector_Reflect_textMarshaler(t *testing.T) {
+	type T struct {
+		ID UUID `json:"id"` // UUID has type [16]byte, but implements encoding.TextMarshaler
+	}
+
+	reflector := jsonschema.Reflector{}
+	schema, err := reflector.Reflect(T{})
+	require.NoError(t, err)
+
+	assertjson.EqMarshal(t, `{
+	  "properties":{"id":{"type":"string"}},
+	  "type":"object"
+	}`, schema)
+}

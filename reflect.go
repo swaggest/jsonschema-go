@@ -22,6 +22,7 @@ var (
 	typeOfDate            = reflect.TypeOf(Date{})
 	typeOfTextUnmarshaler = reflect.TypeOf((*encoding.TextUnmarshaler)(nil)).Elem()
 	typeOfTextMarshaler   = reflect.TypeOf((*encoding.TextMarshaler)(nil)).Elem()
+	typeOfJSONMarshaler   = reflect.TypeOf((*json.Marshaler)(nil)).Elem()
 	typeOfEmptyInterface  = reflect.TypeOf((*interface{})(nil)).Elem()
 	typeOfSchemaInliner   = reflect.TypeOf((*SchemaInliner)(nil)).Elem()
 	typeOfEmbedReferencer = reflect.TypeOf((*EmbedReferencer)(nil)).Elem()
@@ -494,10 +495,7 @@ func (r *Reflector) reflect(i interface{}, rc *ReflectContext, keepType bool, pa
 		return schema, nil
 	}
 
-	if (t.Implements(typeOfTextUnmarshaler) || reflect.PtrTo(t).Implements(typeOfTextUnmarshaler)) &&
-		(t.Implements(typeOfTextMarshaler) || reflect.PtrTo(t).Implements(typeOfTextMarshaler)) {
-		schema.AddType(String)
-	}
+	isTextMarshaler := checkTextMarshaler(t, &schema)
 
 	if ref, ok := rc.definitionRefs[typeString]; ok && defName != "" {
 		return ref.Schema(), nil
@@ -517,8 +515,10 @@ func (r *Reflector) reflect(i interface{}, rc *ReflectContext, keepType bool, pa
 		return schema, err
 	}
 
-	if err = r.kindSwitch(t, v, sp, rc); err != nil {
-		return schema, err
+	if !isTextMarshaler {
+		if err = r.kindSwitch(t, v, sp, rc); err != nil {
+			return schema, err
+		}
 	}
 
 	if rc.interceptSchema != nil {
@@ -539,6 +539,20 @@ func (r *Reflector) reflect(i interface{}, rc *ReflectContext, keepType bool, pa
 	}
 
 	return schema, nil
+}
+
+func checkTextMarshaler(t reflect.Type, schema *Schema) bool {
+	if (t.Implements(typeOfTextUnmarshaler) || reflect.PtrTo(t).Implements(typeOfTextUnmarshaler)) &&
+		(t.Implements(typeOfTextMarshaler) || reflect.PtrTo(t).Implements(typeOfTextMarshaler)) {
+		if !t.Implements(typeOfJSONMarshaler) && !reflect.PtrTo(t).Implements(typeOfJSONMarshaler) {
+			schema.TypeEns().WithSimpleTypes(String)
+			schema.Type.SliceOfSimpleTypeValues = nil
+
+			return true
+		}
+	}
+
+	return false
 }
 
 func (r *Reflector) applySubSchemas(v reflect.Value, rc *ReflectContext, schema *Schema) error {
