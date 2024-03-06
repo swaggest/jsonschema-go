@@ -79,7 +79,7 @@ func TestReflector_Reflect_Struct(t *testing.T) {
 	  "definitions":{
 		"JsonschemaGoTestEnumed":{"enum":["foo","bar"],"type":"string"},
 		"JsonschemaGoTestPerson":{
-		  "required":["lastName"],
+		  "title":"Person","required":["lastName"],
 		  "properties":{
 			"birthDate":{"type":"string","format":"date"},
 			"createdAt":{"type":"string","format":"date-time"},
