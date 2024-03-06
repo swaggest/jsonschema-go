@@ -685,6 +685,10 @@ func (r *Reflector) defName(rc *ReflectContext, t reflect.Type) string {
 		return ""
 	}
 
+	if t.Kind() == reflect.Func {
+		return ""
+	}
+
 	if r.defNameTypes == nil {
 		r.defNameTypes = map[string]reflect.Type{}
 	}
