@@ -842,7 +842,7 @@ func TestReflector_Reflect_sub_schema(t *testing.T) {
 		},
 		"Enumed":{"enum":["foo","bar"],"type":"string"},
 		"Person":{
-		  "required":["lastName"],
+		  "title":"Person","required":["lastName"],
 		  "properties":{
 			"birthDate":{"type":"string","format":"date"},
 			"createdAt":{"type":"string","format":"date-time"},
@@ -1958,6 +1958,7 @@ func TestReflector_Reflect_nilPreparer(t *testing.T) {
 	s, err := r.Reflect(o)
 	require.NoError(t, err)
 	assertjson.EqMarshal(t, `{
+	  "title":"Organization",
 	  "definitions":{
 		"JsonschemaGoTestEnumed":{"enum":["foo","bar"],"type":"string"},
 		"JsonschemaGoTestPerson":{
@@ -1983,4 +1984,494 @@ func TestReflector_Reflect_nilPreparer(t *testing.T) {
 	  },
 	  "type":"object"
 	}`, s)
+}
+
+type withPtrPreparer string
+
+func (w *withPtrPreparer) PrepareJSONSchema(schema *jsonschema.Schema) error {
+	schema.WithTitle(string(*w))
+
+	return nil
+}
+
+type withValPreparer string
+
+func (w withValPreparer) PrepareJSONSchema(schema *jsonschema.Schema) error {
+	schema.WithTitle(string(w))
+
+	return nil
+}
+
+func TestReflector_Reflect_Preparer(t *testing.T) {
+	r := jsonschema.Reflector{}
+
+	var (
+		np *withPtrPreparer
+		nv *withValPreparer
+	)
+
+	s, err := r.Reflect(np)
+	require.NoError(t, err)
+	assertjson.EqMarshal(t, `{"title":"","type":["null","string"]}`, s)
+
+	s, err = r.Reflect(nv)
+	require.NoError(t, err)
+	assertjson.EqMarshal(t, `{"title":"","type":["null","string"]}`, s)
+
+	s, err = r.Reflect(withValPreparer("test1"))
+	require.NoError(t, err)
+	assertjson.EqMarshal(t, `{"title":"test1","type":"string"}`, s)
+
+	s, err = r.Reflect(withPtrPreparer("test2"))
+	require.NoError(t, err)
+	assertjson.EqMarshal(t, `{"title":"test2","type":"string"}`, s)
+}
+
+type withPtrExposer string
+
+func (w *withPtrExposer) JSONSchema() (jsonschema.Schema, error) {
+	s := jsonschema.Schema{}
+	s.WithTitle(string(*w))
+
+	return s, nil
+}
+
+type withValExposer string
+
+func (w withValExposer) JSONSchema() (jsonschema.Schema, error) {
+	s := jsonschema.Schema{}
+	s.WithTitle(string(w))
+
+	return s, nil
+}
+
+func TestReflector_Reflect_Exposer(t *testing.T) {
+	r := jsonschema.Reflector{}
+
+	var (
+		np *withPtrExposer
+		nv *withValExposer
+	)
+
+	s, err := r.Reflect(np)
+	require.NoError(t, err)
+	assertjson.EqMarshal(t, `{"title":""}`, s)
+
+	s, err = r.Reflect(nv)
+	require.NoError(t, err)
+	assertjson.EqMarshal(t, `{"title":""}`, s)
+
+	s, err = r.Reflect(withValExposer("test1"))
+	require.NoError(t, err)
+	assertjson.EqMarshal(t, `{"title":"test1"}`, s)
+
+	s, err = r.Reflect(withPtrExposer("test2"))
+	require.NoError(t, err)
+	assertjson.EqMarshal(t, `{"title":"test2"}`, s)
+}
+
+type withPtrRawExposer string
+
+func (w *withPtrRawExposer) JSONSchemaBytes() ([]byte, error) {
+	return []byte(`{"title":"` + string(*w) + `"}`), nil
+}
+
+type withValRawExposer string
+
+func (w withValRawExposer) JSONSchemaBytes() ([]byte, error) {
+	return []byte(`{"title":"` + string(w) + `"}`), nil
+}
+
+func TestReflector_Reflect_RawExposer(t *testing.T) {
+	r := jsonschema.Reflector{}
+
+	var (
+		np *withPtrRawExposer
+		nv *withValRawExposer
+	)
+
+	s, err := r.Reflect(np)
+	require.NoError(t, err)
+	assertjson.EqMarshal(t, `{"title":""}`, s)
+
+	s, err = r.Reflect(nv)
+	require.NoError(t, err)
+	assertjson.EqMarshal(t, `{"title":""}`, s)
+
+	s, err = r.Reflect(withValRawExposer("test1"))
+	require.NoError(t, err)
+	assertjson.EqMarshal(t, `{"title":"test1"}`, s)
+
+	s, err = r.Reflect(withPtrRawExposer("test2"))
+	require.NoError(t, err)
+	assertjson.EqMarshal(t, `{"title":"test2"}`, s)
+}
+
+type withPtrEnum string
+
+func (w *withPtrEnum) Enum() []interface{} {
+	return []interface{}{string(*w)}
+}
+
+type withValEnum string
+
+func (w withValEnum) Enum() []interface{} {
+	return []interface{}{string(w)}
+}
+
+func TestReflector_Reflect_Enum(t *testing.T) {
+	r := jsonschema.Reflector{}
+
+	var (
+		np *withPtrEnum
+		nv *withValEnum
+	)
+
+	s, err := r.Reflect(np)
+	require.NoError(t, err)
+	assertjson.EqMarshal(t, `{"enum":[""],"type":["null","string"]}`, s)
+
+	s, err = r.Reflect(nv)
+	require.NoError(t, err)
+	assertjson.EqMarshal(t, `{"enum":[""],"type":["null","string"]}`, s)
+
+	s, err = r.Reflect(withValEnum("test1"))
+	require.NoError(t, err)
+	assertjson.EqMarshal(t, `{"enum":["test1"],"type":"string"}`, s)
+
+	s, err = r.Reflect(withPtrEnum("test2"))
+	require.NoError(t, err)
+	assertjson.EqMarshal(t, `{"enum":["test2"],"type":"string"}`, s)
+}
+
+type withPtrNamedEnum string
+
+func (w *withPtrNamedEnum) NamedEnum() ([]interface{}, []string) {
+	return []interface{}{string(*w)}, []string{"n:" + string(*w)}
+}
+
+type withValNamedEnum string
+
+func (w withValNamedEnum) NamedEnum() ([]interface{}, []string) {
+	return []interface{}{string(w)}, []string{"n:" + string(w)}
+}
+
+func TestReflector_Reflect_NamedEnum(t *testing.T) {
+	r := jsonschema.Reflector{}
+
+	var (
+		np *withPtrNamedEnum
+		nv *withValNamedEnum
+	)
+
+	s, err := r.Reflect(np)
+	require.NoError(t, err)
+	assertjson.EqMarshal(t, `{"enum":[""],"type":["null","string"],"x-enum-names":["n:"]}`, s)
+
+	s, err = r.Reflect(nv)
+	require.NoError(t, err)
+	assertjson.EqMarshal(t, `{"enum":[""],"type":["null","string"],"x-enum-names":["n:"]}`, s)
+
+	s, err = r.Reflect(withValNamedEnum("test1"))
+	require.NoError(t, err)
+	assertjson.EqMarshal(t, `{"enum":["test1"],"type":"string","x-enum-names":["n:test1"]}`, s)
+
+	s, err = r.Reflect(withPtrNamedEnum("test2"))
+	require.NoError(t, err)
+	assertjson.EqMarshal(t, `{"enum":["test2"],"type":"string","x-enum-names":["n:test2"]}`, s)
+}
+
+type withPtrOneOfExposer string
+
+func (w *withPtrOneOfExposer) JSONSchemaOneOf() []interface{} {
+	return []interface{}{withValPreparer(*w), withPtrPreparer("2:" + *w)}
+}
+
+type withValOneOfExposer string
+
+func (w withValOneOfExposer) JSONSchemaOneOf() []interface{} {
+	return []interface{}{withValPreparer(w), withPtrPreparer("2:" + w)}
+}
+
+func TestReflector_Reflect_OneOfExposer(t *testing.T) {
+	r := jsonschema.Reflector{}
+
+	var (
+		np *withPtrOneOfExposer
+		nv *withValOneOfExposer
+	)
+
+	s, err := r.Reflect(np)
+	require.NoError(t, err)
+	assertjson.EqMarshal(t, `{
+        	            	  "type":["null","string"],
+        	            	  "oneOf":[{"title":"","type":"string"},{"title":"2:","type":"string"}]
+        	            	}`, s)
+
+	s, err = r.Reflect(nv)
+	require.NoError(t, err)
+	assertjson.EqMarshal(t, `{
+        	            	  "type":["null","string"],
+        	            	  "oneOf":[{"title":"","type":"string"},{"title":"2:","type":"string"}]
+        	            	}`, s)
+
+	s, err = r.Reflect(withValOneOfExposer("test1"))
+	require.NoError(t, err)
+	assertjson.EqMarshal(t, `{
+        	            	  "type":"string",
+        	            	  "oneOf":[{"title":"test1","type":"string"},{"title":"2:test1","type":"string"}]
+        	            	}`, s)
+
+	s, err = r.Reflect(withPtrOneOfExposer("test2"))
+	require.NoError(t, err)
+	assertjson.EqMarshal(t, `{
+        	            	  "type":"string",
+        	            	  "oneOf":[{"title":"test2","type":"string"},{"title":"2:test2","type":"string"}]
+        	            	}`, s)
+}
+
+type withPtrAnyOfExposer string
+
+func (w *withPtrAnyOfExposer) JSONSchemaAnyOf() []interface{} {
+	return []interface{}{withValPreparer(*w), withPtrPreparer("2:" + *w)}
+}
+
+type withValAnyOfExposer string
+
+func (w withValAnyOfExposer) JSONSchemaAnyOf() []interface{} {
+	return []interface{}{withValPreparer(w), withPtrPreparer("2:" + w)}
+}
+
+func TestReflector_Reflect_AnyOfExposer(t *testing.T) {
+	r := jsonschema.Reflector{}
+
+	var (
+		np *withPtrAnyOfExposer
+		nv *withValAnyOfExposer
+	)
+
+	s, err := r.Reflect(np)
+	require.NoError(t, err)
+	assertjson.EqMarshal(t, `{
+        	            	  "type":["null","string"],
+        	            	  "anyOf":[{"title":"","type":"string"},{"title":"2:","type":"string"}]
+        	            	}`, s)
+
+	s, err = r.Reflect(nv)
+	require.NoError(t, err)
+	assertjson.EqMarshal(t, `{
+        	            	  "type":["null","string"],
+        	            	  "anyOf":[{"title":"","type":"string"},{"title":"2:","type":"string"}]
+        	            	}`, s)
+
+	s, err = r.Reflect(withValAnyOfExposer("test1"))
+	require.NoError(t, err)
+	assertjson.EqMarshal(t, `{
+        	            	  "type":"string",
+        	            	  "anyOf":[{"title":"test1","type":"string"},{"title":"2:test1","type":"string"}]
+        	            	}`, s)
+
+	s, err = r.Reflect(withPtrAnyOfExposer("test2"))
+	require.NoError(t, err)
+	assertjson.EqMarshal(t, `{
+        	            	  "type":"string",
+        	            	  "anyOf":[{"title":"test2","type":"string"},{"title":"2:test2","type":"string"}]
+        	            	}`, s)
+}
+
+type withPtrAllOfExposer string
+
+func (w *withPtrAllOfExposer) JSONSchemaAllOf() []interface{} {
+	return []interface{}{withValPreparer(*w), withPtrPreparer("2:" + *w)}
+}
+
+type withValAllOfExposer string
+
+func (w withValAllOfExposer) JSONSchemaAllOf() []interface{} {
+	return []interface{}{withValPreparer(w), withPtrPreparer("2:" + w)}
+}
+
+func TestReflector_Reflect_AllOfExposer(t *testing.T) {
+	r := jsonschema.Reflector{}
+
+	var (
+		np *withPtrAllOfExposer
+		nv *withValAllOfExposer
+	)
+
+	s, err := r.Reflect(np)
+	require.NoError(t, err)
+	assertjson.EqMarshal(t, `{
+        	            	  "type":["null","string"],
+        	            	  "allOf":[{"title":"","type":"string"},{"title":"2:","type":"string"}]
+        	            	}`, s)
+
+	s, err = r.Reflect(nv)
+	require.NoError(t, err)
+	assertjson.EqMarshal(t, `{
+        	            	  "type":["null","string"],
+        	            	  "allOf":[{"title":"","type":"string"},{"title":"2:","type":"string"}]
+        	            	}`, s)
+
+	s, err = r.Reflect(withValAllOfExposer("test1"))
+	require.NoError(t, err)
+	assertjson.EqMarshal(t, `{
+        	            	  "type":"string",
+        	            	  "allOf":[{"title":"test1","type":"string"},{"title":"2:test1","type":"string"}]
+        	            	}`, s)
+
+	s, err = r.Reflect(withPtrAllOfExposer("test2"))
+	require.NoError(t, err)
+	assertjson.EqMarshal(t, `{
+        	            	  "type":"string",
+        	            	  "allOf":[{"title":"test2","type":"string"},{"title":"2:test2","type":"string"}]
+        	            	}`, s)
+}
+
+type withPtrNotExposer string
+
+func (w *withPtrNotExposer) JSONSchemaNot() interface{} {
+	return withValPreparer(*w)
+}
+
+type withValNotExposer string
+
+func (w withValNotExposer) JSONSchemaNot() interface{} {
+	return withValPreparer(w)
+}
+
+func TestReflector_Reflect_NotExposer(t *testing.T) {
+	r := jsonschema.Reflector{}
+
+	var (
+		np *withPtrNotExposer
+		nv *withValNotExposer
+	)
+
+	s, err := r.Reflect(np)
+	require.NoError(t, err)
+	assertjson.EqMarshal(t, `{"type":["null","string"],"not":{"title":"","type":"string"}}`, s)
+
+	s, err = r.Reflect(nv)
+	require.NoError(t, err)
+	assertjson.EqMarshal(t, `{"type":["null","string"],"not":{"title":"","type":"string"}}`, s)
+
+	s, err = r.Reflect(withValNotExposer("test1"))
+	require.NoError(t, err)
+	assertjson.EqMarshal(t, `{"type":"string","not":{"title":"test1","type":"string"}}`, s)
+
+	s, err = r.Reflect(withPtrNotExposer("test2"))
+	require.NoError(t, err)
+	assertjson.EqMarshal(t, `{"type":"string","not":{"title":"test2","type":"string"}}`, s)
+}
+
+type withPtrIfExposer string
+
+func (w *withPtrIfExposer) JSONSchemaIf() interface{} {
+	return withValPreparer(*w)
+}
+
+type withValIfExposer string
+
+func (w withValIfExposer) JSONSchemaIf() interface{} {
+	return withValPreparer(w)
+}
+
+func TestReflector_Reflect_IfExposer(t *testing.T) {
+	r := jsonschema.Reflector{}
+
+	var (
+		np *withPtrIfExposer
+		nv *withValIfExposer
+	)
+
+	s, err := r.Reflect(np)
+	require.NoError(t, err)
+	assertjson.EqMarshal(t, `{"type":["null","string"],"if":{"title":"","type":"string"}}`, s)
+
+	s, err = r.Reflect(nv)
+	require.NoError(t, err)
+	assertjson.EqMarshal(t, `{"type":["null","string"],"if":{"title":"","type":"string"}}`, s)
+
+	s, err = r.Reflect(withValIfExposer("test1"))
+	require.NoError(t, err)
+	assertjson.EqMarshal(t, `{"type":"string","if":{"title":"test1","type":"string"}}`, s)
+
+	s, err = r.Reflect(withPtrIfExposer("test2"))
+	require.NoError(t, err)
+	assertjson.EqMarshal(t, `{"type":"string","if":{"title":"test2","type":"string"}}`, s)
+}
+
+type withPtrThenExposer string
+
+func (w *withPtrThenExposer) JSONSchemaThen() interface{} {
+	return withValPreparer(*w)
+}
+
+type withValThenExposer string
+
+func (w withValThenExposer) JSONSchemaThen() interface{} {
+	return withValPreparer(w)
+}
+
+func TestReflector_Reflect_ThenExposer(t *testing.T) {
+	r := jsonschema.Reflector{}
+
+	var (
+		np *withPtrThenExposer
+		nv *withValThenExposer
+	)
+
+	s, err := r.Reflect(np)
+	require.NoError(t, err)
+	assertjson.EqMarshal(t, `{"type":["null","string"],"then":{"title":"","type":"string"}}`, s)
+
+	s, err = r.Reflect(nv)
+	require.NoError(t, err)
+	assertjson.EqMarshal(t, `{"type":["null","string"],"then":{"title":"","type":"string"}}`, s)
+
+	s, err = r.Reflect(withValThenExposer("test1"))
+	require.NoError(t, err)
+	assertjson.EqMarshal(t, `{"type":"string","then":{"title":"test1","type":"string"}}`, s)
+
+	s, err = r.Reflect(withPtrThenExposer("test2"))
+	require.NoError(t, err)
+	assertjson.EqMarshal(t, `{"type":"string","then":{"title":"test2","type":"string"}}`, s)
+}
+
+type withPtrElseExposer string
+
+func (w *withPtrElseExposer) JSONSchemaElse() interface{} {
+	return withValPreparer(*w)
+}
+
+type withValElseExposer string
+
+func (w withValElseExposer) JSONSchemaElse() interface{} {
+	return withValPreparer(w)
+}
+
+func TestReflector_Reflect_ElseExposer(t *testing.T) {
+	r := jsonschema.Reflector{}
+
+	var (
+		np *withPtrElseExposer
+		nv *withValElseExposer
+	)
+
+	s, err := r.Reflect(np)
+	require.NoError(t, err)
+	assertjson.EqMarshal(t, `{"type":["null","string"],"else":{"title":"","type":"string"}}`, s)
+
+	s, err = r.Reflect(nv)
+	require.NoError(t, err)
+	assertjson.EqMarshal(t, `{"type":["null","string"],"else":{"title":"","type":"string"}}`, s)
+
+	s, err = r.Reflect(withValElseExposer("test1"))
+	require.NoError(t, err)
+	assertjson.EqMarshal(t, `{"type":"string","else":{"title":"test1","type":"string"}}`, s)
+
+	s, err = r.Reflect(withPtrElseExposer("test2"))
+	require.NoError(t, err)
+	assertjson.EqMarshal(t, `{"type":"string","else":{"title":"test2","type":"string"}}`, s)
 }
