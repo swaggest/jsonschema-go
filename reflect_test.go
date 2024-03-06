@@ -1926,7 +1926,7 @@ const (
 	DiscoverNone Discover = "none"
 )
 
-func (d *Discover) Enum() []any {
+func (d *Discover) Enum() []interface{} {
 	return []any{DiscoverAll, DiscoverNone}
 }
 
