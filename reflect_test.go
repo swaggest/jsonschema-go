@@ -1927,7 +1927,7 @@ const (
 )
 
 func (d *Discover) Enum() []interface{} {
-	return []any{DiscoverAll, DiscoverNone}
+	return []interface{}{DiscoverAll, DiscoverNone}
 }
 
 func TestReflector_Reflect_ptrDefault(t *testing.T) {
