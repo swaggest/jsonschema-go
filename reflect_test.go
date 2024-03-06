@@ -1883,3 +1883,38 @@ func TestReflector_Reflect_textMarshaler(t *testing.T) {
 	  "type":"object"
 	}`, schema)
 }
+
+type rawExposer func() ([]byte, error)
+
+func (r rawExposer) JSONSchemaBytes() ([]byte, error) {
+	return r()
+}
+
+func TestReflector_AddOperation_rawSchema(t *testing.T) {
+	r := jsonschema.Reflector{}
+
+	type My struct {
+		A interface{} `json:"a"`
+		B interface{} `json:"b"`
+	}
+
+	m := My{
+		A: rawExposer(func() ([]byte, error) {
+			return []byte(`{"type":"object","properties":{"foo":{"type":"integer"}}}`), nil
+		}),
+		B: rawExposer(func() ([]byte, error) {
+			return []byte(`{"type":"object","properties":{"bar":{"type":"integer"}}}`), nil
+		}),
+	}
+
+	s, err := r.Reflect(m)
+	require.NoError(t, err)
+
+	assertjson.EqMarshal(t, `{
+	  "properties":{
+		"a":{"properties":{"foo":{"type":"integer"}},"type":"object"},
+		"b":{"properties":{"bar":{"type":"integer"}},"type":"object"}
+	  },
+	  "type":"object"
+	}`, s)
+}
