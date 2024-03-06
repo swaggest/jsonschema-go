@@ -1949,3 +1949,38 @@ func TestReflector_Reflect_ptrDefault(t *testing.T) {
 	  "type":"object"
 	}`, s)
 }
+
+func TestReflector_Reflect_nilPreparer(t *testing.T) {
+	var o *Org
+
+	r := jsonschema.Reflector{}
+
+	s, err := r.Reflect(o)
+	require.NoError(t, err)
+	assertjson.EqMarshal(t, `{
+	  "definitions":{
+		"JsonschemaGoTestEnumed":{"enum":["foo","bar"],"type":"string"},
+		"JsonschemaGoTestPerson":{
+		  "title":"Person","required":["lastName"],
+		  "properties":{
+			"birthDate":{"type":"string","format":"date"},
+			"createdAt":{"type":"string","format":"date-time"},
+			"date":{"type":"string","format":"date"},
+			"deathDate":{"type":["null","string"],"format":"date"},
+			"deletedAt":{"type":["null","string"],"format":"date-time"},
+			"enumed":{"$ref":"#/definitions/JsonschemaGoTestEnumed"},
+			"enumedPtr":{"$ref":"#/definitions/JsonschemaGoTestEnumed"},
+			"firstName":{"type":"string"},"height":{"type":"integer"},
+			"lastName":{"type":"string"},"meta":{},
+			"role":{"description":"The role of person.","type":"string"}
+		  },
+		  "type":"object"
+		}
+	  },
+	  "properties":{
+		"chiefOfMorale":{"$ref":"#/definitions/JsonschemaGoTestPerson"},
+		"employees":{"items":{"$ref":"#/definitions/JsonschemaGoTestPerson"},"type":"array"}
+	  },
+	  "type":"object"
+	}`, s)
+}
