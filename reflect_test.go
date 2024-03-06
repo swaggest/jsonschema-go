@@ -1932,7 +1932,8 @@ func (d *Discover) Enum() []interface{} {
 
 func TestReflector_Reflect_ptrDefault(t *testing.T) {
 	type NewThing struct {
-		DiscoverMode *Discover `json:"discover,omitempty" default:"all"`
+		DiscoverMode  *Discover `json:"discover,omitempty" default:"all"`
+		DiscoverMode2 *Discover `json:"discover2,omitempty" default:"none"`
 	}
 
 	r := jsonschema.Reflector{}
@@ -1944,7 +1945,8 @@ func TestReflector_Reflect_ptrDefault(t *testing.T) {
 		"JsonschemaGoTestDiscover":{"enum":["all","none"],"type":["null","string"]}
 	  },
 	  "properties":{
-		"discover":{"$ref":"#/definitions/JsonschemaGoTestDiscover","default":"all"}
+		"discover":{"$ref":"#/definitions/JsonschemaGoTestDiscover","default":"all"},
+		"discover2":{"$ref":"#/definitions/JsonschemaGoTestDiscover","default":"none"}
 	  },
 	  "type":"object"
 	}`, s)
