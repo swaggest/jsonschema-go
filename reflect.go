@@ -1113,57 +1113,36 @@ func (r *Reflector) walkProperties(v reflect.Value, parent *Schema, rc *ReflectC
 }
 
 func checkInlineValue(propertySchema *Schema, field reflect.StructField, tag string, setter func(interface{}) *Schema) error {
-	var val interface{}
+	var (
+		val interface{}
+		t   SimpleType
 
-	var t SimpleType
+		i *int64
+		f *float64
+		s *string
+		b *bool
+	)
+
 	if propertySchema.Type != nil && propertySchema.Type.SimpleTypes != nil {
 		t = *propertySchema.Type.SimpleTypes
 	}
 
-	switch t { //nolint:exhaustive // Covered by default case.
-	case Integer:
-		var v *int64
+	_ = refl.ReadIntPtrTag(field.Tag, tag, &i)   //nolint:errcheck
+	_ = refl.ReadFloatPtrTag(field.Tag, tag, &f) //nolint:errcheck
+	_ = refl.ReadBoolPtrTag(field.Tag, tag, &b)  //nolint:errcheck
+	refl.ReadStringPtrTag(field.Tag, tag, &s)
 
-		if err := refl.ReadIntPtrTag(field.Tag, tag, &v); err != nil {
-			return fmt.Errorf("parsing %s for %s: %w", tag, t, err)
-		}
-
-		if v != nil {
-			val = *v
-		}
-	case Number:
-		var v *float64
-
-		if err := refl.ReadFloatPtrTag(field.Tag, tag, &v); err != nil {
-			return fmt.Errorf("parsing %s for %s: %w", tag, t, err)
-		}
-
-		if v != nil {
-			val = *v
-		}
-
-	case String:
-		var v *string
-
-		refl.ReadStringPtrTag(field.Tag, tag, &v)
-
-		if v != nil {
-			val = *v
-		}
-
-	case Boolean:
-		var v *bool
-
-		if err := refl.ReadBoolPtrTag(field.Tag, tag, &v); err != nil {
-			return fmt.Errorf("parsing %s for %s: %w", tag, t, err)
-		}
-
-		if v != nil {
-			val = *v
-		}
-	case Null:
+	switch {
+	case propertySchema.HasType(Number) && f != nil:
+		val = *f
+	case propertySchema.HasType(Integer) && i != nil:
+		val = *i
+	case propertySchema.HasType(Boolean) && b != nil:
+		val = *b
+	case propertySchema.HasType(String) && s != nil:
+		val = *s
+	case t == Null:
 		// No default for type null.
-
 	default:
 		var v string
 
