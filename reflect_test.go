@@ -1918,3 +1918,34 @@ func TestReflector_AddOperation_rawSchema(t *testing.T) {
 	  "type":"object"
 	}`, s)
 }
+
+type Discover string
+
+const (
+	DiscoverAll  Discover = "all"
+	DiscoverNone Discover = "none"
+)
+
+func (d *Discover) Enum() []interface{} {
+	return []interface{}{DiscoverAll, DiscoverNone}
+}
+
+func TestReflector_Reflect_ptrDefault(t *testing.T) {
+	type NewThing struct {
+		DiscoverMode *Discover `json:"discover,omitempty" default:"all"`
+	}
+
+	r := jsonschema.Reflector{}
+
+	s, err := r.Reflect(NewThing{})
+	require.NoError(t, err)
+	assertjson.EqMarshal(t, `{
+	  "definitions":{
+		"JsonschemaGoTestDiscover":{"enum":["all","none"],"type":["null","string"]}
+	  },
+	  "properties":{
+		"discover":{"$ref":"#/definitions/JsonschemaGoTestDiscover","default":"all"}
+	  },
+	  "type":"object"
+	}`, s)
+}
