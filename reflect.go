@@ -387,7 +387,7 @@ func (r *Reflector) reflectDefer(defName string, typeString refl.TypeString, rc 
 }
 
 func (r *Reflector) checkTitle(v reflect.Value, s *Struct, schema *Schema) {
-	if vd, ok := v.Interface().(Described); ok {
+	if vd, ok := safeInterface(v).(Described); ok {
 		schema.WithDescription(vd.Description())
 	}
 
@@ -395,7 +395,7 @@ func (r *Reflector) checkTitle(v reflect.Value, s *Struct, schema *Schema) {
 		schema.WithDescription(*s.Description)
 	}
 
-	if vt, ok := v.Interface().(Titled); ok {
+	if vt, ok := safeInterface(v).(Titled); ok {
 		schema.WithTitle(vt.Title())
 	}
 
@@ -532,7 +532,7 @@ func (r *Reflector) reflect(i interface{}, rc *ReflectContext, keepType bool, pa
 		}
 	}
 
-	if preparer, ok := v.Interface().(Preparer); ok {
+	if preparer, ok := safeInterface(v).(Preparer); ok {
 		err := preparer.PrepareJSONSchema(sp)
 
 		return schema, err
@@ -555,8 +555,16 @@ func checkTextMarshaler(t reflect.Type, schema *Schema) bool {
 	return false
 }
 
+func safeInterface(v reflect.Value) interface{} {
+	if v.Kind() == reflect.Ptr && !v.Elem().IsValid() {
+		v = reflect.New(v.Type())
+	}
+
+	return v.Interface()
+}
+
 func (r *Reflector) applySubSchemas(v reflect.Value, rc *ReflectContext, schema *Schema) error {
-	vi := v.Interface()
+	vi := safeInterface(v)
 
 	if e, ok := vi.(OneOfExposer); ok {
 		var schemas []SchemaOrBool
