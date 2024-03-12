@@ -1050,6 +1050,12 @@ func (r *Reflector) walkProperties(v reflect.Value, parent *Schema, rc *ReflectC
 				parent.AdditionalProperties = &SchemaOrBool{TypeBoolean: additionalProperties}
 			}
 
+			if !rc.SkipNonConstraints {
+				if err := reflectExamples(rc, parent, field); err != nil {
+					return err
+				}
+			}
+
 			continue
 		}
 
@@ -1144,7 +1150,7 @@ func (r *Reflector) walkProperties(v reflect.Value, parent *Schema, rc *ReflectC
 		}
 
 		if !rc.SkipNonConstraints {
-			if err := reflectExamples(&propertySchema, field); err != nil {
+			if err := reflectExamples(rc, &propertySchema, field); err != nil {
 				return err
 			}
 		}
@@ -1325,8 +1331,8 @@ func checkNullability(propertySchema *Schema, rc *ReflectContext, ft reflect.Typ
 	}
 }
 
-func reflectExamples(propertySchema *Schema, field reflect.StructField) error {
-	if err := reflectExample(propertySchema, field); err != nil {
+func reflectExamples(rc *ReflectContext, propertySchema *Schema, field reflect.StructField) error {
+	if err := reflectExample(rc, propertySchema, field); err != nil {
 		return err
 	}
 
@@ -1345,57 +1351,12 @@ func reflectExamples(propertySchema *Schema, field reflect.StructField) error {
 	return nil
 }
 
-func reflectExample(propertySchema *Schema, field reflect.StructField) error {
-	var val interface{}
-
-	switch {
-	case propertySchema.HasType(String):
-		var example *string
-
-		refl.ReadStringPtrTag(field.Tag, "example", &example)
-
-		if example != nil {
-			val = *example
-		}
-	case propertySchema.HasType(Number) && val == nil:
-		var example *float64
-
-		if err := refl.ReadFloatPtrTag(field.Tag, "example", &example); err != nil {
-			return err
-		}
-
-		if example != nil {
-			val = *example
-		}
-	case propertySchema.HasType(Integer) && val == nil:
-		var example *int64
-
-		if err := refl.ReadIntPtrTag(field.Tag, "example", &example); err != nil {
-			return err
-		}
-
-		if example != nil {
-			val = *example
-		}
-	case propertySchema.HasType(Boolean) && val == nil:
-		var example *bool
-
-		if err := refl.ReadBoolPtrTag(field.Tag, "example", &example); err != nil {
-			return err
-		}
-
-		if example != nil {
-			val = *example
-		}
-	case propertySchema.HasType(Array) && val == nil && propertySchema.Items != nil &&
-		propertySchema.Items.SchemaOrBool != nil && propertySchema.Items.SchemaOrBool.TypeObject != nil:
-		return reflectExample(propertySchema.Items.SchemaOrBool.TypeObject, field)
-	default:
-		return nil
-	}
-
-	if val != nil {
-		propertySchema.Examples = append(propertySchema.Examples, val)
+func reflectExample(rc *ReflectContext, propertySchema *Schema, field reflect.StructField) error {
+	err := checkInlineValue(propertySchema, field, "example", func(i interface{}) *Schema {
+		return propertySchema.WithExamples(i)
+	})
+	if err != nil {
+		return fmt.Errorf("%s: %w", strings.Join(append(rc.Path[1:], field.Name), "."), err)
 	}
 
 	return nil

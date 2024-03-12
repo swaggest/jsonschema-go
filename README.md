@@ -141,6 +141,9 @@ There are a few interfaces that can be implemented on a type to customize JSON S
 * [`Titled`](https://pkg.go.dev/github.com/swaggest/jsonschema-go#Titled) exposes title.
 * [`Enum`](https://pkg.go.dev/github.com/swaggest/jsonschema-go#Enum) exposes enum values.
 * [`NamedEnum`](https://pkg.go.dev/github.com/swaggest/jsonschema-go#NamedEnum) exposes enum values with names.
+* [`SchemaInliner`](https://pkg.go.dev/github.com/swaggest/jsonschema-go#SchemaInliner) inlines schema without creating a definition.
+* [`IgnoreTypeName`](https://pkg.go.dev/github.com/swaggest/jsonschema-go#IgnoreTypeName), when implemented on a mapped type forces the use of original type for definition name.
+* [`EmbedReferencer`](https://pkg.go.dev/github.com/swaggest/jsonschema-go#EmbedReferencer), when implemented on an embedded field type, makes an `allOf` reference to that type definition.
 
 And a few interfaces to expose subschemas (`anyOf`, `allOf`, `oneOf`, `not` and `if`, `then`, `else`).
 * [`AnyOfExposer`](https://pkg.go.dev/github.com/swaggest/jsonschema-go#AnyOfExposer) exposes `anyOf` subschemas.
@@ -156,6 +159,8 @@ There are also helper functions
 [`jsonschema.AnyOf`](https://pkg.go.dev/github.com/swaggest/jsonschema-go#AnyOf), 
 [`jsonschema.OneOf`](https://pkg.go.dev/github.com/swaggest/jsonschema-go#OneOf) 
 to create exposer instance from multiple values.
+
+
 
 ### Configuring the reflector
 

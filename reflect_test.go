@@ -980,10 +980,10 @@ func TestReflector_Reflect_parentTags(t *testing.T) {
 	assert.EqualError(t, err, "failed to parse int value abc in tag minProperties: strconv.ParseInt: parsing \"abc\": invalid syntax")
 }
 
-func TestReflector_Reflect_parentTagsFiltered(t *testing.T) {
+func TestReflector_Reflect_parentTagsExample(t *testing.T) {
 	type Test struct {
 		Foo string   `json:"foo" query:"foo"`
-		_   struct{} `title:"Test"` // Tags of unnamed field are applied to parent schema.
+		_   struct{} `title:"Test" example:"{\"foo\":\"abc\"}"` // Tags of unnamed field are applied to parent schema.
 
 		// There can be more than one field to set up parent schema.
 		// Types of such fields are not relevant, only tags matter.
@@ -992,7 +992,38 @@ func TestReflector_Reflect_parentTagsFiltered(t *testing.T) {
 
 	r := jsonschema.Reflector{}
 
-	s, err := r.Reflect(Test{}, func(rc *jsonschema.ReflectContext) {
+	s, err := r.Reflect(Test{})
+	require.NoError(t, err)
+
+	assertjson.EqualMarshal(t, []byte(`{
+	  "title":"Test","description":"This is a test.","examples":[{"foo":"abc"}],
+	  "additionalProperties":false,"properties":{"foo":{"type":"string"}},
+	  "type":"object"
+	}`), s)
+}
+
+func TestReflector_Reflect_parentTagsFiltered(t *testing.T) {
+	type Test struct {
+		Foo string   `json:"foo" query:"foo"`
+		_   struct{} `title:"Test" example:"{\"foo\":\"abc\"}"` // Tags of unnamed field are applied to parent schema.
+
+		// There can be more than one field to set up parent schema.
+		// Types of such fields are not relevant, only tags matter.
+		_ string `query:"_" additionalProperties:"false" description:"This is a test."`
+	}
+
+	r := jsonschema.Reflector{}
+
+	s, err := r.Reflect(Test{})
+	require.NoError(t, err)
+
+	assertjson.EqualMarshal(t, []byte(`{
+	  "title":"Test","description":"This is a test.","examples":[{"foo":"abc"}],
+	  "additionalProperties":false,"properties":{"foo":{"type":"string"}},
+	  "type":"object"
+	}`), s)
+
+	s, err = r.Reflect(Test{}, func(rc *jsonschema.ReflectContext) {
 		rc.UnnamedFieldWithTag = true
 		rc.PropertyNameTag = "json"
 	})
@@ -1228,7 +1259,7 @@ func TestReflector_Reflect_skipNonConstraints(t *testing.T) {
 func TestReflector_Reflect_examples(t *testing.T) {
 	type WantExample struct {
 		A string   `json:"a" example:"example of a"`
-		B []string `json:"b" example:"example of b"`
+		B []string `json:"b" example:"[\"example of b\"]"`
 		C int      `json:"c" examples:"[\"foo\", 2, 3]" example:"123"`
 	}
 
@@ -1240,7 +1271,7 @@ func TestReflector_Reflect_examples(t *testing.T) {
 	  "properties":{
 		"a":{"examples":["example of a"],"type":"string"},
 		"b":{
-		  "items":{"examples":["example of b"],"type":"string"},
+		  "examples":[["example of b"]],"items":{"type":"string"},
 		  "type":["array","null"]
 		},
 		"c":{"examples":[123,"foo",2,3],"type":"integer"}
@@ -1253,7 +1284,7 @@ func TestReflector_Reflect_namedSlice(t *testing.T) {
 	type PanicType []string
 
 	type PanicStruct struct {
-		IPPolicy PanicType `json:"ip_policy" example:"127.0.0.1"`
+		IPPolicy PanicType `json:"ip_policy" example:"[\"127.0.0.1\"]"`
 	}
 
 	reflector := jsonschema.Reflector{}
@@ -1264,7 +1295,12 @@ func TestReflector_Reflect_namedSlice(t *testing.T) {
 	  "definitions":{
 		"JsonschemaGoTestPanicType":{"items":{"type":"string"},"type":["array","null"]}
 	  },
-	  "properties":{"ip_policy":{"$ref":"#/definitions/JsonschemaGoTestPanicType"}},
+	  "properties":{
+		"ip_policy":{
+		  "$ref":"#/definitions/JsonschemaGoTestPanicType",
+		  "examples":[["127.0.0.1"]]
+		}
+	  },
 	  "type":"object"
 	}`), schema)
 }
