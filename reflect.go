@@ -494,8 +494,8 @@ func (r *Reflector) reflect(i interface{}, rc *ReflectContext, keepType bool, pa
 
 	isTextMarshaler := checkTextMarshaler(t, &schema)
 
-	if ref, ok := rc.definitionRefs[typeString]; ok && defName != "" {
-		return ref.Schema(), nil
+	if def, ok := rc.definitions[typeString]; ok && defName != "" {
+		return *def, nil
 	}
 
 	if rc.typeCycles[typeString] != nil && !rc.InlineRefs {
