@@ -16,6 +16,8 @@ linters-settings:
     check-exported: false
   unparam:
     check-exported: true
+  nestif:
+    min-complexity: 7
 
 linters:
   enable-all: true
