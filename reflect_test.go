@@ -2511,3 +2511,42 @@ func TestReflector_Reflect_ElseExposer(t *testing.T) {
 	require.NoError(t, err)
 	assertjson.EqMarshal(t, `{"type":"string","else":{"title":"test2","type":"string"}}`, s)
 }
+
+func TestReflector_Reflect_byteSlice(t *testing.T) {
+	r := jsonschema.Reflector{}
+
+	type S struct {
+		A []byte           `json:"a" description:"Hello world!"`
+		B json.RawMessage  `json:"b" description:"I am a RawMessage."`
+		C *json.RawMessage `json:"c" description:"I am a RawMessage pointer."`
+	}
+
+	s1 := S{
+		A: []byte("hello world!"),
+		B: []byte(`{"foo":"bar"}`),
+	}
+	s1.C = &s1.B
+
+	v, err := json.Marshal(s1)
+	require.NoError(t, err)
+	// []byte is marshaled to base64, RawMessage value and pointer are passed as is.
+	assert.Equal(t, `{"a":"aGVsbG8gd29ybGQh","b":{"foo":"bar"},"c":{"foo":"bar"}}`, string(v))
+
+	var s2 S
+
+	require.NoError(t, json.Unmarshal(v, &s2))
+	assert.Equal(t, "hello world!", string(s2.A)) // []byte is unmarshaled from base64.
+	assert.Equal(t, `{"foo":"bar"}`, string(s2.B))
+	assert.Equal(t, `{"foo":"bar"}`, string(*s2.C))
+
+	s, err := r.Reflect(S{})
+	require.NoError(t, err)
+	assertjson.EqMarshal(t, `{
+	  "properties":{
+		"a":{"description":"Hello world!","type":"string","format":"base64"},
+		"b":{"description":"I am a RawMessage."},
+		"c":{"description":"I am a RawMessage pointer."}
+	  },
+	  "type":"object"
+	}`, s)
+}

@@ -18,6 +18,7 @@ import (
 
 var (
 	typeOfJSONRawMsg      = reflect.TypeOf(json.RawMessage{})
+	typeOfByteSlice       = reflect.TypeOf([]byte{})
 	typeOfTime            = reflect.TypeOf(time.Time{})
 	typeOfDate            = reflect.TypeOf(Date{})
 	typeOfTextUnmarshaler = reflect.TypeOf((*encoding.TextUnmarshaler)(nil)).Elem()
@@ -731,6 +732,13 @@ func (r *Reflector) applySubSchemas(v reflect.Value, rc *ReflectContext, schema 
 }
 
 func (r *Reflector) isWellKnownType(t reflect.Type, schema *Schema) bool {
+	if t == typeOfByteSlice {
+		schema.AddType(String)
+		schema.WithFormat("base64")
+
+		return true
+	}
+
 	if t == typeOfTime {
 		schema.AddType(String)
 		schema.WithFormat("date-time")
