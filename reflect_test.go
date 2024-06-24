@@ -2511,3 +2511,27 @@ func TestReflector_Reflect_ElseExposer(t *testing.T) {
 	require.NoError(t, err)
 	assertjson.EqMarshal(t, `{"type":"string","else":{"title":"test2","type":"string"}}`, s)
 }
+
+func TestReflector_Reflect_byteSlice(t *testing.T) {
+	r := jsonschema.Reflector{}
+
+	type S struct {
+		A []byte `json:"a" description:"Hello world!"`
+	}
+
+	v, err := json.Marshal(S{A: []byte("hello world!")})
+	require.NoError(t, err)
+	assert.Equal(t, `{"a":"aGVsbG8gd29ybGQh"}`, string(v)) // []byte is marshaled to base64.
+
+	var s2 S
+
+	require.NoError(t, json.Unmarshal(v, &s2))
+	assert.Equal(t, "hello world!", string(s2.A)) // []byte is unmarshaled from base64.
+
+	s, err := r.Reflect(S{})
+	require.NoError(t, err)
+	assertjson.EqMarshal(t, `{
+	  "properties":{"a":{"description":"Hello world!","type":"string","format":"base64"}},
+	  "type":"object"
+	}`, s)
+}
