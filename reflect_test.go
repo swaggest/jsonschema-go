@@ -13,6 +13,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/swaggest/assertjson"
+
 	"github.com/swaggest/jsonschema-go"
 )
 
@@ -75,6 +76,7 @@ func (p *Person) PrepareJSONSchema(schema *jsonschema.Schema) error {
 type Org struct {
 	ChiefOfMoral *Person  `json:"chiefOfMorale,omitempty"`
 	Employees    []Person `json:"employees,omitempty"`
+	Avatar       []byte   `json:"avatar"`
 }
 
 func (o Org) PrepareJSONSchema(schema *jsonschema.Schema) error {
@@ -140,7 +142,8 @@ func TestReflector_Reflect(t *testing.T) {
 	  },
 	  "properties":{
 		"chiefOfMorale":{"$ref":"#/definitions/JsonschemaGoTestPerson"},
-		"employees":{"items":{"$ref":"#/definitions/JsonschemaGoTestPerson"},"type":"array"}
+		"employees":{"items":{"$ref":"#/definitions/JsonschemaGoTestPerson"},"type":"array"},
+		"avatar":{"type":"string","format":"base64"}
 	  },
 	  "type":"object"
 	}`), schema)
@@ -280,7 +283,8 @@ func TestReflector_Reflect_collectDefinitions(t *testing.T) {
 	  "title":"Organization",
 	  "properties":{
 		"chiefOfMorale":{"$ref":"#/definitions/JsonschemaGoTestPerson"},
-		"employees":{"items":{"$ref":"#/definitions/JsonschemaGoTestPerson"},"type":"array"}
+		"employees":{"items":{"$ref":"#/definitions/JsonschemaGoTestPerson"},"type":"array"},
+		"avatar": {"format":"base64","type":"string"}
 	  },
 	  "type":"object"
 	}`), schema)
@@ -1372,7 +1376,8 @@ func TestInterceptNullability(t *testing.T) {
 	  },
 	  "properties":{
 		"chiefOfMorale":{"$ref":"#/definitions/JsonschemaGoTestPerson"},
-		"employees":{"items":{"$ref":"#/definitions/JsonschemaGoTestPerson"},"type":"array"}
+		"employees":{"items":{"$ref":"#/definitions/JsonschemaGoTestPerson"},"type":"array"},
+		"avatar": {"format":"base64","type":"string"}
 	  },
 	  "type":"object"
 	}`), s)
@@ -2016,7 +2021,8 @@ func TestReflector_Reflect_nilPreparer(t *testing.T) {
 	  },
 	  "properties":{
 		"chiefOfMorale":{"$ref":"#/definitions/JsonschemaGoTestPerson"},
-		"employees":{"items":{"$ref":"#/definitions/JsonschemaGoTestPerson"},"type":"array"}
+		"employees":{"items":{"$ref":"#/definitions/JsonschemaGoTestPerson"},"type":"array"},
+		"avatar": {"format":"base64","type":"string"}
 	  },
 	  "type":"object"
 	}`, s)

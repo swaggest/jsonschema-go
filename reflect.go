@@ -745,6 +745,15 @@ func (r *Reflector) isWellKnownType(t reflect.Type, schema *Schema) bool {
 		return true
 	}
 
+	if t != typeOfJSONRawMsg {
+		if t.Kind() == reflect.Slice && t.Elem().Kind() == reflect.Uint8 {
+			schema.AddType(String)
+			schema.WithFormat("base64")
+
+			return true
+		}
+	}
+
 	return false
 }
 
