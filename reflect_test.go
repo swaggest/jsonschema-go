@@ -1654,7 +1654,15 @@ func TestReflector_Reflect_deeplyEmbedded(t *testing.T) {
 		Baz float64 `json:"baz" title:"Bazzz."`
 	}
 
-	s, err := r.Reflect(My{})
+	val := My{}
+	val.DeeplyEmbedded = &DeeplyEmbedded{}
+	val.Foo = "abcde"
+	val.Bar = 123
+	val.Baz = 4.56
+
+	assertjson.EqMarshal(t, `{"foo":"abcde","bar":123,"baz":4.56}`, val)
+
+	s, err := r.Reflect(val)
 	require.NoError(t, err)
 
 	assertjson.EqMarshal(t, `{
@@ -1662,6 +1670,96 @@ func TestReflector_Reflect_deeplyEmbedded(t *testing.T) {
 		"bar":{"minimum":3,"type":"integer"},
 		"baz":{"title":"Bazzz.","type":"number"},
 		"foo":{"minLength":5,"type":"string"}
+	  },
+	  "type":"object"
+	}`, s)
+}
+
+func TestReflector_Reflect_deeplyEmbedded_emptyJSONTags(t *testing.T) {
+	r := jsonschema.Reflector{}
+
+	type Embed struct {
+		Foo string `json:",omitempty" minLength:"5"` // Empty name in tag results in Go field name.
+		Bar int    `json:"bar" minimum:"3"`
+	}
+
+	type DeeplyEmbedded struct {
+		Embed `json:""`
+	}
+
+	type My struct {
+		*DeeplyEmbedded `json:",inline"` // `inline` does not have any specific handling by encoding/json.
+
+		Baz float64 `json:"baz" title:"Bazzz."`
+	}
+
+	val := My{}
+	val.DeeplyEmbedded = &DeeplyEmbedded{}
+	val.Foo = "abcde"
+	val.Bar = 123
+	val.Baz = 4.56
+
+	assertjson.EqMarshal(t, `{"Foo":"abcde","bar":123,"baz":4.56}`, val)
+
+	s, err := r.Reflect(val)
+	require.NoError(t, err)
+
+	assertjson.EqMarshal(t, `{
+	  "properties":{
+		"bar":{"minimum":3,"type":"integer"},
+		"baz":{"title":"Bazzz.","type":"number"},
+		"Foo":{"minLength":5,"type":"string"}
+	  },
+	  "type":"object"
+	}`, s)
+}
+
+func TestReflector_Reflect_deeplyEmbedded_validJSONTags(t *testing.T) {
+	r := jsonschema.Reflector{}
+
+	type Embed struct {
+		Foo string `json:"foo" minLength:"5"`
+		Bar int    `json:"bar" minimum:"3"`
+	}
+
+	type DeeplyEmbedded struct {
+		Embed `json:"emb"`
+	}
+
+	type My struct {
+		*DeeplyEmbedded `json:"deep,inline"` // `inline` does not have any specific handling by encoding/json.
+
+		Baz float64 `json:"baz" title:"Bazzz."`
+	}
+
+	val := My{}
+	val.DeeplyEmbedded = &DeeplyEmbedded{}
+	val.Foo = "abcde"
+	val.Bar = 123
+	val.Baz = 4.56
+
+	assertjson.EqMarshal(t, `{"deep":{"emb":{"foo":"abcde","bar":123}},"baz":4.56}`, val)
+
+	s, err := r.Reflect(val)
+	require.NoError(t, err)
+
+	assertjson.EqMarshal(t, `{
+	  "definitions":{
+		"JsonschemaGoTestDeeplyEmbedded":{
+		  "properties":{"emb":{"$ref":"#/definitions/JsonschemaGoTestEmbed"}},
+		  "type":"object"
+		},
+		"JsonschemaGoTestEmbed":{
+		  "properties":{
+			"bar":{"minimum":3,"type":"integer"},
+			"foo":{"minLength":5,"type":"string"}
+		  },
+		  "type":"object"
+		}
+	  },
+	  "properties":{
+		"baz":{"title":"Bazzz.","type":"number"},
+		"deep":{"$ref":"#/definitions/JsonschemaGoTestDeeplyEmbedded"}
 	  },
 	  "type":"object"
 	}`, s)
@@ -1685,7 +1783,14 @@ func TestReflector_Reflect_deeplyEmbeddedUnexported(t *testing.T) {
 		Baz float64 `json:"baz" title:"Bazzz."`
 	}
 
-	s, err := r.Reflect(My{})
+	val := My{}
+	val.Foo = "abcde"
+	val.Bar = 123
+	val.Baz = 4.56
+
+	assertjson.EqMarshal(t, `{"foo":"abcde","bar":123,"baz":4.56}`, val)
+
+	s, err := r.Reflect(val)
 	require.NoError(t, err)
 
 	assertjson.EqMarshal(t, `{
