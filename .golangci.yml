@@ -22,6 +22,7 @@ linters-settings:
 linters:
   enable-all: true
   disable:
+    - fatcontext
     - err113
     - maintidx
     - musttag
@@ -31,7 +32,6 @@ linters:
     - cyclop
     - lll
     - gochecknoglobals
-    - gomnd
     - wrapcheck
     - paralleltest
     - forbidigo
@@ -46,9 +46,9 @@ linters:
     - dupword
     - depguard
     - tagalign
-    - execinquery
     - mnd
     - testifylint
+    - recvcheck
 
 issues:
   exclude:
@@ -59,12 +59,12 @@ issues:
   exclude-use-default: false
   exclude-rules:
     - linters:
-        - gomnd
         - mnd
         - goconst
         - noctx
         - funlen
         - dupl
+        - structcheck
         - unused
         - unparam
         - nosnakecase
@@ -74,4 +74,7 @@ issues:
         - errchkjson
         - gosec
       path: "example_"
+    - linters:
+        - revive
+      text: "unused-parameter: parameter"
 
