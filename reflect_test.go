@@ -2655,3 +2655,28 @@ func TestReflector_Reflect_byteSlice(t *testing.T) {
 	  "type":"object"
 	}`, s)
 }
+
+func TestReflector_Reflect_EnumsPlacement(t *testing.T) {
+	r := jsonschema.Reflector{}
+
+	type Check struct {
+		A int                `json:"a" enum:"1"`
+		B []string           `json:"b" enum:"check-string"`
+		C []withValNamedEnum `json:"c"`
+	}
+
+	got, err := r.Reflect(Check{})
+	require.NoError(t, err)
+
+	assertjson.EqMarshal(t, `{
+	  "definitions": {
+		"JsonschemaGoTestWithValNamedEnum": {"enum": [""],"type": "string","x-enum-names": ["n:"]}
+	  },
+	  "properties":{
+		"a":{"enum":["1"],"type":"integer"},
+		"b":{"items":{"enum":["check-string"],"type":"string"},"type":["array","null"]},
+		"c":{"items":{"$ref":"#/definitions/JsonschemaGoTestWithValNamedEnum"},"type":["array","null"]}
+	  },
+	  "type":"object"
+	}`, got)
+}
