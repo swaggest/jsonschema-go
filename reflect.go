@@ -1388,10 +1388,12 @@ func reflectEnum(schema *Schema, fieldTag reflect.StructTag, fieldVal interface{
 	if len(enum.items) > 0 {
 		target := searchDeepestSchema(schema)
 		target.Enum = enum.items
+
 		if len(enum.names) > 0 {
 			if target.ExtraProperties == nil {
 				target.ExtraProperties = make(map[string]interface{}, 1)
 			}
+
 			schema.ExtraProperties[XEnumNames] = enum.names
 		}
 	}
@@ -1401,12 +1403,15 @@ func searchDeepestSchema(in *Schema) *Schema {
 	if in.Items == nil {
 		return in
 	}
+
 	if in.Items.SchemaOrBool == nil {
 		return in
 	}
+
 	if in.Items.SchemaOrBool.TypeObject == nil {
 		return in
 	}
+
 	return searchDeepestSchema(in.Items.SchemaOrBool.TypeObject)
 }
 
