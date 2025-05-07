@@ -23,6 +23,8 @@ type Schema struct {
 	Description          *string                                     `json:"description,omitempty"`
 	Default              *interface{}                                `json:"default,omitempty"`
 	ReadOnly             *bool                                       `json:"readOnly,omitempty"`
+	WriteOnly             *bool                                       `json:"writeOnly,omitempty"`
+	Deprecated             *bool                                       `json:"deprecated,omitempty"`
 	Examples             []interface{}                               `json:"examples,omitempty"`
 	MultipleOf           *float64                                    `json:"multipleOf,omitempty"`
 	Maximum              *float64                                    `json:"maximum,omitempty"`
@@ -110,6 +112,18 @@ func (s *Schema) WithDefault(val interface{}) *Schema {
 // WithReadOnly sets ReadOnly value.
 func (s *Schema) WithReadOnly(val bool) *Schema {
 	s.ReadOnly = &val
+	return s
+}
+
+// WithWriteOnly sets WriteOnly value.
+func (s *Schema) WithWriteOnly(val bool) *Schema {
+	s.WriteOnly = &val
+	return s
+}
+
+// WithDeprecated sets Deprecated value.
+func (s *Schema) WithDeprecated(val bool) *Schema {
+	s.Deprecated = &val
 	return s
 }
 

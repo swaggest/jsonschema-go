@@ -90,6 +90,9 @@ These tags can be used:
 * [`example`](https://json-schema.org/draft/2020-12/json-schema-validation.html#name-examples), a scalar value that matches type of parent property, for an array it is applied to items
 * [`examples`](https://json-schema.org/draft/2020-12/json-schema-validation.html#name-examples), a JSON array value
 * [`const`](https://json-schema.org/draft/2020-12/json-schema-validation.html#rfc.section.6.1.3), can be scalar or JSON value
+* [`deprecated`](https://json-schema.org/draft/2020-12/json-schema-validation#name-deprecated), boolean
+* [`readOnly`](https://json-schema.org/draft/2020-12/json-schema-validation#name-deprecated), boolean
+* [`writeOnly`](https://json-schema.org/draft/2020-12/json-schema-validation#name-deprecated), boolean
 * [`pattern`](https://json-schema.org/draft-04/json-schema-validation.html#rfc.section.5.2.3), string
 * [`format`](https://json-schema.org/draft-04/json-schema-validation.html#rfc.section.7), string
 * [`multipleOf`](https://json-schema.org/draft-04/json-schema-validation.html#rfc.section.5.1.1), float > 0
