@@ -2655,3 +2655,34 @@ func TestReflector_Reflect_byteSlice(t *testing.T) {
 	  "type":"object"
 	}`, s)
 }
+
+func TestReflector_Reflect_EnumsPlacement(t *testing.T) {
+	r := jsonschema.Reflector{}
+
+	type Check struct {
+		A int                      `json:"a" enum:"1"`
+		B []string                 `json:"b" enum:"check-string"`
+		C []withValNamedEnum       `json:"c"`
+		D [][][]string             `json:"d" enum:"d"`
+		F map[string]string        `json:"f" enum:"f"`
+		G map[int]map[string][]int `json:"g" enum:"1"`
+	}
+
+	got, err := r.Reflect(Check{})
+	require.NoError(t, err)
+
+	assertjson.EqMarshal(t, `{
+	  "definitions": {
+		"JsonschemaGoTestWithValNamedEnum": {"enum": [""],"type": "string","x-enum-names": ["n:"]}
+	  },
+	  "properties":{
+		"a":{"enum":["1"],"type":"integer"},
+		"b":{"items":{"enum":["check-string"],"type":"string"},"type":["array","null"]},
+		"c":{"items":{"$ref":"#/definitions/JsonschemaGoTestWithValNamedEnum"},"type":["array","null"]},
+		"d":{"items":{"items":{"items":{"enum":["d"],"type":"string"},"type":"array"},"type":"array"},"type":["array","null"]},
+		"f":{"additionalProperties":{"type":"string"},"enum":["f"],"type":["object","null"]},
+		"g":{"additionalProperties":{"additionalProperties":{"items":{"type":"integer"},"type":"array"},"type":"object"},"enum":["1"],"type":["object","null"]}
+	  },
+	  "type":"object"
+	}`, got)
+}
