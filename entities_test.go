@@ -79,3 +79,29 @@ func TestType_MarshalJSON_roundtrip(t *testing.T) {
 	require.NoError(t, json.Unmarshal(marshaled, &v))
 	assertjson.Equal(t, jsonValue, marshaled)
 }
+
+func TestSchemaWithWriteOnly_MarshalJSON_roundtrip(t *testing.T) {
+	var (
+		jsonValue = []byte(`{"$id":"someid","title":"title","description":"description","writeOnly":true}`)
+		v Schema
+	)
+
+	require.NoError(t, json.Unmarshal(jsonValue, &v))
+	marshaled, err := json.Marshal(v)
+	require.NoError(t, err)
+	require.NoError(t, json.Unmarshal(marshaled, &v))
+	assertjson.Equal(t, jsonValue, marshaled)
+}
+
+func TestSchemaWithDeprecated_MarshalJSON_roundtrip(t *testing.T) {
+	var (
+		jsonValue = []byte(`{"$id":"someid","title":"title","description":"description","deprecated":true}`)
+		v Schema
+	)
+
+	require.NoError(t, json.Unmarshal(jsonValue, &v))
+	marshaled, err := json.Marshal(v)
+	require.NoError(t, err)
+	require.NoError(t, json.Unmarshal(marshaled, &v))
+	assertjson.Equal(t, jsonValue, marshaled)
+}

@@ -1161,13 +1161,6 @@ func (r *Reflector) walkProperties(v reflect.Value, parent *Schema, rc *ReflectC
 			return err
 		}
 
-		deprecated := false
-		if err := refl.ReadBoolTag(field.Tag, "deprecated", &deprecated); err != nil {
-			return err
-		} else if deprecated {
-			propertySchema.WithExtraPropertiesItem("deprecated", true)
-		}
-
 		if !rc.SkipNonConstraints {
 			if err := reflectExamples(rc, &propertySchema, field); err != nil {
 				return err
