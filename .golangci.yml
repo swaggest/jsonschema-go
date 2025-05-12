@@ -12,8 +12,6 @@ linters-settings:
     threshold: 100
   misspell:
     locale: US
-  unused:
-    check-exported: false
   unparam:
     check-exported: true
   nestif:
@@ -64,10 +62,8 @@ issues:
         - noctx
         - funlen
         - dupl
-        - structcheck
         - unused
         - unparam
-        - nosnakecase
       path: "_test.go"
     - linters:
         - errcheck # Error checking omitted for brevity.
