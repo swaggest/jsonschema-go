@@ -425,12 +425,8 @@ func TestReflector_Reflect_pointer_envelop(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	assertjson.EqualMarshal(t, []byte(`{
+	assertjson.EqMarshal(t, `{
 	  "definitions":{
-		"JsonschemaGoTestNamedMap":{
-		  "additionalProperties":{"$ref":"#/definitions/JsonschemaGoTestSt"},
-		  "type":"object"
-		},
 		"JsonschemaGoTestSt":{"properties":{"a":{"type":"integer"}},"type":"object"}
 	  },
 	  "properties":{
@@ -446,9 +442,14 @@ func TestReflector_Reflect_pointer_envelop(t *testing.T) {
 		},
 		"namedMap":{
 		  "minProperties":5,
-		  "anyOf":[{"type":"null"},{"$ref":"#/definitions/JsonschemaGoTestNamedMap"}]
+		  "additionalProperties":{"$ref":"#/definitions/JsonschemaGoTestSt"},
+		  "type":["object","null"]
 		},
-		"namedMapOmitempty":{"$ref":"#/definitions/JsonschemaGoTestNamedMap","minProperties":1},
+		"namedMapOmitempty":{
+		  "minProperties":1,
+		  "additionalProperties":{"$ref":"#/definitions/JsonschemaGoTestSt"},
+		  "type":"object"
+		},
 		"ptr":{"anyOf":[{"type":"null"},{"$ref":"#/definitions/JsonschemaGoTestSt"}]},
 		"ptrOmitempty":{"$ref":"#/definitions/JsonschemaGoTestSt"},
 		"slice":{
@@ -462,7 +463,7 @@ func TestReflector_Reflect_pointer_envelop(t *testing.T) {
 		"val":{"$ref":"#/definitions/JsonschemaGoTestSt"}
 	  },
 	  "type":"object"
-	}`), s)
+	}`, s)
 }
 
 func TestReflector_Reflect_pointer(t *testing.T) {
@@ -489,10 +490,6 @@ func TestReflector_Reflect_pointer(t *testing.T) {
 
 	assertjson.EqualMarshal(t, []byte(`{
 	  "definitions":{
-		"JsonschemaGoTestNamedMap":{
-		  "additionalProperties":{"$ref":"#/definitions/JsonschemaGoTestSt"},
-		  "type":"object"
-		},
 		"JsonschemaGoTestSt":{"properties":{"a":{"type":"integer"}},"type":"object"}
 	  },
 	  "properties":{
@@ -506,8 +503,16 @@ func TestReflector_Reflect_pointer(t *testing.T) {
 		  "additionalProperties":{"$ref":"#/definitions/JsonschemaGoTestSt"},
 		  "type":"object"
 		},
-		"namedMap":{"$ref":"#/definitions/JsonschemaGoTestNamedMap","minProperties":5},
-		"namedMapOmitempty":{"$ref":"#/definitions/JsonschemaGoTestNamedMap","minProperties":1},
+		"namedMap":{
+		  "minProperties":5,
+		  "additionalProperties":{"$ref":"#/definitions/JsonschemaGoTestSt"},
+		  "type":["object","null"]
+		},
+		"namedMapOmitempty":{
+		  "minProperties":1,
+		  "additionalProperties":{"$ref":"#/definitions/JsonschemaGoTestSt"},
+		  "type":"object"
+		},
 		"ptr":{"$ref":"#/definitions/JsonschemaGoTestSt"},
 		"ptrOmitempty":{"$ref":"#/definitions/JsonschemaGoTestSt"},
 		"slice":{
@@ -584,8 +589,8 @@ func TestExposer(t *testing.T) {
 		PtrWeek    *ISOWeek      `json:"ptr_week"`
 		Raw        PtrRawSchema  `json:"raw"`
 		PtrRaw     *PtrRawSchema `json:"ptr_raw"`
-		Country    ISOCountry    `json:"country" deprecated:"true"`
-		PtrCountry ISOCountry    `json:"ptr_country" deprecated:"true"`
+		Country    ISOCountry    `json:"country"`
+		PtrCountry ISOCountry    `json:"ptr_country"`
 		PtrExp     PtrSchema     `json:"ptr_exp"`
 	}
 
@@ -604,8 +609,8 @@ func TestExposer(t *testing.T) {
 		}
 	  },
 	  "properties":{
-		"country":{"$ref":"#/definitions/JsonschemaGoTestISOCountry","deprecated":true},
-		"ptr_country":{"$ref":"#/definitions/JsonschemaGoTestISOCountry","deprecated":true},
+		"country":{"$ref":"#/definitions/JsonschemaGoTestISOCountry"},
+		"ptr_country":{"$ref":"#/definitions/JsonschemaGoTestISOCountry"},
 		"ptr_exp":{"examples":["bar"],"type":"string"},
 		"ptr_raw":{"examples":["foo"],"type":["string","null"]},
 		"ptr_week":{"$ref":"#/definitions/JsonschemaGoTestISOWeek"},
@@ -977,7 +982,7 @@ func TestReflector_Reflect_parentTags(t *testing.T) {
 	_, err = r.Reflect(struct {
 		_ string `minProperties:"abc"`
 	}{})
-	assert.EqualError(t, err, "failed to parse int value abc in tag minProperties: strconv.ParseInt: parsing \"abc\": invalid syntax")
+	assert.EqualError(t, err, "_: failed to parse int value abc in tag minProperties: strconv.ParseInt: parsing \"abc\": invalid syntax")
 }
 
 func TestReflector_Reflect_parentTagsExample(t *testing.T) {
@@ -1053,7 +1058,7 @@ func TestReflector_Reflect_parentTagsFiltered(t *testing.T) {
 	_, err = r.Reflect(struct {
 		_ string `minProperties:"abc"`
 	}{})
-	require.EqualError(t, err, "failed to parse int value abc in tag minProperties: strconv.ParseInt: parsing \"abc\": invalid syntax")
+	require.EqualError(t, err, "_: failed to parse int value abc in tag minProperties: strconv.ParseInt: parsing \"abc\": invalid syntax")
 }
 
 func TestReflector_Reflect_context(t *testing.T) {
@@ -1281,28 +1286,49 @@ func TestReflector_Reflect_examples(t *testing.T) {
 }
 
 func TestReflector_Reflect_namedSlice(t *testing.T) {
-	type PanicType []string
-
-	type PanicStruct struct {
-		IPPolicy PanicType `json:"ip_policy" example:"[\"127.0.0.1\"]"`
-	}
+	type (
+		PanicType   []string
+		NamedString string
+		NamedMap    map[NamedString]string
+		MyStruct    struct {
+			Foo int `json:"foo"`
+		}
+		NamedStructMap map[string]MyStruct
+		PanicStruct    struct {
+			IPPolicy PanicType      `json:"ip_policy" example:"[\"127.0.0.1\"]"`         // Inlined schema for trivial array.
+			NS       NamedString    `json:"named_string" example:"127.0.0.3"`            // Inlined schema for trivial scalar.
+			NM       NamedMap       `json:"named_map" example:"{\"127.0.0.3\":\"abc\"}"` // Inlined schema for trivial map.
+			MS       MyStruct       `json:"my_struct"`                                   // Referenced schema for named properties.
+			NSM      NamedStructMap `json:"named_struct_map"`
+		}
+	)
 
 	reflector := jsonschema.Reflector{}
 	schema, err := reflector.Reflect(PanicStruct{})
 	require.NoError(t, err)
 
-	assertjson.EqualMarshal(t, []byte(`{
+	assertjson.EqMarshal(t, `{
 	  "definitions":{
-		"JsonschemaGoTestPanicType":{"items":{"type":"string"},"type":["array","null"]}
+		"JsonschemaGoTestMyStruct":{"properties":{"foo":{"type":"integer"}},"type":"object"}
 	  },
 	  "properties":{
 		"ip_policy":{
-		  "$ref":"#/definitions/JsonschemaGoTestPanicType",
-		  "examples":[["127.0.0.1"]]
+		  "examples":[["127.0.0.1"]],"items":{"type":"string"},
+		  "type":["array","null"]
+		},
+		"my_struct":{"$ref":"#/definitions/JsonschemaGoTestMyStruct"},
+		"named_map":{
+		  "examples":[{"127.0.0.3":"abc"}],"additionalProperties":{"type":"string"},
+		  "type":["object","null"]
+		},
+		"named_string":{"examples":["127.0.0.3"],"type":"string"},
+		"named_struct_map":{
+		  "additionalProperties":{"$ref":"#/definitions/JsonschemaGoTestMyStruct"},
+		  "type":["object","null"]
 		}
 	  },
 	  "type":"object"
-	}`), schema)
+	}`, schema)
 }
 
 func TestReflector_Reflect_uuid(t *testing.T) {
@@ -1807,13 +1833,13 @@ func TestReflector_Reflect_nullable(t *testing.T) {
 	r := jsonschema.Reflector{}
 
 	type My struct {
-		List1 []string       `json:"l1" items.title:"List 1" items.enum:"abc,def"`
-		List2 []int          `json:"l2"`
+		List1 []string       `json:"l1" items.title:"List 1" items.enum:"abc,def" items.default:"abc"`
+		List2 []int          `json:"l2" items.const:"33" items.default:"33"`
 		List3 []string       `json:"l3" nullable:"false"`
 		S1    string         `json:"s1" nullable:"true"`
 		S2    *string        `json:"s2" nullable:"false"`
 		Map1  map[string]int `json:"m1" additionalProperties.title:"Map 1" additionalProperties.enum:"1,2,3"`
-		Map2  map[string]int `json:"m2" nullable:"false"`
+		Map2  map[string]int `json:"m2" nullable:"false" additionalProperties.const:"123" additionalProperties.default:"123"`
 	}
 
 	s, err := r.Reflect(My{})
@@ -1822,16 +1848,22 @@ func TestReflector_Reflect_nullable(t *testing.T) {
 	assertjson.EqMarshal(t, `{
 	  "properties":{
 		"l1":{
-		  "items":{"title":"List 1","enum":["abc","def"],"type":"string"},
+		  "items":{"title":"List 1","default":"abc","enum":["abc","def"],"type":"string"},
 		  "type":["array","null"]
 		},
-		"l2":{"items":{"type":"integer"},"type":["array","null"]},
+		"l2":{
+		  "items":{"default":33,"const":33,"type":"integer"},
+		  "type":["array","null"]
+		},
 		"l3":{"items":{"type":"string"},"type":"array"},
 		"m1":{
 		  "additionalProperties":{"title":"Map 1","enum":[1,2,3],"type":"integer"},
 		  "type":["object","null"]
 		},
-		"m2":{"additionalProperties":{"type":"integer"},"type":"object"},
+		"m2":{
+		  "additionalProperties":{"default":123,"const":123,"type":"integer"},
+		  "type":"object"
+		},
 		"s1":{"type":["string","null"]},"s2":{"type":"string"}
 	  },
 	  "type":"object"
@@ -1899,10 +1931,8 @@ func TestReflector_Reflect_customTime(t *testing.T) {
 
 	require.NoError(t, err)
 	assertjson.EqMarshal(t, `{
-	  "definitions":{"JsonschemaGoTestMyTime":{"type":"object"}},
 	  "properties":{
-		"t1":{"$ref":"#/definitions/JsonschemaGoTestMyTime"},
-		"t2":{"$ref":"#/definitions/JsonschemaGoTestMyTime"},
+		"t1":{"type":["object","null"]},"t2":{"type":["object","null"]},
 		"t3":{"type":["null","string"],"format":"date-time"}
 	  },
 	  "type":"object"
@@ -2090,7 +2120,7 @@ func TestReflector_Reflect_ptrDefault(t *testing.T) {
 		"JsonschemaGoTestDiscover":{"enum":["all","none"],"type":["null","string"]}
 	  },
 	  "properties":{
-		"discover":{"$ref":"#/definitions/JsonschemaGoTestDiscover","default":"all"}
+		"discover":{"$ref":"#/definitions/JsonschemaGoTestDiscover"}
 	  },
 	  "type":"object"
 	}`, s)

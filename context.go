@@ -320,6 +320,7 @@ type ReflectContext struct {
 	definitions       map[refl.TypeString]*Schema // list of all definition objects
 	definitionRefs    map[refl.TypeString]Ref
 	typeCycles        map[refl.TypeString]*Schema
+	isTypeCycle       bool
 	rootDefName       string
 	parentStructField *reflect.StructField
 	parentTagPrefix   string
@@ -332,7 +333,7 @@ func (rc *ReflectContext) getDefinition(ref string) *Schema {
 		}
 	}
 
-	return &Schema{}
+	return nil
 }
 
 func (rc *ReflectContext) deprecatedFallback() {

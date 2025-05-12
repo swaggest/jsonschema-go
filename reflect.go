@@ -126,11 +126,14 @@ func (r *Reflector) InterceptDefName(f func(t reflect.Type, defaultDefName strin
 	r.DefaultOptions = append(r.DefaultOptions, InterceptDefName(f))
 }
 
+// checkSchemaSetup populates initial schema from interfaced exposers when available.
 func checkSchemaSetup(params InterceptSchemaParams) (bool, error) {
 	v := params.Value
 	s := params.Schema
 
-	reflectEnum(s, "", "", v.Interface())
+	if err := reflectEnum(s, "", "", v.Interface()); err != nil {
+		return true, err
+	}
 
 	var e Exposer
 
@@ -355,8 +358,18 @@ func (r *Reflector) reflectDefer(defName string, typeString refl.TypeString, rc 
 		return ref.Schema()
 	}
 
+	isTrivial := schema.IsTrivial(func(ref string) (SchemaOrBool, bool) {
+		s := rc.getDefinition(ref)
+
+		if s != nil {
+			return s.ToSchemaOrBool(), true
+		}
+
+		return SchemaOrBool{}, false
+	})
+
 	// Inlining trivial scalar schemas.
-	if schema.IsTrivial() && schema.Type != nil && !schema.HasType(Object) && !schema.HasType(Array) {
+	if isTrivial && schema.Type != nil && len(schema.Properties) == 0 && !rc.isTypeCycle /*&& !schema.HasType(Object) /*&& !schema.HasType(Array)*/ {
 		return schema
 	}
 
@@ -410,6 +423,8 @@ func (r *Reflector) reflect(i interface{}, rc *ReflectContext, keepType bool, pa
 		typeString refl.TypeString
 		defName    string
 	)
+
+	rc.isTypeCycle = false
 
 	if st, ok := i.(withStruct); ok {
 		s = st.structPtr()
@@ -500,11 +515,17 @@ func (r *Reflector) reflect(i interface{}, rc *ReflectContext, keepType bool, pa
 	}
 
 	if rc.typeCycles[typeString] != nil && !rc.InlineRefs {
+		rc.isTypeCycle = true
+
 		return *rc.typeCycles[typeString], nil
 	}
 
 	if t.PkgPath() != "" && len(rc.Path) > 1 && defName != "" && !r.inlineDefinition[typeString] {
 		rc.typeCycles[typeString] = sp
+
+		defer func() {
+			delete(rc.typeCycles, typeString)
+		}()
 	}
 
 	r.checkTitle(v, s, sp)
@@ -879,14 +900,8 @@ func (r *Reflector) kindSwitch(t reflect.Type, v reflect.Value, schema *Schema, 
 			return err
 		}
 
-		if rc.parentStructField != nil && itemsSchema.Ref == nil {
-			if err := refl.PopulateFieldsFromTags(&itemsSchema, rc.parentStructField.Tag, func(o *refl.FieldsFromTagsOptions) {
-				o.TagPrefix = rc.parentTagPrefix
-			}); err != nil {
-				return err
-			}
-
-			reflectEnum(&itemsSchema, rc.parentTagPrefix, rc.parentStructField.Tag, itemValue)
+		if err := checkTags(rc, &itemsSchema, itemValue); err != nil {
+			return err
 		}
 
 		schema.AddType(Array)
@@ -927,14 +942,8 @@ func (r *Reflector) kindSwitch(t reflect.Type, v reflect.Value, schema *Schema, 
 			return err
 		}
 
-		if rc.parentStructField != nil && additionalPropertiesSchema.Ref == nil {
-			if err := refl.PopulateFieldsFromTags(&additionalPropertiesSchema, rc.parentStructField.Tag, func(o *refl.FieldsFromTagsOptions) {
-				o.TagPrefix = rc.parentTagPrefix
-			}); err != nil {
-				return err
-			}
-
-			reflectEnum(&additionalPropertiesSchema, rc.parentTagPrefix, rc.parentStructField.Tag, itemValue)
+		if err := checkTags(rc, &additionalPropertiesSchema, itemValue); err != nil {
+			return err
 		}
 
 		schema.AddType(Object)
@@ -959,6 +968,47 @@ func (r *Reflector) kindSwitch(t reflect.Type, v reflect.Value, schema *Schema, 
 		}
 
 		return fmt.Errorf("%s: type is not supported: %s", strings.Join(rc.Path[1:], "."), t.String())
+	}
+
+	return nil
+}
+
+func checkTags(rc *ReflectContext, schema *Schema, value interface{}) (err error) {
+	if rc.parentStructField == nil || schema.Ref != nil {
+		return nil
+	}
+
+	defer func() {
+		if err != nil {
+			err = fmt.Errorf("%s: %w", strings.Join(append(rc.Path[1:], rc.parentStructField.Name), "."), err)
+		}
+	}()
+
+	if err := refl.PopulateFieldsFromTags(schema, rc.parentStructField.Tag, func(o *refl.FieldsFromTagsOptions) {
+		o.TagPrefix = rc.parentTagPrefix
+	}); err != nil {
+		return err
+	}
+
+	if err := reflectEnum(schema, rc.parentTagPrefix, rc.parentStructField.Tag, value); err != nil {
+		return err
+	}
+
+	if !rc.SkipNonConstraints {
+		err := checkInlineValue(schema, *rc.parentStructField, rc.parentTagPrefix+"default", schema.WithDefault)
+		if err != nil {
+			return err
+		}
+	}
+
+	if !rc.SkipNonConstraints {
+		if err := reflectExamples(rc, schema, *rc.parentStructField); err != nil {
+			return err
+		}
+	}
+
+	if err := checkInlineValue(schema, *rc.parentStructField, rc.parentTagPrefix+"const", schema.WithConst); err != nil {
+		return err
 	}
 
 	return nil
@@ -1091,7 +1141,11 @@ func (r *Reflector) walkProperties(v reflect.Value, parent *Schema, rc *ReflectC
 
 		// Use unnamed fields to configure parent schema.
 		if field.Name == "_" && (!rc.UnnamedFieldWithTag || tagFound) {
-			if err := refl.PopulateFieldsFromTags(parent, field.Tag); err != nil {
+			f := field
+			rc.parentStructField = &f
+			rc.parentTagPrefix = ""
+
+			if err := checkTags(rc, parent, nil); err != nil {
 				return err
 			}
 
@@ -1102,12 +1156,6 @@ func (r *Reflector) walkProperties(v reflect.Value, parent *Schema, rc *ReflectC
 
 			if additionalProperties != nil {
 				parent.AdditionalProperties = &SchemaOrBool{TypeBoolean: additionalProperties}
-			}
-
-			if !rc.SkipNonConstraints {
-				if err := reflectExamples(rc, parent, field); err != nil {
-					return err
-				}
 			}
 
 			continue
@@ -1170,6 +1218,7 @@ func (r *Reflector) walkProperties(v reflect.Value, parent *Schema, rc *ReflectC
 
 		f := field
 		rc.parentStructField = &f
+		rc.parentTagPrefix = ""
 
 		propertySchema, err := r.reflect(fieldVal, rc, true, parent)
 		if err != nil {
@@ -1180,35 +1229,17 @@ func (r *Reflector) walkProperties(v reflect.Value, parent *Schema, rc *ReflectC
 			return err
 		}
 
+		rc.parentStructField = &f
+		rc.parentTagPrefix = ""
+
+		if err := checkTags(rc, &propertySchema, fieldVal); err != nil {
+			return err
+		}
+
 		rc.parentStructField = nil
+		rc.parentTagPrefix = ""
 
 		checkNullability(&propertySchema, rc, ft, omitEmpty, nullable)
-
-		if !rc.SkipNonConstraints {
-			err = checkInlineValue(&propertySchema, field, "default", propertySchema.WithDefault)
-			if err != nil {
-				return fmt.Errorf("%s: %w", strings.Join(append(rc.Path[1:], field.Name), "."), err)
-			}
-		}
-
-		err = checkInlineValue(&propertySchema, field, "const", propertySchema.WithConst)
-		if err != nil {
-			return err
-		}
-
-		if err := refl.PopulateFieldsFromTags(&propertySchema, field.Tag); err != nil {
-			return err
-		}
-
-		if !rc.SkipNonConstraints {
-			if err := reflectExamples(rc, &propertySchema, field); err != nil {
-				return err
-			}
-		}
-
-		if propertySchema.Ref == nil {
-			reflectEnum(&propertySchema, "", field.Tag, fieldVal)
-		}
 
 		// Remove temporary kept type from referenced schema.
 		if propertySchema.Ref != nil {
@@ -1369,6 +1400,11 @@ func checkNullability(propertySchema *Schema, rc *ReflectContext, ft reflect.Typ
 
 	if propertySchema.Ref != nil && ft.Kind() != reflect.Struct {
 		def := rc.getDefinition(*propertySchema.Ref)
+
+		if def == nil {
+			def = &Schema{}
+		}
+
 		in.RefDef = def
 
 		if (def.HasType(Array) || def.HasType(Object) || ft.Kind() == reflect.Ptr) && !def.HasType(Null) {
@@ -1389,7 +1425,7 @@ func reflectExamples(rc *ReflectContext, propertySchema *Schema, field reflect.S
 		return err
 	}
 
-	value, ok := field.Tag.Lookup("examples")
+	value, ok := field.Tag.Lookup(rc.parentTagPrefix + "examples")
 	if !ok {
 		return nil
 	}
@@ -1405,7 +1441,7 @@ func reflectExamples(rc *ReflectContext, propertySchema *Schema, field reflect.S
 }
 
 func reflectExample(rc *ReflectContext, propertySchema *Schema, field reflect.StructField) error {
-	err := checkInlineValue(propertySchema, field, "example", func(i interface{}) *Schema {
+	err := checkInlineValue(propertySchema, field, rc.parentTagPrefix+"example", func(i interface{}) *Schema {
 		return propertySchema.WithExamples(i)
 	})
 	if err != nil {
@@ -1415,9 +1451,11 @@ func reflectExample(rc *ReflectContext, propertySchema *Schema, field reflect.St
 	return nil
 }
 
-func reflectEnum(schema *Schema, tagPrefix string, fieldTag reflect.StructTag, fieldVal interface{}) {
+func reflectEnum(schema *Schema, tagPrefix string, fieldTag reflect.StructTag, fieldVal interface{}) error {
 	enum := enum{}
-	enum.loadFromField(tagPrefix, fieldTag, fieldVal)
+	if err := enum.loadFromField(tagPrefix, fieldTag, fieldVal); err != nil {
+		return err
+	}
 
 	if len(enum.items) > 0 {
 		schema.Enum = enum.items
@@ -1429,6 +1467,8 @@ func reflectEnum(schema *Schema, tagPrefix string, fieldTag reflect.StructTag, f
 			schema.ExtraProperties[XEnumNames] = enum.names
 		}
 	}
+
+	return nil
 }
 
 type enum struct {
@@ -1437,7 +1477,7 @@ type enum struct {
 }
 
 // loadFromField loads enum from field tag: json array or comma-separated string.
-func (enum *enum) loadFromField(tagPrefix string, fieldTag reflect.StructTag, fieldVal interface{}) {
+func (enum *enum) loadFromField(tagPrefix string, fieldTag reflect.StructTag, fieldVal interface{}) error {
 	fv := reflect.ValueOf(fieldVal)
 
 	if e, isEnumer := safeInterface(fv).(NamedEnum); isEnumer {
@@ -1453,49 +1493,91 @@ func (enum *enum) loadFromField(tagPrefix string, fieldTag reflect.StructTag, fi
 	}
 
 	if enumTag := fieldTag.Get(tagPrefix + "enum"); enumTag != "" {
-		var e []interface{}
-
-		err := json.Unmarshal([]byte(enumTag), &e)
+		err := json.Unmarshal([]byte(enumTag), &enum.items)
 		if err != nil {
-			e = enum.inferType(enumTag, fv)
+			return enum.inferType(enumTag, fv)
 		}
 
-		enum.items = e
+		return enum.checkJSON(fv)
 	}
+
+	return nil
 }
 
-func (enum *enum) inferType(enumTag string, fv reflect.Value) []interface{} {
+func (enum *enum) inferType(enumTag string, fv reflect.Value) error {
 	es := strings.Split(enumTag, ",")
-	e := make([]interface{}, len(es))
+	enum.items = make([]interface{}, len(es))
 
 	switch {
 	case strings.HasPrefix(fv.Kind().String(), "int"):
 		for i, s := range es {
 			if v, err := strconv.ParseInt(s, 10, 64); err == nil {
-				e[i] = v
+				enum.items[i] = v
+			} else {
+				return fmt.Errorf("parse enum item %q: %w", s, err)
 			}
 		}
 	case strings.HasPrefix(fv.Kind().String(), "uint"):
 		for i, s := range es {
 			if v, err := strconv.ParseUint(s, 10, 64); err == nil {
-				e[i] = v
+				enum.items[i] = v
+			} else {
+				return fmt.Errorf("parse enum item %q: %w", s, err)
 			}
 		}
 
 	case strings.HasPrefix(fv.Kind().String(), "float"):
 		for i, s := range es {
 			if v, err := strconv.ParseFloat(s, 64); err == nil {
-				e[i] = v
+				enum.items[i] = v
+			} else {
+				return fmt.Errorf("parse enum item %q: %w", s, err)
+			}
+		}
+
+	case fv.Kind().String() == "bool":
+		for i, s := range es {
+			if v, err := strconv.ParseBool(s); err == nil {
+				enum.items[i] = v
+			} else {
+				return fmt.Errorf("parse enum item %q: %w", s, err)
 			}
 		}
 
 	default:
 		for i, s := range es {
-			e[i] = s
+			enum.items[i] = s
 		}
 	}
 
-	return e
+	return nil
+}
+
+func (enum *enum) checkJSON(fv reflect.Value) error {
+	switch {
+	case strings.HasPrefix(fv.Kind().String(), "int") || strings.HasPrefix(fv.Kind().String(), "uint"):
+		for _, v := range enum.items {
+			if _, ok := v.(int); !ok {
+				return fmt.Errorf("integer expected in enum: %T(%v)", v, v)
+			}
+		}
+
+	case strings.HasPrefix(fv.Kind().String(), "float"):
+		for _, v := range enum.items {
+			if _, ok := v.(float64); !ok {
+				return fmt.Errorf("float expected in enum: %T(%v)", v, v)
+			}
+		}
+
+	case fv.Kind().String() == "bool":
+		for _, v := range enum.items {
+			if _, ok := v.(bool); !ok {
+				return fmt.Errorf("bool expected in enum: %T(%v)", v, v)
+			}
+		}
+	}
+
+	return nil
 }
 
 type (
