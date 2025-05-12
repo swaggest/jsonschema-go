@@ -83,7 +83,7 @@ func TestType_MarshalJSON_roundtrip(t *testing.T) {
 func TestSchemaWithWriteOnly_MarshalJSON_roundtrip(t *testing.T) {
 	var (
 		jsonValue = []byte(`{"$id":"someid","title":"title","description":"description","writeOnly":true}`)
-		v Schema
+		v         Schema
 	)
 
 	require.NoError(t, json.Unmarshal(jsonValue, &v))
@@ -96,7 +96,7 @@ func TestSchemaWithWriteOnly_MarshalJSON_roundtrip(t *testing.T) {
 func TestSchemaWithDeprecated_MarshalJSON_roundtrip(t *testing.T) {
 	var (
 		jsonValue = []byte(`{"$id":"someid","title":"title","description":"description","deprecated":true}`)
-		v Schema
+		v         Schema
 	)
 
 	require.NoError(t, json.Unmarshal(jsonValue, &v))

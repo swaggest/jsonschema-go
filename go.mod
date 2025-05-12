@@ -3,10 +3,10 @@ module github.com/swaggest/jsonschema-go
 go 1.18
 
 require (
-	github.com/bool64/dev v0.2.38
+	github.com/bool64/dev v0.2.39
 	github.com/stretchr/testify v1.8.2
 	github.com/swaggest/assertjson v1.9.0
-	github.com/swaggest/refl v1.3.0
+	github.com/swaggest/refl v1.4.0
 	github.com/yudai/gojsondiff v1.0.0
 )
 

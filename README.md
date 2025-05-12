@@ -133,6 +133,17 @@ type MyObj struct {
 }
 ```
 
+Complex nested maps and slices/arrays can be configured with path-prefixed field tags.
+
+```go
+type MyObj struct {
+	Ints          []int            `json:"ints" items.title:"My int"`
+	ExtraFloats   [][]float64      `json:"extra_floats" items.items.title:"My float" items.items.enum:"1.23,4.56"`
+	MappedStrings map[int]string   `json:"mapped_strings" additionalProperties.enum:"abc,def"`
+	VeryDeep      map[int][]string `json:"very_deep" additionalProperties.items.enum:"abc,def"`
+}
+```
+
 ### Implementing interfaces on a type
 
 There are a few interfaces that can be implemented on a type to customize JSON Schema generation.

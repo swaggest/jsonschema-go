@@ -130,7 +130,7 @@ func checkSchemaSetup(params InterceptSchemaParams) (bool, error) {
 	v := params.Value
 	s := params.Schema
 
-	reflectEnum(s, "", v.Interface())
+	reflectEnum(s, "", "", v.Interface())
 
 	var e Exposer
 
@@ -867,9 +867,26 @@ func (r *Reflector) kindSwitch(t reflect.Type, v reflect.Value, schema *Schema, 
 			itemValue = v.Index(0).Interface()
 		}
 
+		prevTagPrefix := rc.parentTagPrefix
+		defer func() {
+			rc.parentTagPrefix = prevTagPrefix
+		}()
+
+		rc.parentTagPrefix += "items."
+
 		itemsSchema, err := r.reflect(itemValue, rc, false, schema)
 		if err != nil {
 			return err
+		}
+
+		if rc.parentStructField != nil && itemsSchema.Ref == nil {
+			if err := refl.PopulateFieldsFromTags(&itemsSchema, rc.parentStructField.Tag, func(o *refl.FieldsFromTagsOptions) {
+				o.TagPrefix = rc.parentTagPrefix
+			}); err != nil {
+				return err
+			}
+
+			reflectEnum(&itemsSchema, rc.parentTagPrefix, rc.parentStructField.Tag, itemValue)
 		}
 
 		schema.AddType(Array)
@@ -898,9 +915,26 @@ func (r *Reflector) kindSwitch(t reflect.Type, v reflect.Value, schema *Schema, 
 			}
 		}
 
+		prevTagPrefix := rc.parentTagPrefix
+		defer func() {
+			rc.parentTagPrefix = prevTagPrefix
+		}()
+
+		rc.parentTagPrefix += "additionalProperties."
+
 		additionalPropertiesSchema, err := r.reflect(itemValue, rc, false, schema)
 		if err != nil {
 			return err
+		}
+
+		if rc.parentStructField != nil && additionalPropertiesSchema.Ref == nil {
+			if err := refl.PopulateFieldsFromTags(&additionalPropertiesSchema, rc.parentStructField.Tag, func(o *refl.FieldsFromTagsOptions) {
+				o.TagPrefix = rc.parentTagPrefix
+			}); err != nil {
+				return err
+			}
+
+			reflectEnum(&additionalPropertiesSchema, rc.parentTagPrefix, rc.parentStructField.Tag, itemValue)
 		}
 
 		schema.AddType(Object)
@@ -1134,6 +1168,9 @@ func (r *Reflector) walkProperties(v reflect.Value, parent *Schema, rc *ReflectC
 			}
 		}
 
+		f := field
+		rc.parentStructField = &f
+
 		propertySchema, err := r.reflect(fieldVal, rc, true, parent)
 		if err != nil {
 			if errors.Is(err, ErrSkipProperty) {
@@ -1142,6 +1179,8 @@ func (r *Reflector) walkProperties(v reflect.Value, parent *Schema, rc *ReflectC
 
 			return err
 		}
+
+		rc.parentStructField = nil
 
 		checkNullability(&propertySchema, rc, ft, omitEmpty, nullable)
 
@@ -1167,7 +1206,9 @@ func (r *Reflector) walkProperties(v reflect.Value, parent *Schema, rc *ReflectC
 			}
 		}
 
-		reflectEnum(&propertySchema, field.Tag, nil)
+		if propertySchema.Ref == nil {
+			reflectEnum(&propertySchema, "", field.Tag, fieldVal)
+		}
 
 		// Remove temporary kept type from referenced schema.
 		if propertySchema.Ref != nil {
@@ -1374,9 +1415,9 @@ func reflectExample(rc *ReflectContext, propertySchema *Schema, field reflect.St
 	return nil
 }
 
-func reflectEnum(schema *Schema, fieldTag reflect.StructTag, fieldVal interface{}) {
+func reflectEnum(schema *Schema, tagPrefix string, fieldTag reflect.StructTag, fieldVal interface{}) {
 	enum := enum{}
-	enum.loadFromField(fieldTag, fieldVal)
+	enum.loadFromField(tagPrefix, fieldTag, fieldVal)
 
 	if len(enum.items) > 0 {
 		schema.Enum = enum.items
@@ -1390,14 +1431,13 @@ func reflectEnum(schema *Schema, fieldTag reflect.StructTag, fieldVal interface{
 	}
 }
 
-// enum can be use for sending enum data that need validate.
 type enum struct {
 	items []interface{}
 	names []string
 }
 
 // loadFromField loads enum from field tag: json array or comma-separated string.
-func (enum *enum) loadFromField(fieldTag reflect.StructTag, fieldVal interface{}) {
+func (enum *enum) loadFromField(tagPrefix string, fieldTag reflect.StructTag, fieldVal interface{}) {
 	fv := reflect.ValueOf(fieldVal)
 
 	if e, isEnumer := safeInterface(fv).(NamedEnum); isEnumer {
@@ -1412,21 +1452,50 @@ func (enum *enum) loadFromField(fieldTag reflect.StructTag, fieldVal interface{}
 		enum.items = e.Enum()
 	}
 
-	if enumTag := fieldTag.Get("enum"); enumTag != "" {
+	if enumTag := fieldTag.Get(tagPrefix + "enum"); enumTag != "" {
 		var e []interface{}
 
 		err := json.Unmarshal([]byte(enumTag), &e)
 		if err != nil {
-			es := strings.Split(enumTag, ",")
-			e = make([]interface{}, len(es))
-
-			for i, s := range es {
-				e[i] = s
-			}
+			e = enum.inferType(enumTag, fv)
 		}
 
 		enum.items = e
 	}
+}
+
+func (enum *enum) inferType(enumTag string, fv reflect.Value) []interface{} {
+	es := strings.Split(enumTag, ",")
+	e := make([]interface{}, len(es))
+
+	switch {
+	case strings.HasPrefix(fv.Kind().String(), "int"):
+		for i, s := range es {
+			if v, err := strconv.ParseInt(s, 10, 64); err == nil {
+				e[i] = v
+			}
+		}
+	case strings.HasPrefix(fv.Kind().String(), "uint"):
+		for i, s := range es {
+			if v, err := strconv.ParseUint(s, 10, 64); err == nil {
+				e[i] = v
+			}
+		}
+
+	case strings.HasPrefix(fv.Kind().String(), "float"):
+		for i, s := range es {
+			if v, err := strconv.ParseFloat(s, 64); err == nil {
+				e[i] = v
+			}
+		}
+
+	default:
+		for i, s := range es {
+			e[i] = s
+		}
+	}
+
+	return e
 }
 
 type (
