@@ -1807,12 +1807,12 @@ func TestReflector_Reflect_nullable(t *testing.T) {
 	r := jsonschema.Reflector{}
 
 	type My struct {
-		List1 []string       `json:"l1"`
+		List1 []string       `json:"l1" items.title:"List 1" items.enum:"abc,def"`
 		List2 []int          `json:"l2"`
 		List3 []string       `json:"l3" nullable:"false"`
 		S1    string         `json:"s1" nullable:"true"`
 		S2    *string        `json:"s2" nullable:"false"`
-		Map1  map[string]int `json:"m1"`
+		Map1  map[string]int `json:"m1" additionalProperties.title:"Map 1" additionalProperties.enum:"1,2,3"`
 		Map2  map[string]int `json:"m2" nullable:"false"`
 	}
 
@@ -1821,13 +1821,18 @@ func TestReflector_Reflect_nullable(t *testing.T) {
 
 	assertjson.EqMarshal(t, `{
 	  "properties":{
-		"l1":{"items":{"type":"string"},"type":["array","null"]},
+		"l1":{
+		  "items":{"title":"List 1","enum":["abc","def"],"type":"string"},
+		  "type":["array","null"]
+		},
 		"l2":{"items":{"type":"integer"},"type":["array","null"]},
 		"l3":{"items":{"type":"string"},"type":"array"},
-		"m1":{"additionalProperties":{"type":"integer"},"type":["object","null"]},
+		"m1":{
+		  "additionalProperties":{"title":"Map 1","enum":[1,2,3],"type":"integer"},
+		  "type":["object","null"]
+		},
 		"m2":{"additionalProperties":{"type":"integer"},"type":"object"},
-		"s1":{"type":["string","null"]},
-		"s2":{"type":"string"}
+		"s1":{"type":["string","null"]},"s2":{"type":"string"}
 	  },
 	  "type":"object"
 	}`, s)
@@ -2651,6 +2656,46 @@ func TestReflector_Reflect_byteSlice(t *testing.T) {
 		"a":{"description":"Hello world!","type":"string","format":"base64"},
 		"b":{"description":"I am a RawMessage."},
 		"c":{"description":"I am a RawMessage pointer."}
+	  },
+	  "type":"object"
+	}`, s)
+}
+
+func TestReflector_Reflect_enum(t *testing.T) {
+	type S struct {
+		I    int                `json:"i" enum:"1,2,3"`
+		S    string             `json:"s" enum:"1,2,3"`
+		II   []int              `json:"ii" items.enum:"1,2,3"`
+		MI   map[string]int     `json:"mi" additionalProperties.enum:"1,2,3"`
+		MII  map[string][]int   `json:"mii" additionalProperties.items.enum:"1,2,3"`
+		IMII []map[string][]int `json:"imii" items.additionalProperties.items.enum:"1,2,3"`
+	}
+
+	r := jsonschema.Reflector{}
+
+	s, err := r.Reflect(S{})
+	require.NoError(t, err)
+
+	assertjson.EqMarshal(t, `{
+	  "properties":{
+		"i":{"enum":[1,2,3],"type":"integer"},
+		"ii":{"items":{"enum":[1,2,3],"type":"integer"},"type":["array","null"]},
+		"imii":{
+		  "items":{
+			"additionalProperties":{"items":{"enum":[1,2,3],"type":"integer"},"type":"array"},
+			"type":"object"
+		  },
+		  "type":["array","null"]
+		},
+		"mi":{
+		  "additionalProperties":{"enum":[1,2,3],"type":"integer"},
+		  "type":["object","null"]
+		},
+		"mii":{
+		  "additionalProperties":{"items":{"enum":[1,2,3],"type":"integer"},"type":"array"},
+		  "type":["object","null"]
+		},
+		"s":{"enum":["1","2","3"],"type":"string"}
 	  },
 	  "type":"object"
 	}`, s)

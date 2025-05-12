@@ -171,16 +171,14 @@ func TestReflector_Reflect_StructEmbed(t *testing.T) {
 	  "definitions":{
 		"DynIn123":{
 		  "properties":{
-			"bar":{"type":"string"},
-			"foo":{"enum":["123","456","789"],"type":"integer"},
+			"bar":{"type":"string"},"foo":{"enum":[123,456,789],"type":"integer"},
 			"type":{"type":"string"}
 		  },
 		  "type":"object"
 		},
 		"DynOut123":{
 		  "properties":{
-			"bar":{"type":"string"},
-			"foo":{"enum":["123","456","789"],"type":"integer"},
+			"bar":{"type":"string"},"foo":{"enum":[123,456,789],"type":"integer"},
 			"status":{"type":"string"}
 		  },
 		  "type":"object"

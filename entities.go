@@ -23,8 +23,8 @@ type Schema struct {
 	Description          *string                                     `json:"description,omitempty"`
 	Default              *interface{}                                `json:"default,omitempty"`
 	ReadOnly             *bool                                       `json:"readOnly,omitempty"`
-	WriteOnly             *bool                                       `json:"writeOnly,omitempty"`
-	Deprecated             *bool                                       `json:"deprecated,omitempty"`
+	WriteOnly            *bool                                       `json:"writeOnly,omitempty"`
+	Deprecated           *bool                                       `json:"deprecated,omitempty"`
 	Examples             []interface{}                               `json:"examples,omitempty"`
 	MultipleOf           *float64                                    `json:"multipleOf,omitempty"`
 	Maximum              *float64                                    `json:"maximum,omitempty"`
