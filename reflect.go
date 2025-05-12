@@ -871,6 +871,7 @@ func (r *Reflector) kindSwitch(t reflect.Type, v reflect.Value, schema *Schema, 
 		defer func() {
 			rc.parentTagPrefix = prevTagPrefix
 		}()
+
 		rc.parentTagPrefix += "items."
 
 		itemsSchema, err := r.reflect(itemValue, rc, false, schema)
@@ -1167,7 +1168,8 @@ func (r *Reflector) walkProperties(v reflect.Value, parent *Schema, rc *ReflectC
 			}
 		}
 
-		rc.parentStructField = &field
+		f := field
+		rc.parentStructField = &f
 
 		propertySchema, err := r.reflect(fieldVal, rc, true, parent)
 		if err != nil {
@@ -1455,39 +1457,45 @@ func (enum *enum) loadFromField(tagPrefix string, fieldTag reflect.StructTag, fi
 
 		err := json.Unmarshal([]byte(enumTag), &e)
 		if err != nil {
-			es := strings.Split(enumTag, ",")
-			e = make([]interface{}, len(es))
-
-			switch {
-			case strings.HasPrefix(fv.Kind().String(), "int"):
-				for i, s := range es {
-					if v, err := strconv.ParseInt(s, 10, 64); err == nil {
-						e[i] = v
-					}
-				}
-			case strings.HasPrefix(fv.Kind().String(), "uint"):
-				for i, s := range es {
-					if v, err := strconv.ParseUint(s, 10, 64); err == nil {
-						e[i] = v
-					}
-				}
-
-			case strings.HasPrefix(fv.Kind().String(), "float"):
-				for i, s := range es {
-					if v, err := strconv.ParseFloat(s, 64); err == nil {
-						e[i] = v
-					}
-				}
-
-			default:
-				for i, s := range es {
-					e[i] = s
-				}
-			}
+			e = enum.inferType(enumTag, fv)
 		}
 
 		enum.items = e
 	}
+}
+
+func (enum *enum) inferType(enumTag string, fv reflect.Value) []interface{} {
+	es := strings.Split(enumTag, ",")
+	e := make([]interface{}, len(es))
+
+	switch {
+	case strings.HasPrefix(fv.Kind().String(), "int"):
+		for i, s := range es {
+			if v, err := strconv.ParseInt(s, 10, 64); err == nil {
+				e[i] = v
+			}
+		}
+	case strings.HasPrefix(fv.Kind().String(), "uint"):
+		for i, s := range es {
+			if v, err := strconv.ParseUint(s, 10, 64); err == nil {
+				e[i] = v
+			}
+		}
+
+	case strings.HasPrefix(fv.Kind().String(), "float"):
+		for i, s := range es {
+			if v, err := strconv.ParseFloat(s, 64); err == nil {
+				e[i] = v
+			}
+		}
+
+	default:
+		for i, s := range es {
+			e[i] = s
+		}
+	}
+
+	return e
 }
 
 type (
