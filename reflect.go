@@ -1379,15 +1379,33 @@ func reflectEnum(schema *Schema, fieldTag reflect.StructTag, fieldVal interface{
 	enum.loadFromField(fieldTag, fieldVal)
 
 	if len(enum.items) > 0 {
-		schema.Enum = enum.items
+		target := searchDeepestSchema(schema)
+		target.Enum = enum.items
+
 		if len(enum.names) > 0 {
-			if schema.ExtraProperties == nil {
-				schema.ExtraProperties = make(map[string]interface{}, 1)
+			if target.ExtraProperties == nil {
+				target.ExtraProperties = make(map[string]interface{}, 1)
 			}
 
 			schema.ExtraProperties[XEnumNames] = enum.names
 		}
 	}
+}
+
+func searchDeepestSchema(in *Schema) *Schema {
+	if in.Items == nil {
+		return in
+	}
+
+	if in.Items.SchemaOrBool == nil {
+		return in
+	}
+
+	if in.Items.SchemaOrBool.TypeObject == nil {
+		return in
+	}
+
+	return searchDeepestSchema(in.Items.SchemaOrBool.TypeObject)
 }
 
 // enum can be use for sending enum data that need validate.
