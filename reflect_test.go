@@ -2690,6 +2690,7 @@ func (o MyEnum) String() string {
 	if o == MyEnumOn {
 		return "On"
 	}
+
 	return "Off"
 }
 
