@@ -543,15 +543,23 @@ func (r *Reflector) reflect(i interface{}, rc *ReflectContext, keepType bool, pa
 	return schema, nil
 }
 
-func checkTextMarshaler(t reflect.Type, schema *Schema) bool {
+func isTextMarshaler(t reflect.Type) bool {
 	if (t.Implements(typeOfTextUnmarshaler) || reflect.PtrTo(t).Implements(typeOfTextUnmarshaler)) &&
 		(t.Implements(typeOfTextMarshaler) || reflect.PtrTo(t).Implements(typeOfTextMarshaler)) {
 		if !t.Implements(typeOfJSONMarshaler) && !reflect.PtrTo(t).Implements(typeOfJSONMarshaler) {
-			schema.TypeEns().WithSimpleTypes(String)
-			schema.Type.SliceOfSimpleTypeValues = nil
-
 			return true
 		}
+	}
+
+	return false
+}
+
+func checkTextMarshaler(t reflect.Type, schema *Schema) bool {
+	if isTextMarshaler(t) {
+		schema.TypeEns().WithSimpleTypes(String)
+		schema.Type.SliceOfSimpleTypeValues = nil
+
+		return true
 	}
 
 	return false
@@ -1466,32 +1474,40 @@ func (enum *enum) loadFromField(tagPrefix string, fieldTag reflect.StructTag, fi
 
 func (enum *enum) inferType(enumTag string, fv reflect.Value) []interface{} {
 	es := strings.Split(enumTag, ",")
-	e := make([]interface{}, len(es))
+	e := make([]interface{}, 0, len(es))
+
+	if isTextMarshaler(fv.Type()) {
+		for _, s := range es {
+			e = append(e, s)
+		}
+
+		return e
+	}
 
 	switch {
 	case strings.HasPrefix(fv.Kind().String(), "int"):
-		for i, s := range es {
+		for _, s := range es {
 			if v, err := strconv.ParseInt(s, 10, 64); err == nil {
-				e[i] = v
+				e = append(e, v)
 			}
 		}
 	case strings.HasPrefix(fv.Kind().String(), "uint"):
-		for i, s := range es {
+		for _, s := range es {
 			if v, err := strconv.ParseUint(s, 10, 64); err == nil {
-				e[i] = v
+				e = append(e, v)
 			}
 		}
 
 	case strings.HasPrefix(fv.Kind().String(), "float"):
-		for i, s := range es {
+		for _, s := range es {
 			if v, err := strconv.ParseFloat(s, 64); err == nil {
-				e[i] = v
+				e = append(e, v)
 			}
 		}
 
 	default:
-		for i, s := range es {
-			e[i] = s
+		for _, s := range es {
+			e = append(e, s)
 		}
 	}
 
