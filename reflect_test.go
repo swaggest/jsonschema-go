@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding"
 	"encoding/json"
+	"fmt"
 	"mime/multipart"
 	"reflect"
 	"strings"
@@ -2661,14 +2662,46 @@ func TestReflector_Reflect_byteSlice(t *testing.T) {
 	}`, s)
 }
 
+type MyEnum uint32
+
+const (
+	MyEnumOn  MyEnum = 0 // On
+	MyEnumOff MyEnum = 1 // Off
+)
+
+func (o *MyEnum) UnmarshalText(text []byte) error {
+	switch string(text) {
+	case MyEnumOff.String():
+		*o = MyEnumOff
+	case MyEnumOn.String():
+		*o = MyEnumOn
+	default:
+		return fmt.Errorf("invalid MyEnum value: %s", string(text))
+	}
+
+	return nil
+}
+
+func (o MyEnum) MarshalText() ([]byte, error) {
+	return []byte(o.String()), nil
+}
+
+func (o MyEnum) String() string {
+	if o == MyEnumOn {
+		return "On"
+	}
+	return "Off"
+}
+
 func TestReflector_Reflect_enum(t *testing.T) {
 	type S struct {
-		I    int                `json:"i" enum:"1,2,3"`
-		S    string             `json:"s" enum:"1,2,3"`
-		II   []int              `json:"ii" items.enum:"1,2,3"`
-		MI   map[string]int     `json:"mi" additionalProperties.enum:"1,2,3"`
-		MII  map[string][]int   `json:"mii" additionalProperties.items.enum:"1,2,3"`
-		IMII []map[string][]int `json:"imii" items.additionalProperties.items.enum:"1,2,3"`
+		I        int                `json:"i" enum:"1,2,3"`
+		S        string             `json:"s" enum:"1,2,3"`
+		II       []int              `json:"ii" items.enum:"1,2,3"`
+		MI       map[string]int     `json:"mi" additionalProperties.enum:"1,2,3"`
+		MII      map[string][]int   `json:"mii" additionalProperties.items.enum:"1,2,3"`
+		IMII     []map[string][]int `json:"imii" items.additionalProperties.items.enum:"1,2,3"`
+		Stringer MyEnum             `json:"stringer" enum:"On,Off"`
 	}
 
 	r := jsonschema.Reflector{}
@@ -2695,7 +2728,8 @@ func TestReflector_Reflect_enum(t *testing.T) {
 		  "additionalProperties":{"items":{"enum":[1,2,3],"type":"integer"},"type":"array"},
 		  "type":["object","null"]
 		},
-		"s":{"enum":["1","2","3"],"type":"string"}
+		"s":{"enum":["1","2","3"],"type":"string"},
+		"stringer":{"enum":["On","Off"],"type":"string"}
 	  },
 	  "type":"object"
 	}`, s)
