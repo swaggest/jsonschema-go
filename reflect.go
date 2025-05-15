@@ -369,7 +369,7 @@ func (r *Reflector) reflectDefer(defName string, typeString refl.TypeString, rc 
 	})
 
 	// Inlining trivial scalar schemas.
-	if isTrivial && schema.Type != nil && len(schema.Properties) == 0 && !rc.isTypeCycle /*&& !schema.HasType(Object) /*&& !schema.HasType(Array)*/ {
+	if isTrivial && schema.Type != nil && len(schema.Properties) == 0 && !rc.isTypeCycle {
 		return schema
 	}
 
