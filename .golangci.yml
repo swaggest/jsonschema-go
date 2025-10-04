@@ -1,76 +1,94 @@
-# See https://github.com/golangci/golangci-lint/blob/master/.golangci.example.yml
+# See https://golangci-lint.run/docs/linters/configuration/
+version: "2"
 run:
   tests: true
-
-linters-settings:
-  errcheck:
-    check-type-assertions: true
-    check-blank: true
-  gocyclo:
-    min-complexity: 45
-  dupl:
-    threshold: 100
-  misspell:
-    locale: US
-  unparam:
-    check-exported: true
-  nestif:
-    min-complexity: 7
-
 linters:
-  enable-all: true
+  default: all
   disable:
-    - fatcontext
+    - containedctx
+    - embeddedstructfieldcheck
     - err113
     - maintidx
-    - musttag
-    - containedctx
     - funlen
+    - gocyclo
     - gocognit
     - cyclop
-    - lll
-    - gochecknoglobals
-    - wrapcheck
-    - paralleltest
+    - noinlineerr
+    - wsl_v5
+    - funcorder
+    - copyloopvar
+    - depguard
+    - dupword
+    - errname
+    - exhaustruct
     - forbidigo
     - forcetypeassert
-    - varnamelen
-    - tagliatelle
-    - errname
+    - gochecknoglobals
+    - intrange
     - ireturn
-    - exhaustruct
-    - nonamedreturns
-    - testableexamples
-    - dupword
-    - depguard
-    - tagalign
+    - lll
     - mnd
-    - testifylint
+    - nonamedreturns
+    - paralleltest
     - recvcheck
-
-issues:
-  exclude:
-    - "strings.Title is deprecated"
-    - "strings.Title has been deprecated"
-    - "\"io/ioutil\" has been deprecated"
-    - "cyclomatic complexity \\d+ of func `\\(Schema\\).IsTrivial` is high"
-  exclude-use-default: false
-  exclude-rules:
-    - linters:
-        - mnd
-        - goconst
-        - noctx
-        - funlen
-        - dupl
-        - unused
-        - unparam
-      path: "_test.go"
-    - linters:
-        - errcheck # Error checking omitted for brevity.
-        - errchkjson
-        - gosec
-      path: "example_"
-    - linters:
-        - revive
-      text: "unused-parameter: parameter"
-
+    - tagalign
+    - tagliatelle
+    - testableexamples
+    - testifylint
+    - varnamelen
+    - wrapcheck
+  settings:
+    dupl:
+      threshold: 100
+    errcheck:
+      check-type-assertions: true
+      check-blank: true
+    gocyclo:
+      min-complexity: 45
+    misspell:
+      locale: US
+    unparam:
+      check-exported: true
+    nestif:
+      min-complexity: 7
+  exclusions:
+    generated: lax
+    rules:
+      - linters:
+          - staticcheck
+        text: strings.Title has been deprecated
+      - linters:
+          - gosec
+          - dupl
+          - funlen
+          - goconst
+          - mnd
+          - noctx
+          - unparam
+          - unused
+          - errchkjson
+          - err113
+        path: _test.go
+      - linters:
+          - errcheck
+          - gosec
+        path: example_
+      - linters:
+          - revive
+        text: 'unused-parameter: parameter'
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
+formatters:
+  enable:
+    - gci
+    - gofmt
+    - gofumpt
+    - goimports
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
