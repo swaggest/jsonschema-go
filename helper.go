@@ -7,7 +7,8 @@ import (
 )
 
 const (
-	// XEnumNames is the name of JSON property to store names of enumerated values.
+	// XEnumNames is the default name of JSON property to store names of enumerated values.
+	// Use ReflectContext.EnumNames for a different value.
 	XEnumNames = "x-enum-names"
 )
 

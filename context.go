@@ -316,6 +316,9 @@ type ReflectContext struct {
 	// SkipUnsupportedProperties skips properties with unsupported types (func, chan, etc...) instead of failing.
 	SkipUnsupportedProperties bool
 
+	// EnumNames allows custom schema property name for enum values, default 'x-enum-names'.
+	EnumNames string
+
 	Path              []string
 	definitions       map[refl.TypeString]*Schema // list of all definition objects
 	definitionRefs    map[refl.TypeString]Ref
