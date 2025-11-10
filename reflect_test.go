@@ -2328,6 +2328,33 @@ func TestReflector_Reflect_NamedEnum(t *testing.T) {
 	assertjson.EqMarshal(t, `{"enum":["test2"],"type":"string","x-enum-names":["n:test2"]}`, s)
 }
 
+func TestReflector_Reflect_NamedEnum_custom(t *testing.T) {
+	r := jsonschema.Reflector{}
+
+	var (
+		np *withPtrNamedEnum
+		nv *withValNamedEnum
+	)
+
+	enumNames := "x-enum-varnames"
+
+	s, err := r.Reflect(np, func(rc *jsonschema.ReflectContext) { rc.EnumNames = enumNames })
+	require.NoError(t, err)
+	assertjson.EqMarshal(t, `{"enum":[""],"type":["null","string"],"x-enum-varnames":["n:"]}`, s)
+
+	s, err = r.Reflect(nv, func(rc *jsonschema.ReflectContext) { rc.EnumNames = enumNames })
+	require.NoError(t, err)
+	assertjson.EqMarshal(t, `{"enum":[""],"type":["null","string"],"x-enum-varnames":["n:"]}`, s)
+
+	s, err = r.Reflect(withValNamedEnum("test1"), func(rc *jsonschema.ReflectContext) { rc.EnumNames = enumNames })
+	require.NoError(t, err)
+	assertjson.EqMarshal(t, `{"enum":["test1"],"type":"string","x-enum-varnames":["n:test1"]}`, s)
+
+	s, err = r.Reflect(withPtrNamedEnum("test2"), func(rc *jsonschema.ReflectContext) { rc.EnumNames = enumNames })
+	require.NoError(t, err)
+	assertjson.EqMarshal(t, `{"enum":["test2"],"type":"string","x-enum-varnames":["n:test2"]}`, s)
+}
+
 type withPtrOneOfExposer string
 
 func (w *withPtrOneOfExposer) JSONSchemaOneOf() []interface{} {

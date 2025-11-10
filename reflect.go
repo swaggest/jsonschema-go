@@ -130,7 +130,7 @@ func checkSchemaSetup(params InterceptSchemaParams) (bool, error) {
 	v := params.Value
 	s := params.Schema
 
-	reflectEnum(s, "", "", v.Interface())
+	reflectEnum(params.Context, s, "", "", v.Interface())
 
 	var e Exposer
 
@@ -894,7 +894,7 @@ func (r *Reflector) kindSwitch(t reflect.Type, v reflect.Value, schema *Schema, 
 				return err
 			}
 
-			reflectEnum(&itemsSchema, rc.parentTagPrefix, rc.parentStructField.Tag, itemValue)
+			reflectEnum(rc, &itemsSchema, rc.parentTagPrefix, rc.parentStructField.Tag, itemValue)
 		}
 
 		schema.AddType(Array)
@@ -942,7 +942,7 @@ func (r *Reflector) kindSwitch(t reflect.Type, v reflect.Value, schema *Schema, 
 				return err
 			}
 
-			reflectEnum(&additionalPropertiesSchema, rc.parentTagPrefix, rc.parentStructField.Tag, itemValue)
+			reflectEnum(rc, &additionalPropertiesSchema, rc.parentTagPrefix, rc.parentStructField.Tag, itemValue)
 		}
 
 		schema.AddType(Object)
@@ -1215,7 +1215,7 @@ func (r *Reflector) walkProperties(v reflect.Value, parent *Schema, rc *ReflectC
 		}
 
 		if propertySchema.Ref == nil {
-			reflectEnum(&propertySchema, "", field.Tag, fieldVal)
+			reflectEnum(rc, &propertySchema, "", field.Tag, fieldVal)
 		}
 
 		// Remove temporary kept type from referenced schema.
@@ -1423,9 +1423,14 @@ func reflectExample(rc *ReflectContext, propertySchema *Schema, field reflect.St
 	return nil
 }
 
-func reflectEnum(schema *Schema, tagPrefix string, fieldTag reflect.StructTag, fieldVal interface{}) {
+func reflectEnum(rc *ReflectContext, schema *Schema, tagPrefix string, fieldTag reflect.StructTag, fieldVal interface{}) {
 	enum := enum{}
 	enum.loadFromField(tagPrefix, fieldTag, fieldVal)
+
+	enumNames := XEnumNames
+	if rc.EnumNames != "" {
+		enumNames = rc.EnumNames
+	}
 
 	if len(enum.items) > 0 {
 		schema.Enum = enum.items
@@ -1434,7 +1439,7 @@ func reflectEnum(schema *Schema, tagPrefix string, fieldTag reflect.StructTag, f
 				schema.ExtraProperties = make(map[string]interface{}, 1)
 			}
 
-			schema.ExtraProperties[XEnumNames] = enum.names
+			schema.ExtraProperties[enumNames] = enum.names
 		}
 	}
 }
