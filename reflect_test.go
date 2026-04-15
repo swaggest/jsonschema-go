@@ -449,7 +449,10 @@ func TestReflector_Reflect_pointer_envelop(t *testing.T) {
 		  "minProperties":5,
 		  "anyOf":[{"type":"null"},{"$ref":"#/definitions/JsonschemaGoTestNamedMap"}]
 		},
-		"namedMapOmitempty":{"$ref":"#/definitions/JsonschemaGoTestNamedMap","minProperties":1},
+		"namedMapOmitempty":{
+		  "allOf":[{"$ref":"#/definitions/JsonschemaGoTestNamedMap"}],
+		  "minProperties":1
+		},
 		"ptr":{"anyOf":[{"type":"null"},{"$ref":"#/definitions/JsonschemaGoTestSt"}]},
 		"ptrOmitempty":{"$ref":"#/definitions/JsonschemaGoTestSt"},
 		"slice":{
@@ -507,8 +510,14 @@ func TestReflector_Reflect_pointer(t *testing.T) {
 		  "additionalProperties":{"$ref":"#/definitions/JsonschemaGoTestSt"},
 		  "type":"object"
 		},
-		"namedMap":{"$ref":"#/definitions/JsonschemaGoTestNamedMap","minProperties":5},
-		"namedMapOmitempty":{"$ref":"#/definitions/JsonschemaGoTestNamedMap","minProperties":1},
+		"namedMap":{
+		  "allOf":[{"$ref":"#/definitions/JsonschemaGoTestNamedMap"}],
+		  "minProperties":5
+		},
+		"namedMapOmitempty":{
+		  "allOf":[{"$ref":"#/definitions/JsonschemaGoTestNamedMap"}],
+		  "minProperties":1
+		},
 		"ptr":{"$ref":"#/definitions/JsonschemaGoTestSt"},
 		"ptrOmitempty":{"$ref":"#/definitions/JsonschemaGoTestSt"},
 		"slice":{
@@ -605,8 +614,14 @@ func TestExposer(t *testing.T) {
 		}
 	  },
 	  "properties":{
-		"country":{"$ref":"#/definitions/JsonschemaGoTestISOCountry","deprecated":true},
-		"ptr_country":{"$ref":"#/definitions/JsonschemaGoTestISOCountry","deprecated":true},
+		"country":{
+		  "allOf":[{"$ref":"#/definitions/JsonschemaGoTestISOCountry"}],
+		  "deprecated":true
+		},
+		"ptr_country":{
+		  "allOf":[{"$ref":"#/definitions/JsonschemaGoTestISOCountry"}],
+		  "deprecated":true
+		},
 		"ptr_exp":{"examples":["bar"],"type":"string"},
 		"ptr_raw":{"examples":["foo"],"type":["string","null"]},
 		"ptr_week":{"$ref":"#/definitions/JsonschemaGoTestISOWeek"},
@@ -722,7 +737,8 @@ func TestReflector_Reflect_inclineScalar(t *testing.T) {
 	type Symbol string
 
 	type topTracesInput struct {
-		RootSymbol Symbol `json:"rootSymbol" minLength:"5" example:"my_func" default:"main()"`
+		RootSymbol  Symbol `json:"rootSymbol" minLength:"5" example:"my_func" default:"main()"`
+		RootSymbol2 Symbol `json:"rootSymbol2" minLength:"5" example:"my_second_func" default:"main()"`
 	}
 
 	r := jsonschema.Reflector{}
@@ -730,7 +746,8 @@ func TestReflector_Reflect_inclineScalar(t *testing.T) {
 	require.NoError(t, err)
 	assertjson.EqualMarshal(t, []byte(`{
 	  "properties":{
-		"rootSymbol":{"default":"main()","examples":["my_func"],"minLength":5,"type":"string"}
+		"rootSymbol":{"default":"main()","examples":["my_func"],"minLength":5,"type":"string"},
+		"rootSymbol2":{"default":"main()","examples":["my_second_func"],"minLength":5,"type":"string"}
 	  },
 	  "type":"object"
 	}`), s)
@@ -1298,7 +1315,7 @@ func TestReflector_Reflect_namedSlice(t *testing.T) {
 	  },
 	  "properties":{
 		"ip_policy":{
-		  "$ref":"#/definitions/JsonschemaGoTestPanicType",
+		  "allOf":[{"$ref":"#/definitions/JsonschemaGoTestPanicType"}],
 		  "examples":[["127.0.0.1"]]
 		}
 	  },
@@ -2079,7 +2096,8 @@ func (d *Discover) Enum() []interface{} {
 
 func TestReflector_Reflect_ptrDefault(t *testing.T) {
 	type NewThing struct {
-		DiscoverMode *Discover `json:"discover,omitempty" default:"all"`
+		DiscoverMode  *Discover `json:"discover,omitempty" default:"all"`
+		DiscoverMode2 *Discover `json:"discover2,omitempty" default:"none"`
 	}
 
 	r := jsonschema.Reflector{}
@@ -2091,7 +2109,14 @@ func TestReflector_Reflect_ptrDefault(t *testing.T) {
 		"JsonschemaGoTestDiscover":{"enum":["all","none"],"type":["null","string"]}
 	  },
 	  "properties":{
-		"discover":{"$ref":"#/definitions/JsonschemaGoTestDiscover","default":"all"}
+		"discover":{
+		  "allOf":[{"$ref":"#/definitions/JsonschemaGoTestDiscover"}],
+		  "default":"all"
+		},
+		"discover2":{
+		  "allOf":[{"$ref":"#/definitions/JsonschemaGoTestDiscover"}],
+		  "default":"none"
+		}
 	  },
 	  "type":"object"
 	}`, s)

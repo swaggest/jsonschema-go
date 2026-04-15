@@ -1193,13 +1193,13 @@ func (r *Reflector) walkProperties(v reflect.Value, parent *Schema, rc *ReflectC
 		checkNullability(&propertySchema, rc, ft, omitEmpty, nullable)
 
 		if !rc.SkipNonConstraints {
-			err = checkInlineValue(&propertySchema, field, "default", propertySchema.WithDefault)
+			err = checkInlineValue(&propertySchema, rc, field, "default", propertySchema.WithDefault)
 			if err != nil {
 				return fmt.Errorf("%s: %w", strings.Join(append(rc.Path[1:], field.Name), "."), err)
 			}
 		}
 
-		err = checkInlineValue(&propertySchema, field, "const", propertySchema.WithConst)
+		err = checkInlineValue(&propertySchema, rc, field, "const", propertySchema.WithConst)
 		if err != nil {
 			return err
 		}
@@ -1218,9 +1218,20 @@ func (r *Reflector) walkProperties(v reflect.Value, parent *Schema, rc *ReflectC
 			reflectEnum(rc, &propertySchema, "", field.Tag, fieldVal)
 		}
 
-		// Remove temporary kept type from referenced schema.
+		// Remove temporary kept type from referenced schema and wrap local keywords
+		// around references to avoid draft-07 "$ref" sibling semantics.
 		if propertySchema.Ref != nil {
 			propertySchema.Type = nil
+
+			if hasRefSiblings(&propertySchema) {
+				refSchema := Schema{
+					Ref:         propertySchema.Ref,
+					ReflectType: propertySchema.ReflectType,
+				}
+
+				propertySchema.Ref = nil
+				propertySchema.AllOf = append([]SchemaOrBool{refSchema.ToSchemaOrBool()}, propertySchema.AllOf...)
+			}
 		}
 
 		if rc.interceptProp != nil {
@@ -1253,7 +1264,7 @@ func (r *Reflector) walkProperties(v reflect.Value, parent *Schema, rc *ReflectC
 	return nil
 }
 
-func checkInlineValue(propertySchema *Schema, field reflect.StructField, tag string, setter func(interface{}) *Schema) error {
+func checkInlineValue(propertySchema *Schema, rc *ReflectContext, field reflect.StructField, tag string, setter func(interface{}) *Schema) error {
 	var (
 		val interface{}
 		t   SimpleType
@@ -1264,8 +1275,13 @@ func checkInlineValue(propertySchema *Schema, field reflect.StructField, tag str
 		b *bool
 	)
 
-	if propertySchema.Type != nil && propertySchema.Type.SimpleTypes != nil {
-		t = *propertySchema.Type.SimpleTypes
+	valueSchema := propertySchema
+	if valueSchema.Ref != nil && valueSchema.Type == nil {
+		valueSchema = rc.getDefinition(*valueSchema.Ref)
+	}
+
+	if valueSchema.Type != nil && valueSchema.Type.SimpleTypes != nil {
+		t = *valueSchema.Type.SimpleTypes
 	}
 
 	_ = refl.ReadIntPtrTag(field.Tag, tag, &i)   //nolint:errcheck
@@ -1274,13 +1290,13 @@ func checkInlineValue(propertySchema *Schema, field reflect.StructField, tag str
 	refl.ReadStringPtrTag(field.Tag, tag, &s)
 
 	switch {
-	case propertySchema.HasType(Number) && f != nil:
+	case valueSchema.HasType(Number) && f != nil:
 		val = *f
-	case propertySchema.HasType(Integer) && i != nil:
+	case valueSchema.HasType(Integer) && i != nil:
 		val = *i
-	case propertySchema.HasType(Boolean) && b != nil:
+	case valueSchema.HasType(Boolean) && b != nil:
 		val = *b
-	case propertySchema.HasType(String) && s != nil:
+	case valueSchema.HasType(String) && s != nil:
 		val = *s
 	case t == Null:
 		// No default for type null.
@@ -1299,9 +1315,9 @@ func checkInlineValue(propertySchema *Schema, field reflect.StructField, tag str
 		}
 
 		if strings.HasPrefix(v, "[") && strings.HasSuffix(v, "]") &&
-			propertySchema.Items != nil &&
-			propertySchema.Items.SchemaOrBool != nil &&
-			propertySchema.Items.SchemaOrBool.TypeObject.HasType(String) {
+			valueSchema.Items != nil &&
+			valueSchema.Items.SchemaOrBool != nil &&
+			valueSchema.Items.SchemaOrBool.TypeObject.HasType(String) {
 			val = strings.Split(v[1:len(v)-1], ",")
 
 			break
@@ -1315,6 +1331,25 @@ func checkInlineValue(propertySchema *Schema, field reflect.StructField, tag str
 	}
 
 	return nil
+}
+
+func hasRefSiblings(schema *Schema) bool {
+	if schema == nil || schema.Ref == nil {
+		return false
+	}
+
+	c := *schema
+	c.Ref = nil
+	c.Type = nil
+	c.ReflectType = nil
+	c.Parent = nil
+
+	j, err := json.Marshal(c)
+	if err != nil {
+		return true
+	}
+
+	return string(j) != "{}"
 }
 
 // checkNullability checks Go semantic conditions and adds null type to schemas when appropriate.
@@ -1413,7 +1448,7 @@ func reflectExamples(rc *ReflectContext, propertySchema *Schema, field reflect.S
 }
 
 func reflectExample(rc *ReflectContext, propertySchema *Schema, field reflect.StructField) error {
-	err := checkInlineValue(propertySchema, field, "example", func(i interface{}) *Schema {
+	err := checkInlineValue(propertySchema, rc, field, "example", func(i interface{}) *Schema {
 		return propertySchema.WithExamples(i)
 	})
 	if err != nil {

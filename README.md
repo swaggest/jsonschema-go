@@ -76,10 +76,10 @@ type MyObj struct {
 }
 ```
 
-Note: field tags are only applied to inline schemas, if you use named type then referenced schema
-will be created and tags will be ignored. This happens because referenced schema can be used in
-multiple fields with conflicting tags, therefore customization of referenced schema has to done on
-the type itself via `RawExposer`, `Exposer` or `Preparer`.
+Note: named types usually become referenced schemas. Field-local tags remain attached to the
+referencing field schema; when they need to coexist with a `$ref`, reflector wraps the reference in
+`allOf` to avoid draft-07 `$ref` sibling semantics. Customization of the referenced type itself can
+still be done on the type via `RawExposer`, `Exposer` or `Preparer`.
 
 Each tag value has to be put in double quotes (`"123"`).
 
