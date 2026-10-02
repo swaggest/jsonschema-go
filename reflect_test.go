@@ -2762,3 +2762,74 @@ func TestReflector_Reflect_enum(t *testing.T) {
 	  "type":"object"
 	}`, s)
 }
+
+type preparerWithDesc struct {
+	Foo string `json:"foo"`
+}
+
+func (p preparerWithDesc) PrepareJSONSchema(schema *jsonschema.Schema) error {
+	schema.WithDescription("custom description from preparer")
+
+	return nil
+}
+
+type ptrPreparerWithTitle struct {
+	Bar int `json:"bar"`
+}
+
+func (p *ptrPreparerWithTitle) PrepareJSONSchema(schema *jsonschema.Schema) error {
+	schema.WithTitle("custom title from ptr preparer")
+
+	return nil
+}
+
+func TestReflector_Reflect_Preparer_InterceptSchema(t *testing.T) {
+	r := jsonschema.Reflector{}
+
+	var interceptedDesc string
+
+	s, err := r.Reflect(
+		preparerWithDesc{},
+		jsonschema.InterceptSchema(func(params jsonschema.InterceptSchemaParams) (bool, error) {
+			if params.Processed && params.Schema.Description != nil {
+				interceptedDesc = *params.Schema.Description
+				params.Schema.WithExtraPropertiesItem("x-processed-description", *params.Schema.Description)
+			}
+
+			return false, nil
+		}),
+	)
+	require.NoError(t, err)
+
+	assert.Equal(t, "custom description from preparer", interceptedDesc)
+	assertjson.EqMarshal(t, `{
+	  "description":"custom description from preparer",
+	  "properties":{"foo":{"type":"string"}},
+	  "type":"object",
+	  "x-processed-description":"custom description from preparer"
+	}`, s)
+
+	var interceptedTitle string
+
+	s, err = r.Reflect(
+		&ptrPreparerWithTitle{},
+		jsonschema.InterceptSchema(func(params jsonschema.InterceptSchemaParams) (bool, error) {
+			if params.Processed && params.Schema.Title != nil {
+				interceptedTitle = *params.Schema.Title
+				params.Schema.WithExtraPropertiesItem("x-processed-title", *params.Schema.Title)
+			}
+
+			return false, nil
+		}),
+	)
+	require.NoError(t, err)
+
+	assert.Equal(t, "custom title from ptr preparer", interceptedTitle)
+	assertjson.EqMarshal(t, `{
+	  "title":"custom title from ptr preparer",
+	  "properties":{"bar":{"type":"integer"}},
+	  "type":"object",
+	  "x-processed-title":"custom title from ptr preparer"
+	}`, s)
+}
+

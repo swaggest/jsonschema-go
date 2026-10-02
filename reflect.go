@@ -519,6 +519,16 @@ func (r *Reflector) reflect(i interface{}, rc *ReflectContext, keepType bool, pa
 		}
 	}
 
+	if preparer, ok := safeInterface(v).(Preparer); ok {
+		if err := preparer.PrepareJSONSchema(sp); err != nil {
+			return schema, err
+		}
+	} else if preparer, ok := ptrTo(v).(Preparer); ok {
+		if err := preparer.PrepareJSONSchema(sp); err != nil {
+			return schema, err
+		}
+	}
+
 	if rc.interceptSchema != nil {
 		if ret, err := rc.interceptSchema(InterceptSchemaParams{
 			Context:   rc,
@@ -528,16 +538,6 @@ func (r *Reflector) reflect(i interface{}, rc *ReflectContext, keepType bool, pa
 		}); err != nil || ret {
 			return schema, err
 		}
-	}
-
-	if preparer, ok := safeInterface(v).(Preparer); ok {
-		err := preparer.PrepareJSONSchema(sp)
-
-		return schema, err
-	} else if preparer, ok := ptrTo(v).(Preparer); ok {
-		err := preparer.PrepareJSONSchema(sp)
-
-		return schema, err
 	}
 
 	return schema, nil
