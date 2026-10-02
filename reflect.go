@@ -1481,7 +1481,24 @@ func (enum *enum) inferType(enumTag string, fv reflect.Value) []interface{} {
 	es := strings.Split(enumTag, ",")
 	e := make([]interface{}, 0, len(es))
 
-	if isTextMarshaler(fv.Type()) {
+	if !fv.IsValid() {
+		for _, s := range es {
+			e = append(e, s)
+		}
+
+		return e
+	}
+
+	t := refl.DeepIndirect(fv.Type())
+	if t == nil {
+		for _, s := range es {
+			e = append(e, s)
+		}
+
+		return e
+	}
+
+	if isTextMarshaler(fv.Type()) || isTextMarshaler(t) {
 		for _, s := range es {
 			e = append(e, s)
 		}
@@ -1490,22 +1507,29 @@ func (enum *enum) inferType(enumTag string, fv reflect.Value) []interface{} {
 	}
 
 	switch {
-	case strings.HasPrefix(fv.Kind().String(), "int"):
+	case strings.HasPrefix(t.Kind().String(), "int"):
 		for _, s := range es {
 			if v, err := strconv.ParseInt(s, 10, 64); err == nil {
 				e = append(e, v)
 			}
 		}
-	case strings.HasPrefix(fv.Kind().String(), "uint"):
+	case strings.HasPrefix(t.Kind().String(), "uint"):
 		for _, s := range es {
 			if v, err := strconv.ParseUint(s, 10, 64); err == nil {
 				e = append(e, v)
 			}
 		}
 
-	case strings.HasPrefix(fv.Kind().String(), "float"):
+	case strings.HasPrefix(t.Kind().String(), "float"):
 		for _, s := range es {
 			if v, err := strconv.ParseFloat(s, 64); err == nil {
+				e = append(e, v)
+			}
+		}
+
+	case t.Kind() == reflect.Bool:
+		for _, s := range es {
+			if v, err := strconv.ParseBool(s); err == nil {
 				e = append(e, v)
 			}
 		}

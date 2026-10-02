@@ -2762,3 +2762,44 @@ func TestReflector_Reflect_enum(t *testing.T) {
 	  "type":"object"
 	}`, s)
 }
+
+func TestReflector_Reflect_pointer_enum(t *testing.T) {
+	type UpdateBody struct {
+		Phases *uint32 `json:"phases,omitempty" enum:"0,1,2" description:"meter phases"`
+	}
+
+	r := jsonschema.Reflector{}
+
+	s, err := r.Reflect(UpdateBody{})
+	require.NoError(t, err)
+
+	assertjson.EqMarshal(t, `{
+	  "properties":{
+		"phases":{
+		  "description":"meter phases",
+		  "enum":[0,1,2],
+		  "minimum":0,
+		  "type":["null","integer"]
+		}
+	  },
+	  "type":"object"
+	}`, s)
+
+	type OtherPointers struct {
+		I *int     `json:"i,omitempty" enum:"1,2,3"`
+		F *float64 `json:"f,omitempty" enum:"1.5,2.5"`
+		B *bool    `json:"b,omitempty" enum:"true,false"`
+	}
+
+	s, err = r.Reflect(OtherPointers{})
+	require.NoError(t, err)
+
+	assertjson.EqMarshal(t, `{
+	  "properties":{
+		"b":{"enum":[true,false],"type":["null","boolean"]},
+		"f":{"enum":[1.5,2.5],"type":["null","number"]},
+		"i":{"enum":[1,2,3],"type":["null","integer"]}
+	  },
+	  "type":"object"
+	}`, s)
+}
